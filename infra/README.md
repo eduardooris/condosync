@@ -79,8 +79,10 @@ docker compose \
 > `api.yml` e o `ip-only.yml` aplica overrides nele.
 
 Para deploy isolado da API/frontend/message-server em IP-only, exporte
-`EXTRA_COMPOSE_FILE=docker-compose.ip-only.yml` antes dos scripts (ou rode o
-`docker compose ... up -d --no-deps <serviço>` à mão com os dois `-f`).
+`EXTRA_COMPOSE_FILE=docker-compose.ip-only.yml` antes dos scripts.
+Os scripts de deploy já incluem `docker-compose.api.yml` automaticamente para
+evitar compose inválido quando o override IP-only declarar apenas ajustes do
+serviço `api`.
 
 Migração para DNS (depois de comprar):
 

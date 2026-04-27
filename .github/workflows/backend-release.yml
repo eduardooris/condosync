@@ -97,5 +97,7 @@ jobs:
             export IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
             export GHCR_USER="${{ secrets.GHCR_USER }}"
             export GHCR_TOKEN="${{ secrets.GHCR_TOKEN }}"
-            export EXTRA_COMPOSE_FILE="${{ vars.EXTRA_COMPOSE_FILE }}"
+            if [ -n "${{ vars.EXTRA_COMPOSE_FILE }}" ]; then
+              export EXTRA_COMPOSE_FILE="${{ vars.EXTRA_COMPOSE_FILE }}"
+            fi
             bash /opt/condosync/infra/scripts/deploy-api.sh

@@ -19,6 +19,7 @@ compose() {
   [[ -n "$EXTRA_COMPOSE_FILE" ]] && extra=(-f "$EXTRA_COMPOSE_FILE")
   FRONTEND_TAG="$1" FRONTEND_IMAGE="$FRONTEND_IMAGE" docker compose \
     -f docker-compose.prod.yml \
+    -f docker-compose.api.yml \
     "${extra[@]}" \
     --env-file "$ENV_FILE" \
     "${@:2}"
