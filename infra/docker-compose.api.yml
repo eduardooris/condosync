@@ -61,7 +61,10 @@ services:
       keycloak:
         condition: service_started
       message-server:
-        condition: service_healthy
+        # imagem distroless não permite healthcheck via wget/curl; usamos
+        # service_started. Se a API precisar do message-server pronto, retry
+        # interno do client cuida da janela inicial.
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/v1/health/ready"]
       interval: 15s

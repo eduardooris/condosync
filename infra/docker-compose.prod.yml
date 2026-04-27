@@ -155,12 +155,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health/ready"]
-      interval: 20s
-      timeout: 4s
-      retries: 5
-      start_period: 25s
+    # NOTA: imagem distroless/static não tem wget/curl/sh, então um healthcheck
+    # HTTP nativo do Docker é inviável. O endpoint /health/ready existe e
+    # funciona — quem precisar checar deve chamar via nginx ou via outro
+    # container. A API depende de `service_started` (não healthy).
+    # healthcheck:
+    #   test: ["CMD", "wget", "-qO-", "http://localhost:8080/health/ready"]
     networks:
       - core
       - messaging
