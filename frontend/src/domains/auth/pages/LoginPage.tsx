@@ -17,7 +17,7 @@ import { useAuthStore } from '@/shared/stores/auth.store';
 import { canCreateCondominiumFromJwt, extractRoleFromJwt } from '@/shared/utils/auth';
 
 const features = [
-  'Gestão financeira com transparência total',
+  'Gestão financeira com transparência total+',
   'Cobranças automáticas via WhatsApp',
   'Enquetes e governança digital',
   'Ocorrências com status em tempo real',
