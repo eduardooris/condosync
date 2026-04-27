@@ -1,0 +1,18 @@
+# Env / secrets
+.env.prod
+.env.prod.*
+!.env.prod.example
+
+# Deploy state files
+.api-previous-tag
+.frontend-previous-tag
+.message-server-previous-tag
+
+# Logs / runtime
+*.log
+*.pid
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/

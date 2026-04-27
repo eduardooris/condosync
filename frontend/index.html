@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('condosync-ui');
+          var t = 'dark';
+          if (raw) {
+            var p = JSON.parse(raw);
+            if (p.state && (p.state.theme === 'light' || p.state.theme === 'dark')) t = p.state.theme;
+          }
+          document.documentElement.dataset.theme = t;
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute('content', t === 'light' ? '#e8edf5' : '#06091a');
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="theme-color" content="#06091a" />
+    <meta name="description" content="CondoSync — gestão condominial digital, transparente e simples." />
+    <title>CondoSync · Gestão condominial inteligente</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

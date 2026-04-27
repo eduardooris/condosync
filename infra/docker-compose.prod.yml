@@ -1,0 +1,218 @@
+# CondoSync — Production Stack BASE (infra estável)
+#
+# Este compose contém a base de produção:
+#   edge (nginx/frontend/certbot), core (postgres/redis/keycloak) e messaging.
+#
+# A API (`api`) foi extraída para `docker-compose.api.yml` (override) para que
+# atualizações de versão do backend possam ser aplicadas com:
+#
+#   IMAGE_TAG=<sha> docker compose \
+#     -f docker-compose.prod.yml -f docker-compose.api.yml \
+#     --env-file .env.prod up -d --no-deps api
+#
+# sem nunca tocar em postgres/redis/keycloak/nginx/frontend.
+#
+# ─── Garantia de zero-perda de dados ────────────────────────────────────────
+# Todos os volumes nomeados (pgdata, keycloak_pgdata, redisdata,
+# certbot_certs, certbot_webroot) sobrevivem a `docker compose down` e a
+# qualquer `up -d --no-deps api`. Eles SÓ são apagados manualmente via
+# `docker volume rm` — nunca pelo pipeline normal.
+#
+# Uso (primeira subida da infra):
+#   cp infra/.env.prod.example infra/.env.prod
+#   nano infra/.env.prod
+#   cd infra && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+services:
+
+  # ── Banco de dados da aplicação ────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: condosync-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    networks:
+      - core
+
+  # ── Banco de dados do Keycloak ─────────────────────────────────────────────
+  keycloak-db:
+    image: postgres:16-alpine
+    container_name: condosync-keycloak-db
+    restart: always
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_DB: keycloak
+    volumes:
+      - keycloak_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    networks:
+      - core
+
+  # ── Keycloak ───────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: condosync-keycloak
+    restart: always
+    # "start" = modo produção. Na primeira run importa realm-main.json.
+    # Após importado, remova --import-realm para acelerar a inicialização.
+    command: start --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      # Hostname público (domínio que o navegador usa para chegar ao Keycloak)
+      KC_HOSTNAME: ${AUTH_DOMAIN}
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY: edge          # nginx termina o TLS; repassa HTTP internamente
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: warn
+    volumes:
+      - ./keycloak/realm-main.json:/opt/keycloak/data/import/realm-main.json:ro
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - edge
+      - core
+
+  # ── Redis (Bull queues) ────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: condosync-redis
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - core
+
+  # ── Frontend React (SPA) ───────────────────────────────────────────────────
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/condosync/condosync-frontend}:${FRONTEND_TAG:-${IMAGE_TAG:-latest}}
+    container_name: condosync-frontend
+    restart: always
+    pull_policy: always
+    networks:
+      - edge
+
+  # ── Message Server (WhatsApp) ──────────────────────────────────────────────
+  message-server:
+    image: ${MESSAGE_SERVER_IMAGE:-ghcr.io/condosync/condosync-message-server}:${MESSAGE_SERVER_TAG:-${IMAGE_TAG:-latest}}
+    container_name: condosync-message-server
+    restart: always
+    pull_policy: always
+    environment:
+      APP_ENV: production
+      APP_NAME: message-server
+      LOG_LEVEL: ${MESSAGE_SERVER_LOG_LEVEL:-info}
+      HTTP_PORT: 8080
+      HTTP_API_KEY: ${MESSAGE_SERVER_API_KEY:-}
+      SHUTDOWN_TIMEOUT: 15s
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      TRANSPORT_MODE: http
+      WEBHOOK_URL: http://api:3000/api/v1/integrations/message-server/events
+      WEBHOOK_AUTH_TOKEN: ${MESSAGE_SERVER_API_KEY:-}
+      WEBHOOK_SECRET: ${MESSAGE_SERVER_WEBHOOK_SECRET:-}
+      WEBHOOK_TIMEOUT: 10s
+      OUTBOX_BATCH_SIZE: 100
+      OUTBOX_POLL_INTERVAL: 500ms
+      WHATSMEOW_LOG_LEVEL: INFO
+      WHATSMEOW_DB_SCHEMA: whatsmeow
+      METRICS_PORT: 9090
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: message-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health/ready"]
+      interval: 20s
+      timeout: 4s
+      retries: 5
+      start_period: 25s
+    networks:
+      - core
+      - messaging
+
+  # ── Nginx (proxy reverso + TLS) ────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: condosync-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
+    # NOTA: o nginx resolve `api`, `frontend` e `keycloak` por DNS interno
+    # do Docker. Por isso NÃO listamos `api` em depends_on aqui — o ciclo
+    # de deploy isolado da API (`up -d --no-deps api`) não derruba o nginx,
+    # e o nginx tolera momentos em que `api` está reiniciando.
+    depends_on:
+      - frontend
+      - keycloak
+    networks:
+      - edge
+
+  # ── Certbot (Let's Encrypt) — rode apenas para emitir/renovar certs ────────
+  certbot:
+    image: certbot/certbot:latest
+    container_name: condosync-certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    # Ativado via: docker compose run --rm certbot certonly ...
+    profiles:
+      - certbot
+    networks:
+      - edge
+
+# Volumes nomeados — persistem entre deploys. Nunca são removidos por
+# `up -d --no-deps api`. Backups devem usar estes nomes.
+volumes:
+  pgdata:               # banco de dados da aplicação
+  keycloak_pgdata:      # banco do Keycloak
+  redisdata:            # filas Bull / cache
+  certbot_certs:        # certificados Let's Encrypt
+  certbot_webroot:      # webroot para HTTP-01 challenge
+
+networks:
+  edge:
+    driver: bridge
+  core:
+    driver: bridge
+  messaging:
+    driver: bridge

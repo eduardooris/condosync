@@ -1,0 +1,81 @@
+{
+  "realm": "main",
+  "enabled": true,
+  "displayName": "CondoSync Main Realm",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 604800,
+  "ssoSessionIdleTimeoutRememberMe": 604800,
+  "ssoSessionMaxLifespanRememberMe": 604800,
+  "clientSessionIdleTimeout": 604800,
+  "clientSessionMaxLifespan": 604800,
+  "offlineSessionIdleTimeout": 2592000,
+  "roles": {
+    "realm": [
+      {
+        "name": "condo-admin",
+        "description": "Pode criar e administrar condominios no CondoSync."
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-main",
+    "composite": true,
+    "clientRole": false,
+    "containerId": "main",
+    "composites": {
+      "realm": ["offline_access", "uma_authorization"]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "main-frontend",
+      "name": "CondoSync Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:*/*", "https://*/*"],
+      "webOrigins": ["*"]
+    },
+    {
+      "clientId": "condo-backend-admin",
+      "name": "CondoSync Backend (Admin API)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "condo-backend-admin-dev-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "protocol": "openid-connect",
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-condo-backend-admin",
+      "enabled": true,
+      "serviceAccountClientId": "condo-backend-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
+    }
+  ]
+}

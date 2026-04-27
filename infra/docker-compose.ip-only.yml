@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CondoSync — Override para modo IP-only (sem DNS / sem TLS)
+#
+# Sobrepõe o docker-compose.prod.yml para:
+#   • trocar o nginx.conf pelo nginx.ip-only.conf (catch-all + /auth)
+#   • configurar o Keycloak para responder em /auth com hostname = IP
+#
+# Uso:
+#   cp infra/.env.prod.ip-only.example infra/.env.prod
+#   nano infra/.env.prod   # confira IP/senhas
+#   cd infra
+#   docker compose \
+#     -f docker-compose.prod.yml \
+#     -f docker-compose.ip-only.yml \
+#     --env-file .env.prod up -d
+#
+# Quando comprar o DNS:
+#   • troque APP_DOMAIN/AUTH_DOMAIN no .env.prod
+#   • PARE de incluir o "-f docker-compose.ip-only.yml"
+#   • execute init-ssl.sh para emitir os certificados
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── API: corrige URLs hardcoded em https/${AUTH_DOMAIN} do api.yml ─────────
+  api:
+    environment:
+      # Keycloak interno responde em /auth (KC_HTTP_RELATIVE_PATH=/auth)
+      KEYCLOAK_BASE_URL: http://keycloak:8080/auth
+      # Issuer público (que vai dentro do JWT) — usa o IP via APP_PUBLIC_URL
+      KEYCLOAK_ISSUER: ${APP_PUBLIC_URL}/auth/realms/main
+      # CORS aceita o próprio host público (HTTP em IP-only)
+      CORS_ORIGINS: ${APP_PUBLIC_URL}
+
+  keycloak:
+    environment:
+      # IP público da EC2 (sem esquema, sem path)
+      KC_HOSTNAME: ${APP_DOMAIN}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      # Keycloak passa a responder em /auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      # Sobrescreve o KC_PROXY=edge do compose base (HTTPS atrás de nginx).
+      # Em IP-only não há TLS na borda, então removemos esse modo.
+      KC_PROXY: ""
+
+  nginx:
+    volumes:
+      - ./nginx/nginx.ip-only.conf:/etc/nginx/nginx.conf:ro
+      # Mantém o caminho do certbot só pra não quebrar o mount; não é usado.
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro

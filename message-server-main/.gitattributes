@@ -1,0 +1,10 @@
+/mvnw text eol=lf
+*.cmd text eol=crlf
+
+# Arquivos que serão criptografados pelo git-crypt
+secrets/** filter=git-crypt diff=git-crypt
+.env.production filter=git-crypt diff=git-crypt
+.env.dev filter=git-crypt diff=git-crypt
+.env.staging filter=git-crypt diff=git-crypt
+**/secrets.yml filter=git-crypt diff=git-crypt
+**/secrets.properties filter=git-crypt diff=git-crypt
