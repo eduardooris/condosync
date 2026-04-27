@@ -168,7 +168,9 @@ export function EditProfileDialog({
               {...form.register('fullName')}
               aria-invalid={Boolean(form.formState.errors.fullName)}
             />
-            <FieldError message={form.formState.errors.fullName?.message} />
+            {form.formState.errors.fullName?.message ? (
+              <FieldError>{form.formState.errors.fullName.message}</FieldError>
+            ) : null}
           </div>
 
           <div className="space-y-1.5">
@@ -182,7 +184,9 @@ export function EditProfileDialog({
               {...form.register('phoneWhatsapp')}
               aria-invalid={Boolean(form.formState.errors.phoneWhatsapp)}
             />
-            <FieldError message={form.formState.errors.phoneWhatsapp?.message} />
+            {form.formState.errors.phoneWhatsapp?.message ? (
+              <FieldError>{form.formState.errors.phoneWhatsapp.message}</FieldError>
+            ) : null}
             <p className="text-ds-xs leading-relaxed text-ds-dim">
               {useResidentProfileEndpoint
                 ? 'Este número pertence ao seu cadastro de morador neste condomínio.'
