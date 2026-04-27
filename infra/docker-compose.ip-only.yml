@@ -43,8 +43,8 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       # Sobrescreve o KC_PROXY=edge do compose base (HTTPS atrás de nginx).
-      # Em IP-only não há TLS na borda, então removemos esse modo.
-      KC_PROXY: ""
+      # Em IP-only não há TLS na borda — usamos "none" (HTTP puro).
+      KC_PROXY: none
 
   nginx:
     volumes:

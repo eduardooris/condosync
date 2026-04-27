@@ -231,6 +231,20 @@ Do seu navegador:
      --env-file .env.prod up -d --no-deps api
    ```
 
+### 4.9.5. Desativar exigência de SSL no realm (IP-only HTTP)
+
+O realm `main` é importado com `sslRequired=EXTERNAL` (padrão Keycloak), que
+**bloqueia chamadas HTTP** ao Admin API de fora do localhost. Em IP-only sem
+TLS, isso quebra `/auth/register` e qualquer fluxo que use o admin client.
+
+```bash
+docker exec -i condosync-keycloak-db psql -U keycloak -d keycloak -c \
+  "UPDATE realm SET ssl_required='NONE' WHERE name='main';"
+docker restart condosync-keycloak
+```
+
+Quando migrar pra DNS, reverta: `UPDATE realm SET ssl_required='EXTERNAL' WHERE name='main';`.
+
 ### 4.10. Criar primeiro usuário admin
 
 Realm `main` → Users → Add user → preenche → aba Credentials → Set password. Esse vira o primeiro login do app.
