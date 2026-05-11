@@ -1,0 +1,60 @@
+# CondoSync — DEV message-server stack (WhatsApp gateway, Go)
+#
+# Build local a partir de ./message-server-main. Independente do ciclo de
+# vida da API: restart/rebuild aqui NÃO derruba a API nem as deps.
+#
+# Acoplamentos:
+#   - Postgres (rede condosync_dev) — usa schema `whatsmeow` no DB `condosync`.
+#   - API (webhook HTTP) — envia eventos para http://api:3000/...
+#     A API não precisa estar pronta para o message-server subir; o cliente
+#     interno faz retry.
+#
+# Uso isolado (rebuild só do message-server):
+#   docker compose -f infra/dev/docker-compose.message-server.yml up -d --build
+#
+# Uso integrado:
+#   docker compose up -d           # via include: no docker-compose.yml raiz
+
+services:
+  message-server:
+    build:
+      context: ../../message-server-main
+      dockerfile: Dockerfile
+    container_name: condosync-message-server
+    restart: unless-stopped
+    ports:
+      # 8080 é do Keycloak. Publicamos o message-server em 8081 no host.
+      - "8081:8080"
+    environment:
+      APP_ENV: local
+      APP_NAME: message-server
+      LOG_LEVEL: info
+      HTTP_PORT: 8080
+      HTTP_API_KEY: ${MESSAGE_SERVER_API_KEY:-}
+      SHUTDOWN_TIMEOUT: 15s
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: condosync
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      TRANSPORT_MODE: http
+      WEBHOOK_URL: http://api:3000/api/v1/integrations/message-server/events
+      WEBHOOK_AUTH_TOKEN: ${MESSAGE_SERVER_API_KEY:-}
+      WEBHOOK_SECRET: ${MESSAGE_SERVER_WEBHOOK_SECRET:-}
+      WEBHOOK_TIMEOUT: 10s
+      OUTBOX_BATCH_SIZE: 100
+      OUTBOX_POLL_INTERVAL: 500ms
+      WHATSMEOW_LOG_LEVEL: INFO
+      WHATSMEOW_DB_SCHEMA: whatsmeow
+      METRICS_PORT: 9090
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+      OTEL_SERVICE_NAME: message-server
+    networks:
+      - condosync_dev
+
+networks:
+  condosync_dev:
+    name: condosync_dev
+    external: true

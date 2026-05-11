@@ -1,0 +1,148 @@
+# CondoSync — DEV deps stack (Postgres, Keycloak, Redis, MinIO)
+#
+# Estado persistente. Sobe uma vez, fica de pé. Você raramente toca aqui.
+# Rodar `docker compose -f infra/dev/docker-compose.api.yml restart` (ou o
+# equivalente do message-server) NÃO afeta nada deste arquivo.
+#
+# Uso isolado (só deps):
+#   docker compose -f infra/dev/docker-compose.deps.yml up -d
+#
+# Uso integrado (preferido em dev):
+#   docker compose up -d           # via include: no docker-compose.yml raiz
+#
+# Volumes nomeados (condosync_pgdata, condosync_keycloak_pgdata,
+# condosync_minio_data) sobrevivem a `down`. Para apagar dados, use
+# `docker volume rm` explicitamente.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: condosync-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: condosync
+    ports:
+      - "5432:5432"
+    volumes:
+      - condosync_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d condosync"]
+      interval: 5s
+      timeout: 5s
+      retries: 8
+    networks:
+      - condosync_dev
+
+  keycloak-db:
+    image: postgres:16-alpine
+    container_name: condosync-keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+      POSTGRES_DB: keycloak
+    volumes:
+      - condosync_keycloak_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 8
+    networks:
+      - condosync_dev
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: condosync-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HEALTH_ENABLED: "true"
+      # Issuer fixo para que o JWT carregue sempre o mesmo `iss` (independente
+      # da request chegar via browser/localhost ou via DNS interno do docker).
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: forwarded
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../keycloak/realm-main.json:/opt/keycloak/data/import/realm-main.json:ro
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - condosync_dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: condosync-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - condosync_dev
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: condosync-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"   # API S3
+      - "9001:9001"   # Console web
+    volumes:
+      - condosync_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - condosync_dev
+
+  # Cria o bucket `condosync-files` na primeira subida. Run-once.
+  minio-init:
+    image: minio/mc:RELEASE.2024-11-21T17-21-54Z
+    container_name: condosync-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/condosync-files &&
+      mc anonymous set none local/condosync-files &&
+      echo 'Bucket condosync-files OK' &&
+      exit 0
+      "
+    restart: "no"
+    networks:
+      - condosync_dev
+
+volumes:
+  condosync_pgdata:
+  condosync_keycloak_pgdata:
+  condosync_minio_data:
+
+networks:
+  condosync_dev:
+    name: condosync_dev
+    driver: bridge
