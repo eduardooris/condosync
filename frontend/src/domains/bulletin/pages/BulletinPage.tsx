@@ -11,7 +11,6 @@ import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/components/ui/Select';
-import { Spinner } from '@/shared/components/ui/Spinner';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { Textarea } from '@/shared/components/ui/Textarea';
 import { useBulletinPage } from '@/domains/bulletin/hooks/useBulletinPage';

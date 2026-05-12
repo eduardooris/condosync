@@ -18,7 +18,6 @@ import { Button } from '@/shared/components/ui/Button';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
-import { Spinner } from '@/shared/components/ui/Spinner';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FormDialog, DialogFooter, DialogClose } from '@/shared/components/ui/Dialog';

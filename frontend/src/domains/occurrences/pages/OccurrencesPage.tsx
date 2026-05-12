@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/Select';
-import { Spinner } from '@/shared/components/ui/Spinner';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { Textarea } from '@/shared/components/ui/Textarea';
 import { useOccurrencesPage } from '@/domains/occurrences/hooks/useOccurrencesPage';
