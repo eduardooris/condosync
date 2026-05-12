@@ -40,7 +40,6 @@ const CondominiumDetailPage = lazy(() =>
   import('@/domains/condominiums/pages/CondominiumDetailPage').then((m) => ({ default: m.CondominiumDetailPage })),
 );
 const UnitsPage = lazy(() => import('@/domains/units/pages/UnitsPage').then((m) => ({ default: m.UnitsPage })));
-const ResidentsPage = lazy(() => import('@/domains/residents/pages/ResidentsPage').then((m) => ({ default: m.ResidentsPage })));
 const SettingsPage = lazy(() => import('@/domains/auth/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const SetupPage = lazy(() => import('@/domains/setup/pages/SetupPage').then((m) => ({ default: m.SetupPage })));
 const AcceptInvitePage = lazy(() =>
@@ -97,14 +96,7 @@ export const router = createBrowserRouter([
               </ProtectedRoute>,
             ),
           },
-          {
-            path: 'residents',
-            element: withSuspense(
-              <ProtectedRoute minRole="SUB_ADMIN">
-                <ResidentsPage />
-              </ProtectedRoute>,
-            ),
-          },
+          { path: 'residents', element: <Navigate to="/units" replace /> },
         ],
       },
     ],

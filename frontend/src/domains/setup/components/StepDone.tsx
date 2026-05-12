@@ -17,10 +17,10 @@ function formatBrl(value: number) {
 
 const nextSteps = [
   {
-    to: '/residents',
+    to: '/units',
     icon: UserPlus,
     title: 'Cadastrar moradores',
-    description: 'Vincule responsáveis financeiros para começar as cobranças.',
+    description: 'Abra uma unidade para vincular os moradores e responsáveis financeiros.',
   },
   {
     to: '/bulletin',

@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Building2,
-  Users,
   Receipt,
   Newspaper,
   BarChart2,
@@ -46,7 +45,6 @@ const tabletLinks: QuickNavItem[] = [
   { to: '/polls', label: 'Enquetes', icon: BarChart2 },
   { to: '/occurrences', label: 'Ocorrências', icon: ClipboardList },
   { to: '/units', label: 'Unidades', icon: Building2 },
-  { to: '/residents', label: 'Moradores', icon: Users },
   { to: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -55,7 +53,7 @@ export function MobileQuickNav() {
   const location = useLocation();
   const isAdmin = canAccessCondominiumAdminRoutes(role);
   const phoneLinks = isAdmin ? smartphoneAdminLinks : smartphoneResidentLinks;
-  const compactTabletLinks = isAdmin ? tabletLinks : tabletLinks.filter((item) => item.to !== '/units' && item.to !== '/residents');
+  const compactTabletLinks = isAdmin ? tabletLinks : tabletLinks.filter((item) => item.to !== '/units');
 
   const isRouteActive = (to: string, end?: boolean) => {
     if (end) return location.pathname === to;

@@ -19,8 +19,8 @@ export function SetupPage() {
   const goBack = () => setStep(prevStep(step));
 
   const finish = () => {
-    reset();
     navigate('/', { replace: true });
+    reset();
   };
 
   return (

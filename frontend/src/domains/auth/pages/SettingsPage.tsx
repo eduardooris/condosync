@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
+  BarChart2,
   Bell,
   Building2,
   ChevronRight,
+  ClipboardList,
   Download,
   KeyRound,
   LogOut,
@@ -13,8 +15,12 @@ import {
   Moon,
   Palette,
   Shield,
+  ShieldAlert,
   Sun,
   User as UserIcon,
+  UserPlus,
+  Wallet,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { GlassCard } from '@/shared/components/ui/GlassCard';
@@ -25,7 +31,30 @@ import { residentsService } from '@/domains/residents/services/residents.service
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { useUIStore, type UITheme } from '@/shared/stores/ui.store';
 import { queryKeys } from '@/shared/lib/queryKeys';
+import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
 import { cn } from '@/shared/utils/cn';
+
+const CONDO_CONFIG_SECTIONS: {
+  id: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  highlight?: boolean;
+}[] = [
+  { id: 'general', label: 'Geral', description: 'Identidade, CNPJ e endereço.', icon: Building2 },
+  { id: 'financial', label: 'Financeiro', description: 'Taxa, geração e vencimento.', icon: Wallet },
+  { id: 'communication', label: 'Comunicação', description: 'WhatsApp e notificações.', icon: MessageCircle },
+  { id: 'polls', label: 'Enquetes', description: 'Anonimato e quórum.', icon: BarChart2 },
+  { id: 'occurrences', label: 'Ocorrências', description: 'Regras de abertura e SLA.', icon: ClipboardList },
+  {
+    id: 'team',
+    label: 'Equipe e convites',
+    description: 'Convide subsíndicos e gere o link de cadastro de moradores.',
+    icon: UserPlus,
+    highlight: true,
+  },
+  { id: 'advanced', label: 'Avançado', description: 'Ações sensíveis e dados do condomínio.', icon: ShieldAlert },
+];
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Administrador',
@@ -45,6 +74,7 @@ export function SettingsPage() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const shouldUseUnitProfile =
     (role === 'RESIDENT' || role === 'RESPONSIBLE') && Boolean(condominium?.id);
+  const canManageCondo = canAccessCondominiumAdminRoutes(role);
 
   const { data: profile } = useQuery({
     queryKey: queryKeys.auth.me(),
@@ -149,16 +179,71 @@ export function SettingsPage() {
               </p>
             </div>
           </div>
-          {(role === 'ADMIN' || role === 'SUB_ADMIN') && (
+          {canManageCondo && (
             <Link to="/condominiums" className="mt-4 block">
               <Button variant="ghost" fullWidth>
-                Trocar / gerenciar
+                Trocar de condomínio
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Button>
             </Link>
           )}
         </GlassCard>
       </div>
+
+      {/* Condominium settings hub (replaces former "Condomínio" sidebar tab) */}
+      {canManageCondo && condominium?.id && (
+        <GlassCard variant="default">
+          <header className="mb-4 flex flex-col gap-1">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+              Condomínio
+            </p>
+            <h2 className="text-ds-lg font-semibold text-ds-body">Configurações de {condominium.name}</h2>
+            <p className="text-ds-sm text-ds-dim">
+              Ajustes que valem para todo o condomínio. Para gerar o link genérico de cadastro de moradores, abra <strong className="text-ds-body">Equipe e convites</strong>.
+            </p>
+          </header>
+          <ul className="grid gap-2 ds-sm:grid-cols-2">
+            {CONDO_CONFIG_SECTIONS.map(({ id, label, description, icon: Icon, highlight }) => (
+              <li key={id}>
+                <Link
+                  to={`/condominiums/${condominium.id}?section=${id}`}
+                  className={cn(
+                    'group flex h-full items-start gap-3 rounded-ds-xl border px-3 py-3 transition',
+                    highlight
+                      ? 'border-brand-400/40 bg-brand-500/[0.06] hover:border-brand-400/70 hover:bg-brand-500/[0.10]'
+                      : 'border-ds-stroke/60 bg-white/[0.02] hover:border-brand-400/40 hover:bg-white/[0.05]',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-ds-lg ring-1',
+                      highlight
+                        ? 'bg-brand-500/15 text-brand-700 ring-brand-400/40 dark:text-brand-300'
+                        : 'bg-ds-surface text-ds-dim ring-ds-stroke dark:bg-white/[0.04]',
+                    )}
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="text-ds-sm font-semibold text-ds-body">{label}</span>
+                      {highlight ? (
+                        <span className="rounded-ds-pill bg-brand-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-brand-800 ring-1 ring-brand-400/30 dark:text-brand-200">
+                          Convite
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-0.5 block text-ds-xs leading-relaxed text-ds-dim">
+                      {description}
+                    </span>
+                  </span>
+                  <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-ds-subtle transition group-hover:translate-x-0.5 group-hover:text-brand-700 dark:group-hover:text-brand-300" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </GlassCard>
+      )}
 
       <EditProfileDialog
         open={editProfileOpen}

@@ -14,7 +14,6 @@ import {
   Receipt,
   Search,
   Settings,
-  Users,
 } from 'lucide-react';
 import { queryKeys } from '@/shared/lib/queryKeys';
 import { useNavigate } from 'react-router-dom';
@@ -45,9 +44,7 @@ const NAV_ITEMS: { to: string; label: string; icon: PaletteItem['icon']; admin?:
   { to: '/documents', label: 'Documentos', icon: FolderOpen },
   { to: '/occurrences', label: 'Ocorrências', icon: ClipboardList },
   { to: '/polls', label: 'Enquetes', icon: BarChart2 },
-  { to: '/units', label: 'Unidades', icon: Building2, admin: true },
-  { to: '/residents', label: 'Moradores', icon: Users, admin: true },
-  { to: '/condominiums', label: 'Condomínios', icon: Building2, admin: true },
+  { to: '/units', label: 'Unidades & moradores', icon: Building2, admin: true },
   { to: '/settings', label: 'Configurações', icon: Settings },
 ];
 
