@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Banknote,
   Plus,
+  Search,
   Wrench,
   SprayCan,
   ShieldCheck,
   Scale,
   MoreHorizontal,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +19,7 @@ import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { FormDialog, DialogFooter, DialogClose } from '@/shared/components/ui/Dialog';
 import { FormField } from '@/shared/components/ui/FormField';
@@ -79,6 +82,8 @@ export function ExpensesPage() {
   const role = useAuthStore((state) => state.role);
   const canManageExpenses = canAccessCondominiumAdminRoutes(role);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | ExpenseCategory>('all');
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
@@ -88,9 +93,26 @@ export function ExpensesPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useExpenses(condId);
   const { createMutation } = useExpensesPage(condId);
 
-  if (isLoading && condId) return <Spinner />;
+  if (isLoading && condId) return <ListSkeleton rows={6} />;
 
   const list = data ?? [];
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return list.filter((expense) => {
+      if (categoryFilter !== 'all' && expense.category !== categoryFilter) return false;
+      if (q) {
+        const blob = `${expense.description} ${expense.vendor ?? ''}`.toLowerCase();
+        if (!blob.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [list, search, categoryFilter]);
+
+  const totalFiltered = useMemo(
+    () => filtered.reduce((acc, e) => acc + Number(e.amount ?? 0), 0),
+    [filtered],
+  );
 
   if (!condId) {
     return (
@@ -265,8 +287,74 @@ export function ExpensesPage() {
           }
         />
       ) : (
+        <>
+          <div className="flex flex-col gap-3 ds-md:flex-row ds-md:items-center ds-md:justify-between">
+            <div className="relative min-w-0 flex-1 ds-md:max-w-md">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ds-subtle"
+                aria-hidden
+              />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por descrição ou fornecedor"
+                className="pl-9 pr-9"
+                aria-label="Buscar despesa"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-ds-md p-1 text-ds-subtle hover:bg-ds-elevated hover:text-ds-body"
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+            <div className="rounded-ds-lg border border-ds-stroke bg-ds-surface px-3 py-2 text-ds-sm dark:bg-white/[0.02]">
+              <span className="text-ds-dim">Total filtrado: </span>
+              <span className="font-semibold tabular-nums text-ds-body">
+                {formatBRL(totalFiltered)}
+              </span>
+              <span className="ml-2 text-ds-xs text-ds-subtle">
+                ({filtered.length}{filtered.length === 1 ? ' lançamento' : ' lançamentos'})
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {([
+              { value: 'all' as const, label: 'Todas' },
+              { value: 'MAINTENANCE' as const, label: 'Manutenção' },
+              { value: 'CLEANING' as const, label: 'Limpeza' },
+              { value: 'CONCIERGE' as const, label: 'Portaria' },
+              { value: 'LEGAL' as const, label: 'Jurídico' },
+              { value: 'OTHER' as const, label: 'Outros' },
+            ]).map((chip) => (
+              <button
+                key={chip.value}
+                type="button"
+                onClick={() => setCategoryFilter(chip.value)}
+                className={cn(
+                  'rounded-ds-pill px-3 py-1.5 text-ds-xs font-semibold transition',
+                  categoryFilter === chip.value
+                    ? 'bg-brand-500/20 text-brand-700 ring-1 ring-brand-500/40 dark:text-brand-300'
+                    : 'bg-ds-surface text-ds-dim ring-1 ring-ds-stroke hover:bg-ds-elevated dark:bg-white/[0.03] dark:hover:bg-white/[0.06]',
+                )}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <p className="rounded-ds-xl border border-ds-stroke bg-ds-surface p-6 text-center text-ds-sm text-ds-dim dark:bg-white/[0.02]">
+              Nenhuma despesa corresponde aos filtros.
+            </p>
+          ) : (
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((expense) => {
+          {filtered.map((expense) => {
             const cat: ExpenseCategory = isExpenseCategory(expense.category)
               ? expense.category
               : 'OTHER';
@@ -303,6 +391,8 @@ export function ExpensesPage() {
             );
           })}
         </div>
+          )}
+        </>
       )}
     </div>
   );

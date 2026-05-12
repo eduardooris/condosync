@@ -24,21 +24,21 @@ import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
 import { cn } from '@/shared/utils/cn';
 import { CondoSwitcher } from '@/shared/components/layout/CondoSwitcher';
 
-interface NavItem {
+export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
   end?: boolean;
 }
 
-interface NavSection {
+export interface NavSection {
   id: string;
   label: string;
   items: NavItem[];
   adminOnly?: boolean;
 }
 
-const SECTIONS: NavSection[] = [
+export const SIDEBAR_SECTIONS: NavSection[] = [
   {
     id: 'principal',
     label: 'Principal',
@@ -49,8 +49,8 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    id: 'cadastros',
-    label: 'Cadastros',
+    id: 'moradores',
+    label: 'Moradores',
     adminOnly: true,
     items: [
       { to: '/units', label: 'Unidades & moradores', icon: Building2 },
@@ -64,10 +64,20 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: '/bulletin', label: 'Mural de recados', icon: Newspaper },
       { to: '/occurrences', label: 'Ocorrências', icon: ClipboardList },
-      { to: '/polls', label: 'Enquetes', icon: BarChart2 },
-      { to: '/reservations', label: 'Reservas', icon: CalendarDays },
-      { to: '/documents', label: 'Documentos', icon: FolderOpen },
     ],
+  },
+  {
+    id: 'servicos',
+    label: 'Serviços',
+    items: [
+      { to: '/reservations', label: 'Reservas', icon: CalendarDays },
+      { to: '/polls', label: 'Enquetes', icon: BarChart2 },
+    ],
+  },
+  {
+    id: 'documentos',
+    label: 'Documentos',
+    items: [{ to: '/documents', label: 'Documentos', icon: FolderOpen }],
   },
   {
     id: 'conta',
@@ -75,6 +85,8 @@ const SECTIONS: NavSection[] = [
     items: [{ to: '/settings', label: 'Configurações', icon: Settings }],
   },
 ];
+
+const SECTIONS = SIDEBAR_SECTIONS;
 
 interface SidebarProps {
   onOpenCommandPalette?: () => void;

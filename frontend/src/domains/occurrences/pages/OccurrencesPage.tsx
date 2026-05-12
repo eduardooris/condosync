@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/Select';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { Textarea } from '@/shared/components/ui/Textarea';
 import { useOccurrencesPage } from '@/domains/occurrences/hooks/useOccurrencesPage';
 import {
@@ -100,7 +101,7 @@ export function OccurrencesPage() {
   if (!condo?.id) {
     return <p className="ds-page text-ds-sm text-ds-dim">Selecione um condomínio.</p>;
   }
-  if (loadingUnits || occurrencesQuery.isLoading) return <Spinner />;
+  if (loadingUnits || occurrencesQuery.isLoading) return <ListSkeleton rows={6} />;
 
   const hasUnits = unitList.length > 0;
   const canOpenUnitsSettings = canAccessCondominiumAdminRoutes(role);

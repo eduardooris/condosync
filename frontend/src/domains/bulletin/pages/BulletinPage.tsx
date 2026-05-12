@@ -12,6 +12,7 @@ import { Input } from '@/shared/components/ui/Input';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/components/ui/Select';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { Textarea } from '@/shared/components/ui/Textarea';
 import { useBulletinPage } from '@/domains/bulletin/hooks/useBulletinPage';
 import { bulletinFormSchema, type BulletinFormInput } from '@/domains/bulletin/schemas/bulletin.schema';
@@ -55,7 +56,7 @@ export function BulletinPage() {
     return <p className="ds-page text-ds-sm text-ds-dim">Selecione um condomínio no topo da página.</p>;
   }
 
-  if (bulletinQuery.isLoading) return <Spinner />;
+  if (bulletinQuery.isLoading) return <ListSkeleton rows={4} />;
 
   const list = bulletinQuery.data ?? [];
 

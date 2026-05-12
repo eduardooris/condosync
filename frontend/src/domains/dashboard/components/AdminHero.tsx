@@ -1,5 +1,13 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Building2, Sparkles, TrendingUp, Wallet } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  Building2,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/shared/utils/cn';
 
@@ -44,34 +52,51 @@ export function AdminHero({ saldo, inadimplenciaUnidades, receitas, despesas, co
             <span className="flex h-7 w-7 items-center justify-center rounded-ds-md bg-gradient-to-br from-brand-200/80 to-brand-500/30 ring-1 ring-brand-500/25 dark:from-brand-300/30 dark:to-brand-500/10 dark:ring-brand-400/30">
               <Wallet className="h-3.5 w-3.5 text-brand-700 dark:text-brand-300" strokeWidth={2} aria-hidden />
             </span>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-secondary">
-              Saldo do caixa{condominiumName ? ` · ${condominiumName}` : ''}
+            <p
+              className="text-[11px] font-semibold uppercase tracking-widest text-ds-secondary"
+              title="Receitas pagas menos despesas aprovadas, somando todos os meses."
+            >
+              Saldo acumulado{condominiumName ? ` · ${condominiumName}` : ''}
             </p>
           </div>
 
-          <p className="mt-3 text-4xl font-extrabold tracking-tight text-ds-body ds-md:text-6xl">
-            {formatBrl(saldo)}
+          <p
+            className={cn(
+              'mt-3 inline-flex items-center gap-2 text-4xl font-extrabold tracking-tight ds-md:text-6xl',
+              positive ? 'text-ds-body' : 'text-rose-700 dark:text-rose-300',
+            )}
+          >
+            {positive ? (
+              <ArrowUp className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400 ds-md:h-9 ds-md:w-9" strokeWidth={2.4} aria-hidden />
+            ) : (
+              <ArrowDown className="h-6 w-6 shrink-0 text-rose-600 dark:text-rose-400 ds-md:h-9 ds-md:w-9" strokeWidth={2.4} aria-hidden />
+            )}
+            <span>{formatBrl(saldo)}</span>
+          </p>
+          <p className="mt-1 text-ds-xs text-ds-secondary">
+            Receitas pagas − despesas aprovadas, desde sempre.
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-ds-sm">
             <span className="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
               <TrendingUp className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
               <span className="font-semibold">{formatBrl(receitas)}</span>
-              <span className="text-ds-secondary">receitas</span>
+              <span className="text-ds-secondary">receitas no mês</span>
             </span>
             <span className="inline-flex items-center gap-1.5 text-rose-800 dark:text-rose-300">
               <span className="font-semibold">−{formatBrl(despesas)}</span>
-              <span className="text-ds-secondary">despesas</span>
+              <span className="text-ds-secondary">despesas no mês</span>
             </span>
             <span
               className={cn(
                 'inline-flex items-center gap-1.5',
                 resultado >= 0 ? 'text-brand-800 dark:text-brand-200' : 'text-amber-900 dark:text-amber-300',
               )}
+              title="Receitas pagas menos despesas aprovadas neste mês."
             >
               <Sparkles className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
               <span className="font-semibold">{formatBrl(resultado)}</span>
-              <span className="text-ds-secondary">no mês</span>
+              <span className="text-ds-secondary">resultado do mês</span>
             </span>
           </div>
 

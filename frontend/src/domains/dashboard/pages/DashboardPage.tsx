@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Sparkles, TrendingUp, TrendingDown, Scale,
+  Sparkles, TrendingUp, TrendingDown,
   Building2, AlertCircle, ArrowRight, Receipt, BarChart2, ClipboardList, UserPlus,
 } from 'lucide-react';
 import { DashboardRevenueChart } from '@/domains/dashboard/components/DashboardRevenueChart';
@@ -11,6 +11,7 @@ import { AdminHero } from '@/domains/dashboard/components/AdminHero';
 import { ResidentHero } from '@/domains/dashboard/components/ResidentHero';
 import { KpiCard } from '@/shared/components/ui/KpiCard';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { PageSkeleton } from '@/shared/components/ui/Skeleton';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { useDashboardPage } from '@/domains/dashboard/hooks/useDashboardPage';
 import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
@@ -67,7 +68,7 @@ export function DashboardPage() {
     };
   }, [data]);
 
-  if (isLoading) return <Spinner />;
+  if (isLoading) return <PageSkeleton />;
 
   const now = new Date();
   const dataLonga = new Intl.DateTimeFormat('pt-BR', {
@@ -196,35 +197,27 @@ export function DashboardPage() {
         </motion.div>
       ) : null}
 
-      {/* Secondary KPIs (admin only) */}
+      {/* Secondary KPIs (admin only) — sem duplicar números do hero */}
       {isAdmin ? (
-        <div className="grid min-w-0 grid-cols-1 gap-3 ds-sm:grid-cols-2 ds-md:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-3 ds-sm:grid-cols-3">
           <KpiCard
-            title="Receitas pagas"
+            title="Receitas pagas (mês)"
             value={formatBrl(kpi.receitas)}
-            hint="Total quitado"
+            hint="Total quitado neste mês"
             icon={<TrendingUp className="h-4 w-4" strokeWidth={1.75} />}
             gradient="emerald"
           />
           <KpiCard
-            title="Despesas"
+            title="Despesas (mês)"
             value={formatBrl(kpi.despesas)}
-            hint="Aprovadas"
+            hint="Aprovadas neste mês"
             icon={<TrendingDown className="h-4 w-4" strokeWidth={1.75} />}
             gradient="rose"
           />
           <KpiCard
-            title="Resultado do mês"
-            value={formatBrl(kpi.resultado)}
-            hint="Receitas − despesas"
-            icon={<Scale className="h-4 w-4" strokeWidth={1.75} />}
-            gradient="violet"
-            trend={kpi.resultado >= 0 ? 'up' : 'down'}
-          />
-          <KpiCard
-            title="Atrasos"
+            title="Inadimplência"
             value={String(kpi.inadimplencia)}
-            hint="Unidades em atraso"
+            hint={kpi.inadimplencia === 1 ? 'unidade em atraso' : 'unidades em atraso'}
             icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
             gradient="amber"
             trend={kpi.inadimplencia === 0 ? 'up' : 'down'}

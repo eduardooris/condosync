@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/Select';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { useUnits, useUnitsOnboardingChecklist } from '@/domains/units/hooks/useUnits';
 import { useUnitsPage } from '@/domains/units/hooks/useUnitsPage';
 import { unitFormSchema, type UnitFormInput } from '@/domains/units/schemas/unit.schema';
@@ -124,7 +125,7 @@ export function UnitsPage() {
     return <p className="ds-page text-ds-sm text-ds-dim">Selecione um condomínio no topo da página.</p>;
   }
 
-  if (isLoading) return <Spinner />;
+  if (isLoading) return <ListSkeleton rows={6} />;
 
   const list = data ?? [];
   const checklistByUnitId = new Map(onboardingChecklist.map((item) => [item.unitId, item]));

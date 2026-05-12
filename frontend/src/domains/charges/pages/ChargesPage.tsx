@@ -9,6 +9,7 @@ import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { useChargesPage, type StatusFilter } from '@/domains/charges/hooks/useChargesPage';
 import { GenerateChargesDialog } from '@/domains/charges/components/GenerateChargesDialog';
 import { EditChargeDialog } from '@/domains/charges/components/EditChargeDialog';
@@ -93,7 +94,7 @@ export function ChargesPage() {
   );
   const [editing, setEditing] = useState<Charge | null>(null);
   const [detailCharge, setDetailCharge] = useState<Charge | null>(null);
-  if (chargesQuery.isLoading) return <Spinner />;
+  if (chargesQuery.isLoading) return <ListSkeleton rows={8} />;
 
   return (
     <div className="ds-page mx-auto max-w-5xl min-w-0 space-y-4 ds-md:space-y-5">

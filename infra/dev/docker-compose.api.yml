@@ -34,13 +34,14 @@ services:
       KEYCLOAK_BASE_URL: http://keycloak:8080
       KEYCLOAK_REALM: main
       # Issuer público (mesmo URL que o frontend usa). Vai dentro do JWT.
-      KEYCLOAK_ISSUER: http://localhost:8080/realms/main
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/main}
       # URL interna (rede docker) usada pelo backend p/ falar com o Keycloak.
       KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/main
       KEYCLOAK_CLIENT_ID: main-frontend
       KEYCLOAK_ADMIN_CLIENT_ID: condo-backend-admin
-      KEYCLOAK_ADMIN_CLIENT_SECRET: condo-backend-admin-dev-secret
-      APP_PUBLIC_URL: http://localhost:5173
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-condo-backend-admin-dev-secret}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/condosync
       REDIS_URL: redis://redis:6379
       # Backend usa endpoint interno; URLs assinadas usam endpoint público para

@@ -303,6 +303,24 @@ html[data-theme='light'] .ds-card-hover:hover {
   border-color: var(--ds-color-action-primary);
 }
 
+/* Baseline acessível: qualquer elemento interativo nativo recebe um anel
+ * visível ao receber foco por teclado. Componentes que já têm sua própria
+ * estratégia (`focus-visible:ring-*` ou `.ds-focus-ring`) sobrescrevem
+ * pelo nível de especificidade ou pelo `box-shadow` que apliquem. */
+:focus-visible {
+  outline: 2px solid var(--ds-color-action-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 2px;
+}
+
 /* ----------------------------------------------------------------------------
  * Shell de página — evita estouro lateral no flex do layout (PWA / mobile).
  * Use na raiz de cada rota: className="ds-page …"

@@ -12,6 +12,7 @@ import { Input } from '@/shared/components/ui/Input';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/components/ui/Select';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { documentsService } from '@/domains/documents/services/documents.service';
 import { useDocumentsPage } from '@/domains/documents/hooks/useDocumentsPage';
 import { documentFormSchema, type DocumentFormInput } from '@/domains/documents/schemas/documents.schema';
@@ -48,7 +49,7 @@ export function DocumentsPage() {
     return <p className="ds-page text-ds-sm text-ds-dim">Selecione um condomínio no topo da página.</p>;
   }
 
-  if (documentsQuery.isLoading) return <Spinner />;
+  if (documentsQuery.isLoading) return <ListSkeleton rows={4} />;
 
   const list = documentsQuery.data ?? [];
 
