@@ -66,4 +66,4 @@ services:
 networks:
   condosync_dev:
     name: condosync_dev
-    external: true
+    driver: bridge
