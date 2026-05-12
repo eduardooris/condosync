@@ -69,7 +69,9 @@ services:
       KC_HEALTH_ENABLED: "true"
       # Issuer fixo para que o JWT carregue sempre o mesmo `iss` (independente
       # da request chegar via browser/localhost ou via DNS interno do docker).
-      KC_HOSTNAME: http://localhost:8080
+      # Em prod (VPS atrás de Caddy/nginx terminando TLS) defina via .env raiz:
+      #   KC_HOSTNAME=https://seu-auth.duckdns.org
+      KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: forwarded
