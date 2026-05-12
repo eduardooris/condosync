@@ -37,6 +37,8 @@ export function useAcceptInvite(token: string, navigate: NavigateFunction) {
       password: '',
       confirmPassword: '',
       unitId: '',
+      cpf: '',
+      phoneWhatsapp: '',
     },
   });
 
@@ -126,6 +128,18 @@ export function useAcceptInvite(token: string, navigate: NavigateFunction) {
       form.setError('email', { message: 'Informe seu e-mail.' });
       return;
     }
+    if (preview.type === 'GENERIC_LINK') {
+      if (!values.cpf || values.cpf.length !== 11) {
+        form.setError('cpf', { message: 'Informe um CPF válido.' });
+        return;
+      }
+      if (!values.phoneWhatsapp || values.phoneWhatsapp.length < 10) {
+        form.setError('phoneWhatsapp', {
+          message: 'Informe um WhatsApp válido.',
+        });
+        return;
+      }
+    }
     const payload: AcceptInvitationInput = {
       fullName: values.fullName.trim(),
       password: values.password,
@@ -133,6 +147,8 @@ export function useAcceptInvite(token: string, navigate: NavigateFunction) {
     if (preview.type === 'GENERIC_LINK') {
       payload.email = values.email?.trim().toLowerCase();
       if (!preview.unitId) payload.unitId = values.unitId;
+      payload.cpf = values.cpf;
+      payload.phoneWhatsapp = values.phoneWhatsapp;
     }
     acceptMutation.mutate(payload);
   });

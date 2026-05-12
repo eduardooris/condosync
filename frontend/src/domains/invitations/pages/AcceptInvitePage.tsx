@@ -6,9 +6,11 @@ import {
   Building2,
   CheckCircle2,
   Clock,
+  IdCard,
   Loader2,
   Lock,
   Mail,
+  Phone,
   ShieldCheck,
   User,
 } from 'lucide-react';
@@ -32,6 +34,29 @@ const roleLabels: Record<string, string> = {
   RESPONSIBLE: 'Responsável financeiro',
   RESIDENT: 'Morador',
 };
+
+function formatCpfInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  }
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function formatWhatsappInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
 
 export function AcceptInvitePage() {
   const { token = '' } = useParams<{ token: string }>();
@@ -179,6 +204,59 @@ export function AcceptInvitePage() {
                   <FieldError>{form.formState.errors.unitId.message}</FieldError>
                 ) : null}
               </div>
+            ) : null}
+
+            {preview.type === 'GENERIC_LINK' ? (
+              <>
+                <Field
+                  id="invite-cpf"
+                  label="CPF"
+                  icon={<IdCard className="h-3 w-3" />}
+                  error={form.formState.errors.cpf?.message}
+                >
+                  <Controller
+                    control={form.control}
+                    name="cpf"
+                    render={({ field }) => (
+                      <Input
+                        id="invite-cpf"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="000.000.000-00"
+                        invalid={Boolean(form.formState.errors.cpf)}
+                        value={formatCpfInput(field.value ?? '')}
+                        onChange={(e) =>
+                          field.onChange(e.target.value.replace(/\D/g, ''))
+                        }
+                      />
+                    )}
+                  />
+                </Field>
+                <Field
+                  id="invite-whatsapp"
+                  label="WhatsApp"
+                  icon={<Phone className="h-3 w-3" />}
+                  error={form.formState.errors.phoneWhatsapp?.message}
+                >
+                  <Controller
+                    control={form.control}
+                    name="phoneWhatsapp"
+                    render={({ field }) => (
+                      <Input
+                        id="invite-whatsapp"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        placeholder="(11) 98765-4321"
+                        invalid={Boolean(form.formState.errors.phoneWhatsapp)}
+                        value={formatWhatsappInput(field.value ?? '')}
+                        onChange={(e) =>
+                          field.onChange(e.target.value.replace(/\D/g, ''))
+                        }
+                      />
+                    )}
+                  />
+                </Field>
+              </>
             ) : null}
 
             <Field

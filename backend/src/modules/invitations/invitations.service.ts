@@ -11,7 +11,13 @@ import { ConfigService } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Env } from '../../config/env.schema';
-import { UserRole } from '../../common/enums';
+import { UnitStatus, UserRole } from '../../common/enums';
+import {
+  isValidBrazilWhatsapp,
+  isValidCpfDigits,
+  normalizeBrazilWhatsapp,
+  normalizeCpf,
+} from '../../common/utils/br-documents';
 import {
   CondominiumInvitation,
   InvitationStatus,
@@ -263,6 +269,28 @@ export class InvitationsService {
       membershipUnitId = unit.id;
     }
 
+    let residentDraft: { cpf: string; phoneWhatsapp: string } | null = null;
+    if (
+      inv.type === InvitationType.GENERIC_LINK &&
+      membershipUnitId &&
+      !inv.residentId
+    ) {
+      if (!dto.cpf || !isValidCpfDigits(dto.cpf)) {
+        throw new BadRequestException(
+          'Informe um CPF válido (11 dígitos com verificação).',
+        );
+      }
+      if (!dto.phoneWhatsapp || !isValidBrazilWhatsapp(dto.phoneWhatsapp)) {
+        throw new BadRequestException(
+          'Informe um WhatsApp válido (DDD + número).',
+        );
+      }
+      residentDraft = {
+        cpf: normalizeCpf(dto.cpf),
+        phoneWhatsapp: normalizeBrazilWhatsapp(dto.phoneWhatsapp),
+      };
+    }
+
     let email: string;
     if (inv.type === InvitationType.EMAIL_DIRECT) {
       email = inv.email!;
@@ -347,6 +375,8 @@ export class InvitationsService {
         inv.residentId,
         userId,
         email,
+        dto.fullName,
+        residentDraft,
       );
       await ucRepo.save(
         ucRepo.create({
@@ -456,6 +486,8 @@ export class InvitationsService {
     residentId: string | null,
     userId: string,
     email: string,
+    fullName: string,
+    newResident: { cpf: string; phoneWhatsapp: string } | null,
   ): Promise<void> {
     const repo = manager.getRepository(Resident);
     if (residentId) {
@@ -491,15 +523,42 @@ export class InvitationsService {
       })
       .getMany();
     const target = candidates[0];
-    if (!target) return;
-    if (target.userId && target.userId !== userId) {
+    if (target) {
+      if (target.userId && target.userId !== userId) {
+        throw new ConflictException(
+          'Já existe um morador desta unidade vinculado a outro usuário com este e-mail.',
+        );
+      }
+      if (!target.userId) {
+        target.userId = userId;
+        await repo.save(target);
+      }
+      return;
+    }
+    if (!newResident) return;
+    const cpfClash = await repo.findOne({
+      where: { unitId, cpf: newResident.cpf },
+    });
+    if (cpfClash) {
       throw new ConflictException(
-        'Já existe um morador desta unidade vinculado a outro usuário com este e-mail.',
+        'Já existe um morador com este CPF nesta unidade.',
       );
     }
-    if (!target.userId) {
-      target.userId = userId;
-      await repo.save(target);
-    }
+    const created = repo.create({
+      unitId,
+      userId,
+      fullName,
+      cpf: newResident.cpf,
+      phoneWhatsapp: newResident.phoneWhatsapp,
+      email: normalized,
+      isFinancialResponsible: false,
+    });
+    await repo.save(created);
+    await manager
+      .getRepository(Unit)
+      .update(
+        { id: unitId, status: UnitStatus.VACANT },
+        { status: UnitStatus.OCCUPIED },
+      );
   }
 }

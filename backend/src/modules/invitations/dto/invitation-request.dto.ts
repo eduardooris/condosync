@@ -94,4 +94,22 @@ export class AcceptInvitationDto {
   @IsOptional()
   @IsUUID()
   unitId?: string;
+
+  @ApiPropertyOptional({
+    example: '12345678901',
+    description:
+      'CPF do morador. Obrigatório em convites GENERIC_LINK (autocadastro).',
+  })
+  @IsOptional()
+  @IsString()
+  cpf?: string;
+
+  @ApiPropertyOptional({
+    example: '11987654321',
+    description:
+      'WhatsApp do morador (DDD + número). Obrigatório em convites GENERIC_LINK.',
+  })
+  @IsOptional()
+  @IsString()
+  phoneWhatsapp?: string;
 }

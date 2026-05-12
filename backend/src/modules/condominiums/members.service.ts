@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserRole } from '../../common/enums';
+import { UnitStatus, UserRole } from '../../common/enums';
 import {
   MembershipStatus,
   UserCondominium,
@@ -76,6 +76,28 @@ export class MembersService {
     if (dto.unitId) {
       await this.assertUnitInCondo(dto.unitId, condominiumId);
     }
+    const previousUnitId = m.unitId;
+    const userId = m.userId;
+    const newRole = dto.role;
+    const newUnitId = dto.unitId ?? null;
+    const wantsResidentRow =
+      (newRole === UserRole.RESIDENT || newRole === UserRole.RESPONSIBLE) &&
+      !!newUnitId;
+    const existingResident = previousUnitId
+      ? await this.residentRepo.findOne({
+          where: { userId, unitId: previousUnitId },
+        })
+      : null;
+    if (wantsResidentRow && existingResident && newUnitId !== previousUnitId) {
+      const clash = await this.residentRepo.findOne({
+        where: { unitId: newUnitId!, cpf: existingResident.cpf },
+      });
+      if (clash) {
+        throw new ConflictException(
+          'Já existe um morador com este CPF na unidade selecionada.',
+        );
+      }
+    }
     // Garante reativação de contas antigas que possam ter sido desabilitadas
     // em fluxos anteriores de remoção/rejeição.
     try {
@@ -85,17 +107,50 @@ export class MembersService {
         `Não foi possível reativar o usuário ${m.userId} no Keycloak ao aprovar membership: ${(err as Error).message}`,
       );
     }
-    m.role = dto.role;
-    m.unitId = dto.unitId ?? null;
+    m.role = newRole;
+    m.unitId = newUnitId;
     m.status = MembershipStatus.APPROVED;
     const saved = await this.ucRepo.save(m);
+
+    if (!wantsResidentRow) {
+      if (existingResident) {
+        await this.residentRepo.remove(existingResident);
+        if (previousUnitId) await this.refreshOccupation(previousUnitId);
+      }
+    } else if (existingResident && existingResident.unitId !== newUnitId) {
+      existingResident.unitId = newUnitId!;
+      await this.residentRepo.save(existingResident);
+      if (previousUnitId) await this.refreshOccupation(previousUnitId);
+      await this.refreshOccupation(newUnitId!);
+    }
+
     return this.toResponse(await this.reloadWithUser(saved.id));
+  }
+
+  private async refreshOccupation(unitId: string): Promise<void> {
+    const count = await this.residentRepo.count({ where: { unitId } });
+    if (count > 0) {
+      await this.unitRepo.update(
+        { id: unitId, status: UnitStatus.VACANT },
+        { status: UnitStatus.OCCUPIED },
+      );
+    } else {
+      await this.unitRepo.update(
+        { id: unitId, status: UnitStatus.OCCUPIED },
+        { status: UnitStatus.VACANT },
+      );
+    }
   }
 
   async reject(condominiumId: string, membershipId: string): Promise<void> {
     const m = await this.findPendingOrFail(condominiumId, membershipId);
     const userId = m.userId;
+    const unitId = m.unitId;
     await this.ucRepo.remove(m);
+    if (unitId) {
+      await this.residentRepo.delete({ userId, unitId });
+      await this.refreshOccupation(unitId);
+    }
     await this.maybeDeleteUserIfOrphan(userId);
   }
 

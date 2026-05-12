@@ -45,6 +45,8 @@ export interface AcceptInvitationInput {
   password: string;
   email?: string;
   unitId?: string;
+  cpf?: string;
+  phoneWhatsapp?: string;
 }
 
 export interface AcceptInvitationResponse {
