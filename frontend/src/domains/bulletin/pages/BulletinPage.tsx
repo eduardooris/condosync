@@ -139,8 +139,13 @@ export function BulletinPage() {
           description="Aqui ficam avisos oficiais do condomínio — reformas, assembleias, manutenção da piscina, alteração de regras, etc."
           suggestion={
             canPublish
-              ? "Publique o primeiro recado clicando em 'Novo recado'. Com o tempo, este mural vira o histórico de comunicação com todos os moradores."
+              ? 'Com o tempo, este mural vira o histórico de comunicação com todos os moradores.'
               : 'Quando o síndico publicar avisos, eles aparecerão aqui.'
+          }
+          action={
+            canPublish
+              ? { label: 'Publicar primeiro recado', onClick: () => setOpen(true) }
+              : undefined
           }
         />
       ) : (

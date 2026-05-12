@@ -140,7 +140,6 @@ export function ChargesPage() {
               </Link>
             ) : null}
             <Button
-              variant="gradient"
               size="sm"
               fullWidth
               className="ds-sm:w-auto"

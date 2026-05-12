@@ -250,7 +250,7 @@ export function ResidentOnboardingDialog({ open, onOpenChange, condominiumId, un
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" variant="gradient" disabled={createMutation.isPending}>
+              <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Salvando…' : 'Salvar'}
               </Button>
             </DialogFooter>
@@ -265,7 +265,7 @@ export function ResidentOnboardingDialog({ open, onOpenChange, condominiumId, un
             </p>
 
             <DialogFooter className="flex flex-wrap gap-2 sm:justify-end">
-              <Button type="button" variant="gradient" onClick={() => onOpenChange(false)}>
+              <Button type="button" onClick={() => onOpenChange(false)}>
                 Concluir
               </Button>
             </DialogFooter>

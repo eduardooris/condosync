@@ -92,7 +92,15 @@ export function ReservationsPage() {
                 Nova área
               </Button>
             ) : null}
-            <Button onClick={() => setReservationDialogOpen(true)}>
+            <Button
+              onClick={() => setReservationDialogOpen(true)}
+              disabled={areas.length === 0}
+              title={
+                areas.length === 0
+                  ? 'Cadastre uma área comum antes de criar reservas'
+                  : undefined
+              }
+            >
               <CalendarDays className="h-4 w-4" />
               Nova reserva
             </Button>
@@ -105,6 +113,14 @@ export function ReservationsPage() {
           icon={CalendarDays}
           title="Nenhuma área de reserva cadastrada"
           description="Cadastre primeiro as áreas comuns para começar a receber solicitações."
+          action={
+            canManage
+              ? {
+                  label: 'Cadastrar primeira área',
+                  onClick: () => setAreaDialogOpen(true),
+                }
+              : undefined
+          }
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 ds-lg:grid-cols-2">

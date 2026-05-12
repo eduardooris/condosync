@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ChevronDown,
+  ChevronRight,
   CreditCard,
   Home,
   Link2,
@@ -8,15 +9,18 @@ import {
   Pencil,
   Phone,
   Plus,
+  Search,
   ShieldCheck,
   Trash2,
   UserPlus,
   UserRound,
+  X,
 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
+import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { DialogFooter, FormDialog } from '@/shared/components/ui/Dialog';
@@ -99,6 +103,9 @@ export function UnitsPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [addResidentForUnit, setAddResidentForUnit] = useState<Unit | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'OCCUPIED' | 'VACANT' | 'ONBOARDING'>('all');
+  const [collapsedBlocks, setCollapsedBlocks] = useState<Set<string>>(new Set());
 
   const createForm = useForm<UnitFormInput>({
     resolver: zodResolver(unitFormSchema),
@@ -121,6 +128,57 @@ export function UnitsPage() {
 
   const list = data ?? [];
   const checklistByUnitId = new Map(onboardingChecklist.map((item) => [item.unitId, item]));
+
+  const counts = useMemo(() => {
+    const occupied = list.filter((u) => u.status === 'OCCUPIED').length;
+    const vacant = list.filter((u) => u.status === 'VACANT').length;
+    const onboardingIncomplete = list.filter(
+      (u) => !(checklistByUnitId.get(u.id)?.isReady ?? false),
+    ).length;
+    return { total: list.length, occupied, vacant, onboardingIncomplete };
+  }, [list, checklistByUnitId]);
+
+  const filteredUnits = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return list.filter((unit) => {
+      if (statusFilter === 'OCCUPIED' && unit.status !== 'OCCUPIED') return false;
+      if (statusFilter === 'VACANT' && unit.status !== 'VACANT') return false;
+      if (statusFilter === 'ONBOARDING') {
+        const ck = checklistByUnitId.get(unit.id);
+        if (ck?.isReady) return false;
+      }
+      if (q) {
+        const blob = `${unit.block} ${unit.number}`.toLowerCase();
+        if (!blob.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [list, search, statusFilter, checklistByUnitId]);
+
+  const groupedByBlock = useMemo(() => {
+    const groups = new Map<string, Unit[]>();
+    for (const unit of filteredUnits) {
+      const arr = groups.get(unit.block) ?? [];
+      arr.push(unit);
+      groups.set(unit.block, arr);
+    }
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b, 'pt-BR', { numeric: true }))
+      .map(([block, units]) => ({
+        block,
+        units: units.sort((a, b) =>
+          a.number.localeCompare(b.number, 'pt-BR', { numeric: true }),
+        ),
+      }));
+  }, [filteredUnits]);
+
+  const toggleBlock = (block: string) =>
+    setCollapsedBlocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(block)) next.delete(block);
+      else next.add(block);
+      return next;
+    });
 
   return (
     <div className="ds-page space-y-6">
@@ -348,29 +406,121 @@ export function UnitsPage() {
           action={canCreate ? { to: '/setup', label: 'Abrir setup assistant' } : undefined}
         />
       ) : (
-        <div className="space-y-3">
-          {list.map((unit) => (
-            <UnitCard
-              key={unit.id}
-              condominiumId={condo.id!}
-              unit={unit}
-              checklist={checklistByUnitId.get(unit.id) ?? null}
-              expanded={expandedUnitId === unit.id}
-              canEdit={canCreate}
-              onToggleExpand={() => setExpandedUnitId((prev) => (prev === unit.id ? null : unit.id))}
-              onEditUnit={() => {
-                setEditingUnitId(unit.id);
-                editForm.reset({
-                  block: unit.block,
-                  number: unit.number,
-                  type: unit.type as UnitFormInput['type'],
-                  status: unit.status as UnitFormInput['status'],
-                });
-              }}
-              onAddResident={() => setAddResidentForUnit(unit)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3 ds-md:flex-row ds-md:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ds-subtle"
+                aria-hidden
+              />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por bloco ou número (ex.: A 101)"
+                className="pl-9 pr-9"
+                aria-label="Buscar unidade"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-ds-md p-1 text-ds-subtle hover:bg-ds-elevated hover:text-ds-body"
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { value: 'all', label: `Todas · ${counts.total}` },
+                  { value: 'OCCUPIED', label: `Ocupadas · ${counts.occupied}` },
+                  { value: 'VACANT', label: `Vagas · ${counts.vacant}` },
+                  {
+                    value: 'ONBOARDING',
+                    label: `Onboarding pendente · ${counts.onboardingIncomplete}`,
+                  },
+                ] as const
+              ).map((chip) => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => setStatusFilter(chip.value)}
+                  className={cn(
+                    'rounded-ds-pill px-3 py-1.5 text-ds-xs font-semibold transition',
+                    statusFilter === chip.value
+                      ? 'bg-brand-500/20 text-brand-700 ring-1 ring-brand-500/40 dark:text-brand-300'
+                      : 'bg-ds-surface text-ds-dim ring-1 ring-ds-stroke hover:bg-ds-elevated dark:bg-white/[0.03] dark:hover:bg-white/[0.06]',
+                  )}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredUnits.length === 0 ? (
+            <p className="rounded-ds-xl border border-ds-stroke bg-ds-surface p-6 text-center text-ds-sm text-ds-dim dark:bg-white/[0.02]">
+              Nenhuma unidade corresponde aos filtros aplicados.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {groupedByBlock.map(({ block, units }) => {
+                const isCollapsed = collapsedBlocks.has(block);
+                return (
+                  <div key={block} className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleBlock(block)}
+                      className="flex w-full items-center gap-2 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-subtle transition hover:text-ds-body"
+                      aria-expanded={!isCollapsed}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          'h-3 w-3 transition',
+                          !isCollapsed && 'rotate-90',
+                        )}
+                        aria-hidden
+                      />
+                      Bloco {block}
+                      <span className="font-normal text-ds-dim">· {units.length}</span>
+                    </button>
+                    {!isCollapsed ? (
+                      <div className="space-y-3">
+                        {units.map((unit) => (
+                          <UnitCard
+                            key={unit.id}
+                            condominiumId={condo.id!}
+                            unit={unit}
+                            checklist={checklistByUnitId.get(unit.id) ?? null}
+                            expanded={expandedUnitId === unit.id}
+                            canEdit={canCreate}
+                            onToggleExpand={() =>
+                              setExpandedUnitId((prev) =>
+                                prev === unit.id ? null : unit.id,
+                              )
+                            }
+                            onEditUnit={() => {
+                              setEditingUnitId(unit.id);
+                              editForm.reset({
+                                block: unit.block,
+                                number: unit.number,
+                                type: unit.type as UnitFormInput['type'],
+                                status: unit.status as UnitFormInput['status'],
+                              });
+                            }}
+                            onAddResident={() => setAddResidentForUnit(unit)}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -423,23 +573,20 @@ function UnitCard({
             {unit.block} — {unit.number}
           </h3>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center rounded-full bg-ds-info/10 px-2.5 py-0.5 text-ds-xs font-medium text-ds-info ring-1 ring-inset ring-ds-info/20">
-              {TYPE_LABELS[unit.type] ?? unit.type}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-ds-success/10 px-2.5 py-0.5 text-ds-xs font-medium text-ds-success ring-1 ring-inset ring-ds-success/20">
-              {STATUS_LABELS[unit.status] ?? unit.status}
-            </span>
+            <Badge
+              tone="info"
+              showDot={false}
+              label={TYPE_LABELS[unit.type] ?? unit.type}
+            />
+            <Badge
+              tone={unit.status === 'OCCUPIED' ? 'success' : 'neutral'}
+              label={STATUS_LABELS[unit.status] ?? unit.status}
+            />
             {checklist ? (
-              <span
-                className={cn(
-                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-ds-xs font-medium ring-1 ring-inset',
-                  checklist.isReady
-                    ? 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20 dark:text-emerald-300'
-                    : 'bg-amber-500/10 text-amber-700 ring-amber-500/20 dark:text-amber-300',
-                )}
-              >
-                Onboarding {checklist.score}/5
-              </span>
+              <Badge
+                tone={checklist.isReady ? 'success' : 'warning'}
+                label={`Onboarding ${checklist.score}/5`}
+              />
             ) : null}
           </div>
         </div>

@@ -142,7 +142,6 @@ function EditChargeForm({
           Cancelar
         </Button>
         <Button
-          variant="gradient"
           onClick={handleSave}
           disabled={!dirty || updateMutation.isPending}
         >

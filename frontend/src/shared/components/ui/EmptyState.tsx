@@ -2,8 +2,12 @@ import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/shared/utils/cn';
 
-const ctaClassName =
-  'mt-5 inline-flex min-h-10 items-center justify-center rounded-ds-lg border border-ds-stroke px-5 text-ds-sm font-semibold text-ds-body bg-ds-surface transition duration-200 hover:border-ds-stroke-strong hover:bg-ds-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus dark:bg-white/[0.03] dark:hover:bg-white/[0.06]';
+const primaryCtaClassName =
+  'mt-5 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-ds-lg bg-gradient-to-br from-brand-400 to-brand-600 px-5 text-ds-sm font-semibold text-ds-on-primary shadow-ds-sm transition duration-200 hover:from-brand-300 hover:to-brand-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus disabled:opacity-50 disabled:cursor-not-allowed';
+
+type EmptyStateAction =
+  | { to: string; label: string; onClick?: never }
+  | { onClick: () => void; label: string; to?: never };
 
 type EmptyStateProps = {
   icon: LucideIcon;
@@ -11,7 +15,7 @@ type EmptyStateProps = {
   description: string;
   /** O que o usuário pode fazer ou o que passará a aparecer aqui quando houver dados */
   suggestion?: string;
-  action?: { to: string; label: string };
+  action?: EmptyStateAction;
   className?: string;
 };
 
@@ -41,9 +45,15 @@ export function EmptyState({ icon: Icon, title, description, suggestion, action,
         </p>
       ) : null}
       {action ? (
-        <Link to={action.to} className={ctaClassName}>
-          {action.label}
-        </Link>
+        action.to ? (
+          <Link to={action.to} className={primaryCtaClassName}>
+            {action.label}
+          </Link>
+        ) : (
+          <button type="button" onClick={action.onClick} className={primaryCtaClassName}>
+            {action.label}
+          </button>
+        )
       ) : null}
     </div>
   );

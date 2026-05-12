@@ -255,8 +255,13 @@ export function ExpensesPage() {
           description="Ainda não há despesas registradas neste condomínio."
           suggestion={
             canManageExpenses
-              ? "Clique em 'Lançar despesa' para adicionar a primeira."
+              ? undefined
               : 'O síndico registra as despesas aprovadas. Quando houver lançamentos, eles aparecerão aqui.'
+          }
+          action={
+            canManageExpenses
+              ? { label: 'Lançar primeira despesa', onClick: () => setDialogOpen(true) }
+              : undefined
           }
         />
       ) : (

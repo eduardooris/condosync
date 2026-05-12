@@ -131,7 +131,7 @@ export function PollsPage() {
                 if (!v) form.reset();
               }}
               trigger={
-                <Button variant="gradient" size="sm">
+                <Button size="sm">
                   <Plus className="h-3.5 w-3.5" aria-hidden />
                   Nova enquete
                 </Button>
@@ -217,7 +217,12 @@ export function PollsPage() {
           icon={BarChart2}
           title="Nenhuma enquete ativa"
           description="Votações consultivas e assembleias simplificadas aparecem aqui com título, opções, prazo e contagem de votos."
-          suggestion="Com permissão de administrador, crie a primeira enquete acima."
+          suggestion={canManagePoll ? undefined : 'Quando o síndico publicar enquetes, elas aparecerão aqui.'}
+          action={
+            canManagePoll
+              ? { label: 'Criar primeira enquete', onClick: () => setDialogOpen(true) }
+              : undefined
+          }
         />
       ) : (
         <motion.div

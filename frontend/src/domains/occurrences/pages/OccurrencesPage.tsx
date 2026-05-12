@@ -133,7 +133,7 @@ export function OccurrencesPage() {
           description={`${counts.all} ocorrência${counts.all !== 1 ? 's' : ''}`}
           actions={
             hasUnits ? (
-              <Button variant="gradient" size="sm" onClick={() => setDialogOpen(true)}>
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 Nova ocorrência
               </Button>
@@ -225,7 +225,7 @@ export function OccurrencesPage() {
               <Button variant="secondary" type="button" onClick={() => setDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" variant="gradient" disabled={createMutation.isPending}>
+              <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Registrando…' : 'Registrar ocorrência'}
               </Button>
             </DialogFooter>

@@ -92,7 +92,7 @@ export function DashboardPage() {
               return first ? `${greeting()}, ${first}` : greeting();
             })()}
           </span>
-          <p className="mt-0.5 capitalize text-ds-sm text-ds-secondary">{dataLonga}</p>
+          <p className="mt-0.5 text-ds-sm text-ds-secondary">{dataLonga}</p>
         </div>
 
         {isAdmin ? (

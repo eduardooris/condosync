@@ -269,7 +269,6 @@ function GenerateChargesDialogBody({
           Cancelar
         </Button>
         <Button
-          variant="gradient"
           onClick={handleSubmit}
           disabled={submitting || (mode === 'unit' && (!unitId || !amountValid))}
         >

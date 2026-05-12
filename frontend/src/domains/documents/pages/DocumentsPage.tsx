@@ -149,8 +149,13 @@ export function DocumentsPage() {
           }
           suggestion={
             canManage
-              ? 'Envie o primeiro arquivo clicando em "Novo documento". Documentos com visibilidade "todos" ajudam na transparência; "somente admin" restringe o conteúdo sensível.'
+              ? 'Documentos com visibilidade "todos" ajudam na transparência; "somente admin" restringe o conteúdo sensível.'
               : 'Se precisar de um documento que ainda não está no sistema, solicite à administração do condomínio o envio pelo painel.'
+          }
+          action={
+            canManage
+              ? { label: 'Enviar primeiro documento', onClick: () => setOpen(true) }
+              : undefined
           }
         />
       ) : (

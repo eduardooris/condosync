@@ -14,6 +14,10 @@ function userInitial(name?: string | null) {
   return name.slice(0, 2).toUpperCase();
 }
 
+function firstName(name?: string | null) {
+  return name?.trim().split(/\s+/)[0] ?? '';
+}
+
 interface HeaderProps {
   onOpenCommandPalette?: () => void;
 }
@@ -83,7 +87,7 @@ export function Header({ onOpenCommandPalette }: HeaderProps) {
             {userInitial(user?.name)}
           </div>
           <span className="hidden truncate text-ds-sm font-medium text-ds-body ds-md:block">
-            {user?.name ?? 'Visitante'}
+            {firstName(user?.name) || 'Visitante'}
           </span>
         </div>
       </div>
