@@ -47,8 +47,10 @@ async function bootstrap(): Promise<void> {
       'CORS_ORIGINS deve ser configurado em produção (lista separada por vírgula).',
     );
   }
+  // Em dev, reflete qualquer origin (ngrok, IP local, celular na rede etc.).
+  // Em prod, restringe à lista do .env.
   app.enableCors({
-    origin: corsOrigins.length ? corsOrigins : true,
+    origin: isProd ? corsOrigins : true,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],

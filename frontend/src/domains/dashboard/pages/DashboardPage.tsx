@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Sparkles, TrendingUp, TrendingDown, Scale,
-  Building2, AlertCircle, ArrowRight, Receipt, BarChart2, ClipboardList,
+  Building2, AlertCircle, ArrowRight, Receipt, BarChart2, ClipboardList, UserPlus,
 } from 'lucide-react';
 import { DashboardRevenueChart } from '@/domains/dashboard/components/DashboardRevenueChart';
 import { AdminHero } from '@/domains/dashboard/components/AdminHero';
@@ -14,6 +15,8 @@ import { useAuthStore } from '@/shared/stores/auth.store';
 import { useDashboardPage } from '@/domains/dashboard/hooks/useDashboardPage';
 import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
 import { cn } from '@/shared/utils/cn';
+import { membersService } from '@/domains/condominiums/services/members.service';
+import { queryKeys } from '@/shared/lib/queryKeys';
 
 function formatBrl(n: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
@@ -43,6 +46,14 @@ export function DashboardPage() {
   const chart = chartQuery.data;
   const isLoading = summaryQuery.isLoading;
   const chartLoading = chartQuery.isLoading;
+
+  const pendingMembersQuery = useQuery({
+    queryKey: queryKeys.members.pending(condominium?.id),
+    queryFn: () => membersService.listPending(condominium!.id),
+    enabled: isAdmin && Boolean(condominium?.id),
+    staleTime: 30_000,
+  });
+  const pendingMembers = pendingMembersQuery.data ?? [];
 
   const kpi = useMemo(() => {
     const receitas = data?.totalReceitasPagas ?? 0;
@@ -104,6 +115,38 @@ export function DashboardPage() {
           </div>
         ) : null}
       </motion.header>
+
+      {/* Pending member approvals banner (admin only) */}
+      {isAdmin && pendingMembers.length > 0 && condominium?.id ? (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Link
+            to={`/condominiums/${condominium.id}?section=team`}
+            className="group flex items-start gap-3 rounded-ds-xl border border-ds-stroke border-l-2 border-l-brand-400 bg-brand-50/90 px-4 py-3.5 text-ds-sm leading-relaxed text-ds-secondary shadow-ds-sm transition hover:bg-brand-100/70 dark:border-transparent dark:bg-brand-500/[0.10] dark:text-ds-dim dark:hover:bg-brand-500/[0.16] dark:shadow-none"
+          >
+            <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-700 ring-1 ring-brand-500/30 dark:text-brand-300">
+              <UserPlus className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="font-semibold text-ds-body">
+                {pendingMembers.length === 1
+                  ? '1 morador aguardando aprovação'
+                  : `${pendingMembers.length} moradores aguardando aprovação`}
+              </span>
+              <span className="ml-1 text-ds-dim">
+                — revise e defina unidade/papel em Equipe.
+              </span>
+            </span>
+            <ArrowRight
+              className="mt-1 h-3.5 w-3.5 shrink-0 text-ds-dim transition group-hover:translate-x-0.5 group-hover:text-ds-body"
+              aria-hidden
+            />
+          </Link>
+        </motion.div>
+      ) : null}
 
       {/* Hero by role */}
       {isAdmin ? (

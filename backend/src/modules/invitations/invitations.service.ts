@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Env } from '../../config/env.schema';
 import { UnitStatus, UserRole } from '../../common/enums';
 import {
@@ -29,9 +29,11 @@ import {
 } from '../../database/entities/user-condominium.entity';
 import { Resident } from '../../database/entities/resident.entity';
 import { Unit } from '../../database/entities/unit.entity';
+import { NotificationType } from '../../database/entities/notification.entity';
 import { KeycloakAdminClient } from '../../adapters/auth/keycloak-admin.client';
 import { AUTH_ADAPTER, IAuthAdapter } from '../../adapters/auth/auth.adapter';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { InvitationsRepository } from './invitations.repository';
 import {
   AcceptInvitationDto,
@@ -62,6 +64,7 @@ export class InvitationsService {
     private readonly invitations: InvitationsRepository,
     private readonly admin: KeycloakAdminClient,
     private readonly usersService: UsersService,
+    private readonly notifications: NotificationsService,
     @Inject(AUTH_ADAPTER) private readonly authAdapter: IAuthAdapter,
     @InjectRepository(UserCondominium)
     private readonly ucRepo: Repository<UserCondominium>,
@@ -397,11 +400,57 @@ export class InvitationsService {
       }
     });
 
+    if (requiresApproval) {
+      await this.notifyAdminsOfPendingMember({
+        condominiumId: inv.condominiumId,
+        condominiumName: inv.condominium.name,
+        candidateName: dto.fullName,
+        candidateEmail: email,
+        candidateUnitId: membershipUnitId,
+      });
+    }
+
     return {
       accessToken: session?.accessToken ?? null,
       refreshToken: session?.refreshToken ?? null,
       requiresApproval,
     };
+  }
+
+  private async notifyAdminsOfPendingMember(params: {
+    condominiumId: string;
+    condominiumName: string;
+    candidateName: string;
+    candidateEmail: string;
+    candidateUnitId: string | null;
+  }): Promise<void> {
+    try {
+      const admins = await this.ucRepo.find({
+        where: {
+          condominiumId: params.condominiumId,
+          status: MembershipStatus.APPROVED,
+          role: In([UserRole.ADMIN, UserRole.SUB_ADMIN]),
+        },
+        select: ['userId'],
+      });
+      if (admins.length === 0) return;
+      await this.notifications.createMany(
+        admins.map((a) => ({
+          userId: a.userId,
+          condominiumId: params.condominiumId,
+          type: NotificationType.MEMBER_PENDING_APPROVAL,
+          title: 'Nova solicitação de morador',
+          body: `${params.candidateName} (${params.candidateEmail}) pediu para entrar em ${params.condominiumName}. Revise e aprove em Equipe.`,
+          payload: {
+            condominiumId: params.condominiumId,
+            unitId: params.candidateUnitId,
+            email: params.candidateEmail,
+          },
+        })),
+      );
+    } catch {
+      // Notificação é "best effort" — não derruba o aceite se falhar.
+    }
   }
 
   // -----------------------------------------------------------------
