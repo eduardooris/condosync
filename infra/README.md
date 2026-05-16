@@ -94,6 +94,11 @@ Migração para DNS (depois de comprar):
 6. Descomentar blocos HTTPS em `nginx/nginx.conf`.
 7. Rebuild do frontend (workflow `frontend-release` com novos build-args).
 
+## Variáveis de ambiente
+
+Produção usa **apenas** `infra/.env.prod` (modelo em `.env.prod.example`).  
+Passe sempre `--env-file .env.prod`. Não precisa de `.env` na raiz nem `backend/.env` na VPS.
+
 ## Primeira subida
 
 ```bash
@@ -101,7 +106,7 @@ cp infra/.env.prod.example infra/.env.prod
 nano infra/.env.prod
 
 cd infra
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+docker compose -f docker-compose.prod.yml -f docker-compose.api.yml --env-file .env.prod up -d
 
 # Opcional TLS inicial
 ./scripts/init-ssl.sh
