@@ -35,6 +35,7 @@ import {
   GenerateMonthResponseDto,
 } from './dto/charge-response.dto';
 import { ResendWhatsappResponseDto } from './dto/resend-whatsapp.dto';
+import { MarkPaidDto } from './dto/mark-paid.dto';
 
 /**
  * Listagem e administração de cobranças por condomínio.
@@ -225,5 +226,34 @@ export class CondominiumMyChargesController {
     @Param('chargeId', ParseUUIDPipe) chargeId: string,
   ) {
     return this.service.getMineInCondo(user.id, condominiumId, chargeId);
+  }
+
+  @Patch(':chargeId/mark-paid')
+  @ApiOperation({
+    summary: 'Morador confirma pagamento (auto-declaração)',
+    description:
+      'US-08 — o morador declara que pagou a cobrança via Pix. Valida que a unidade da cobrança tem o usuário vinculado. Em V2 com `IPaymentAdapter`, esta rota apenas move para `PENDING_CONFIRMATION` e o webhook do banco confirma.',
+  })
+  @ApiOkResponse({
+    description: 'Cobrança marcada como paga.',
+    type: ChargeResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Cobrança não encontrada ou não pertence ao morador.',
+    type: ErrorResponseDto,
+  })
+  markPaidMine(
+    @CurrentUser() user: RequestUser,
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @Param('chargeId', ParseUUIDPipe) chargeId: string,
+    @Body() dto: MarkPaidDto,
+  ) {
+    const paidAt = dto.paidAt ? new Date(dto.paidAt) : undefined;
+    return this.service.markPaidByResident(
+      user.id,
+      condominiumId,
+      chargeId,
+      paidAt,
+    );
   }
 }

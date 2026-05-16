@@ -244,6 +244,41 @@ export class ChargesService {
     return this.chargesRepo.save(charge);
   }
 
+  /**
+   * Auto-declaração de pagamento pelo morador (US-08 — "já paguei").
+   * Valida que a cobrança pertence ao condomínio informado **e** que
+   * a unidade da cobrança tem o usuário vinculado como morador.
+   *
+   * Hoje a transição é direta para `PAID` (mesma do markPaid admin).
+   * Em V2, quando houver `IPaymentAdapter`, esta rota só deveria mover
+   * para um estado `PENDING_CONFIRMATION` e o webhook do banco
+   * confirmaria.
+   */
+  async markPaidByResident(
+    userId: string,
+    condominiumId: string,
+    chargeId: string,
+    paidAt?: Date,
+  ): Promise<ChargeResponseDto> {
+    const charge = await this.findInCondo(condominiumId, chargeId);
+    const linked = await this.residentRepo
+      .createQueryBuilder('r')
+      .where('r.user_id = :userId', { userId })
+      .andWhere('r.unit_id = :unitId', { unitId: charge.unitId })
+      .getCount();
+    if (linked === 0) {
+      throw new NotFoundException('Cobrança não encontrada.');
+    }
+    assertChargeTransition(charge.status, ChargeStatus.PAID);
+    charge.status = ChargeStatus.PAID;
+    charge.paidAt = paidAt ?? new Date();
+    const saved = await this.chargesRepo.save(charge);
+    const condo = await this.condoRepo.findOne({
+      where: { id: condominiumId },
+    });
+    return toChargeResponse(saved, condo);
+  }
+
   async exempt(
     userId: string,
     chargeId: string,
