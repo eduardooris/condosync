@@ -11,7 +11,10 @@ import { IsNull, Repository } from 'typeorm';
 import { endOfMonth } from 'date-fns';
 import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
-import { UserCondominium } from '../../database/entities/user-condominium.entity';
+import {
+  MembershipStatus,
+  UserCondominium,
+} from '../../database/entities/user-condominium.entity';
 import { Resident } from '../../database/entities/resident.entity';
 import { ChargeStatus, UnitStatus, UserRole } from '../../common/enums';
 import { CreateChargeDto } from './dto/create-charge.dto';
@@ -61,13 +64,7 @@ export class ChargesService {
     userId: string,
     condominiumId: string,
   ): Promise<ChargeResponseDto[]> {
-    const residents = await this.residentRepo
-      .createQueryBuilder('r')
-      .innerJoin('r.unit', 'u')
-      .where('r.user_id = :userId', { userId })
-      .andWhere('u.condominium_id = :condominiumId', { condominiumId })
-      .getMany();
-    const unitIds = residents.map((r) => r.unitId);
+    const unitIds = await this.resolveMineUnitIds(userId, condominiumId);
     if (unitIds.length === 0) return [];
     const [charges, condo] = await Promise.all([
       this.chargesRepo.findByUnits(unitIds),
@@ -98,14 +95,7 @@ export class ChargesService {
     chargeId: string,
   ): Promise<ChargeResponseDto> {
     const charge = await this.findInCondo(condominiumId, chargeId);
-    const linked = await this.residentRepo
-      .createQueryBuilder('r')
-      .where('r.user_id = :userId', { userId })
-      .andWhere('r.unit_id = :unitId', { unitId: charge.unitId })
-      .getCount();
-    if (linked === 0) {
-      throw new NotFoundException('Cobrança não encontrada.');
-    }
+    await this.assertUserOwnsChargeUnit(userId, condominiumId, charge.unitId);
     const condo = await this.condoRepo.findOne({
       where: { id: condominiumId },
     });
@@ -261,14 +251,7 @@ export class ChargesService {
     paidAt?: Date,
   ): Promise<ChargeResponseDto> {
     const charge = await this.findInCondo(condominiumId, chargeId);
-    const linked = await this.residentRepo
-      .createQueryBuilder('r')
-      .where('r.user_id = :userId', { userId })
-      .andWhere('r.unit_id = :unitId', { unitId: charge.unitId })
-      .getCount();
-    if (linked === 0) {
-      throw new NotFoundException('Cobrança não encontrada.');
-    }
+    await this.assertUserOwnsChargeUnit(userId, condominiumId, charge.unitId);
     assertChargeTransition(charge.status, ChargeStatus.PAID);
     charge.status = ChargeStatus.PAID;
     charge.paidAt = paidAt ?? new Date();
@@ -504,5 +487,48 @@ export class ChargesService {
     }
     await this.enqueueChargeResend(chargeId);
     return { enqueued: true };
+  }
+
+  /**
+   * Unidades do morador no condomínio: `residents.user_id` e/ou
+   * `user_condominiums.unit_id` (membership aprovado), alinhado a
+   * `ResidentsService.findMyResidentOrFail`.
+   */
+  private async resolveMineUnitIds(
+    userId: string,
+    condominiumId: string,
+  ): Promise<string[]> {
+    const [residents, membership] = await Promise.all([
+      this.residentRepo
+        .createQueryBuilder('r')
+        .innerJoin('r.unit', 'u')
+        .where('r.user_id = :userId', { userId })
+        .andWhere('u.condominium_id = :condominiumId', { condominiumId })
+        .getMany(),
+      this.ucRepo.findOne({
+        where: {
+          userId,
+          condominiumId,
+          status: MembershipStatus.APPROVED,
+        },
+      }),
+    ]);
+
+    const unitIds = new Set(residents.map((r) => r.unitId));
+    if (membership?.unitId) {
+      unitIds.add(membership.unitId);
+    }
+    return [...unitIds];
+  }
+
+  private async assertUserOwnsChargeUnit(
+    userId: string,
+    condominiumId: string,
+    unitId: string,
+  ): Promise<void> {
+    const unitIds = await this.resolveMineUnitIds(userId, condominiumId);
+    if (!unitIds.includes(unitId)) {
+      throw new NotFoundException('Cobrança não encontrada.');
+    }
   }
 }
