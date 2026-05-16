@@ -58,7 +58,8 @@ As envs relevantes:
 ```bash
 KEYCLOAK_ADMIN_CLIENT_ID=condo-backend-admin
 KEYCLOAK_ADMIN_CLIENT_SECRET=condo-backend-admin-dev-secret  # sobrescreva em prod
-APP_PUBLIC_URL=http://localhost:5173                          # base p/ links de convite
+PUBLIC_URL=https://seu-dominio.com                            # prod: PWA + API no mesmo host
+APP_PUBLIC_URL=http://localhost:5173                          # dev: links do PWA (Vite)
 ```
 
 > **Atenção (primeira aplicação local):** ao puxar essas mudanças,
