@@ -30,8 +30,10 @@ import { BalanceCheckProcessor } from './processors/balance-check.processor';
     DashboardModule,
   ],
   controllers: [
-    CondominiumChargesController,
+    // Rotas do morador (`.../charges/mine`) antes do admin (`.../charges/:chargeId`).
+    // Se invertido, Express trata `mine` como UUID e o RolesGuard devolve 403.
     CondominiumMyChargesController,
+    CondominiumChargesController,
     ChargeActionsController,
   ],
   providers: [

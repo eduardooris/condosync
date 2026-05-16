@@ -73,6 +73,8 @@ export class CondominiumChargesController {
     return this.service.list(condominiumId);
   }
 
+  /** Não registrar este controller antes de {@link CondominiumMyChargesController}
+   * — senão `GET .../charges/mine` casa aqui com `chargeId = mine` e morador leva 403. */
   @Get(':chargeId')
   @ApiOperation({ summary: 'Detalhe de uma cobrança específica (admin)' })
   @ApiOkResponse({

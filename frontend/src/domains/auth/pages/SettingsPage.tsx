@@ -92,7 +92,7 @@ export function SettingsPage() {
   const shownName = shouldUseUnitProfile
     ? residentProfile?.fullName ?? 'Morador'
     : user?.name;
-    console.log(residentProfile)
+    
   const shownWhatsapp = shouldUseUnitProfile
     ? residentProfile?.phoneWhatsapp ?? null
     : profile?.phoneWhatsapp ?? null;
