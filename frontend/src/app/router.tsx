@@ -1,49 +1,61 @@
-/* eslint-disable react-refresh/only-export-components */
-import { Suspense, lazy, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedLayout } from '@/shared/components/layout/ProtectedLayout';
 import { Spinner } from '@/shared/components/ui/Spinner';
 import { ProtectedRoute } from '@/app/ProtectedRoute';
+import { lazyPage } from '@/shared/lib/lazyImport';
 
-const LoginPage = lazy(() => import('@/domains/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('@/domains/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
-const ForgotPasswordPage = lazy(() =>
-  import('@/domains/auth/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+const LoginPage = lazyPage(() => import('@/domains/auth/pages/LoginPage'), 'LoginPage');
+const RegisterPage = lazyPage(() => import('@/domains/auth/pages/RegisterPage'), 'RegisterPage');
+const ForgotPasswordPage = lazyPage(
+  () => import('@/domains/auth/pages/ForgotPasswordPage'),
+  'ForgotPasswordPage',
 );
-const ResetPasswordPage = lazy(() =>
-  import('@/domains/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+const ResetPasswordPage = lazyPage(
+  () => import('@/domains/auth/pages/ResetPasswordPage'),
+  'ResetPasswordPage',
 );
-const NoCondominiumPage = lazy(() =>
-  import('@/domains/auth/pages/NoCondominiumPage').then((m) => ({ default: m.NoCondominiumPage })),
+const NoCondominiumPage = lazyPage(
+  () => import('@/domains/auth/pages/NoCondominiumPage'),
+  'NoCondominiumPage',
 );
-const DashboardPage = lazy(() => import('@/domains/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
-const ChargesPage = lazy(() => import('@/domains/charges/pages/ChargesPage').then((m) => ({ default: m.ChargesPage })));
-const ExpensesPage = lazy(() => import('@/domains/expenses/pages/ExpensesPage').then((m) => ({ default: m.ExpensesPage })));
-const BulletinPage = lazy(() => import('@/domains/bulletin/pages/BulletinPage').then((m) => ({ default: m.BulletinPage })));
-const DocumentsPage = lazy(() => import('@/domains/documents/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })));
-const OccurrencesPage = lazy(() => import('@/domains/occurrences/pages/OccurrencesPage').then((m) => ({ default: m.OccurrencesPage })));
-const PollsPage = lazy(() => import('@/domains/polls/pages/PollsPage').then((m) => ({ default: m.PollsPage })));
-const ReservationsPage = lazy(() =>
-  import('@/domains/reservations/pages/ReservationsPage').then((m) => ({ default: m.ReservationsPage })),
+const DashboardPage = lazyPage(() => import('@/domains/dashboard/pages/DashboardPage'), 'DashboardPage');
+const ChargesPage = lazyPage(() => import('@/domains/charges/pages/ChargesPage'), 'ChargesPage');
+const ExpensesPage = lazyPage(() => import('@/domains/expenses/pages/ExpensesPage'), 'ExpensesPage');
+const BulletinPage = lazyPage(() => import('@/domains/bulletin/pages/BulletinPage'), 'BulletinPage');
+const DocumentsPage = lazyPage(() => import('@/domains/documents/pages/DocumentsPage'), 'DocumentsPage');
+const OccurrencesPage = lazyPage(
+  () => import('@/domains/occurrences/pages/OccurrencesPage'),
+  'OccurrencesPage',
 );
-const VisitorsPage = lazy(() =>
-  import('@/domains/visitors/pages/VisitorsPage').then((m) => ({ default: m.VisitorsPage })),
+const PollsPage = lazyPage(() => import('@/domains/polls/pages/PollsPage'), 'PollsPage');
+const ReservationsPage = lazyPage(
+  () => import('@/domains/reservations/pages/ReservationsPage'),
+  'ReservationsPage',
 );
-const CorrespondencesPage = lazy(() =>
-  import('@/domains/visitors/pages/CorrespondencesPage').then((m) => ({ default: m.CorrespondencesPage })),
+const VisitorsPage = lazyPage(() => import('@/domains/visitors/pages/VisitorsPage'), 'VisitorsPage');
+const CorrespondencesPage = lazyPage(
+  () => import('@/domains/visitors/pages/CorrespondencesPage'),
+  'CorrespondencesPage',
 );
-const NotificationsPage = lazy(() =>
-  import('@/domains/notifications/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
+const NotificationsPage = lazyPage(
+  () => import('@/domains/notifications/pages/NotificationsPage'),
+  'NotificationsPage',
 );
-const CondominiumsPage = lazy(() => import('@/domains/condominiums/pages/CondominiumsPage').then((m) => ({ default: m.CondominiumsPage })));
-const CondominiumDetailPage = lazy(() =>
-  import('@/domains/condominiums/pages/CondominiumDetailPage').then((m) => ({ default: m.CondominiumDetailPage })),
+const CondominiumsPage = lazyPage(
+  () => import('@/domains/condominiums/pages/CondominiumsPage'),
+  'CondominiumsPage',
 );
-const UnitsPage = lazy(() => import('@/domains/units/pages/UnitsPage').then((m) => ({ default: m.UnitsPage })));
-const SettingsPage = lazy(() => import('@/domains/auth/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
-const SetupPage = lazy(() => import('@/domains/setup/pages/SetupPage').then((m) => ({ default: m.SetupPage })));
-const AcceptInvitePage = lazy(() =>
-  import('@/domains/invitations/pages/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
+const CondominiumDetailPage = lazyPage(
+  () => import('@/domains/condominiums/pages/CondominiumDetailPage'),
+  'CondominiumDetailPage',
+);
+const UnitsPage = lazyPage(() => import('@/domains/units/pages/UnitsPage'), 'UnitsPage');
+const SettingsPage = lazyPage(() => import('@/domains/auth/pages/SettingsPage'), 'SettingsPage');
+const SetupPage = lazyPage(() => import('@/domains/setup/pages/SetupPage'), 'SetupPage');
+const AcceptInvitePage = lazyPage(
+  () => import('@/domains/invitations/pages/AcceptInvitePage'),
+  'AcceptInvitePage',
 );
 
 const withSuspense = (component: ReactNode) => <Suspense fallback={<Spinner size="lg" />}>{component}</Suspense>;

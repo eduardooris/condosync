@@ -23,7 +23,9 @@ import {
   CancelReservationDto,
   CreateReservationDto,
   RejectReservationDto,
+  ReservationResponseDto,
 } from './dto/reservation.dto';
+import { toReservationResponse } from './reservation.mapper';
 
 @Injectable()
 export class ReservationsService {
@@ -84,19 +86,22 @@ export class ReservationsService {
     return this.areaRepo.save(area);
   }
 
-  async listReservations(condominiumId: string): Promise<Reservation[]> {
-    return this.reservationRepo.find({
+  async listReservations(
+    condominiumId: string,
+  ): Promise<ReservationResponseDto[]> {
+    const rows = await this.reservationRepo.find({
       where: { condominiumId },
       order: { startAt: 'ASC' },
       relations: ['area', 'unit', 'resident'],
     });
+    return rows.map(toReservationResponse);
   }
 
   async createReservation(
     userId: string,
     condominiumId: string,
     dto: CreateReservationDto,
-  ): Promise<Reservation> {
+  ): Promise<ReservationResponseDto> {
     const [area, unit] = await Promise.all([
       this.areaRepo.findOne({ where: { id: dto.areaId, condominiumId } }),
       this.unitRepo.findOne({ where: { id: dto.unitId, condominiumId } }),
@@ -178,14 +183,15 @@ export class ReservationsService {
         ? ReservationStatus.PENDING
         : ReservationStatus.APPROVED,
     });
-    return this.reservationRepo.save(row);
+    const saved = await this.reservationRepo.save(row);
+    return toReservationResponse({ ...saved, area } as Reservation);
   }
 
   async approve(
     userId: string,
     condominiumId: string,
     reservationId: string,
-  ): Promise<Reservation> {
+  ): Promise<ReservationResponseDto> {
     const row = await this.findReservation(condominiumId, reservationId);
     if (row.status !== ReservationStatus.PENDING) {
       throw new BadRequestException(
@@ -196,7 +202,8 @@ export class ReservationsService {
     row.reviewedByUserId = userId;
     row.reviewedAt = new Date();
     row.cancelReason = null;
-    return this.reservationRepo.save(row);
+    const saved = await this.reservationRepo.save(row);
+    return toReservationResponse(saved);
   }
 
   async reject(
@@ -204,7 +211,7 @@ export class ReservationsService {
     condominiumId: string,
     reservationId: string,
     dto: RejectReservationDto,
-  ): Promise<Reservation> {
+  ): Promise<ReservationResponseDto> {
     const row = await this.findReservation(condominiumId, reservationId);
     if (row.status !== ReservationStatus.PENDING) {
       throw new BadRequestException(
@@ -215,7 +222,8 @@ export class ReservationsService {
     row.reviewedByUserId = userId;
     row.reviewedAt = new Date();
     row.cancelReason = dto.reason?.trim() || null;
-    return this.reservationRepo.save(row);
+    const saved = await this.reservationRepo.save(row);
+    return toReservationResponse(saved);
   }
 
   async cancel(
@@ -223,7 +231,7 @@ export class ReservationsService {
     condominiumId: string,
     reservationId: string,
     dto: CancelReservationDto,
-  ): Promise<Reservation> {
+  ): Promise<ReservationResponseDto> {
     const row = await this.findReservation(condominiumId, reservationId);
     if (
       row.status === ReservationStatus.CANCELED ||
@@ -252,7 +260,8 @@ export class ReservationsService {
     row.cancelReason = dto.reason?.trim() || null;
     row.reviewedByUserId = isAdmin ? userId : null;
     row.reviewedAt = new Date();
-    return this.reservationRepo.save(row);
+    const saved = await this.reservationRepo.save(row);
+    return toReservationResponse(saved);
   }
 
   private async findReservation(
@@ -261,6 +270,7 @@ export class ReservationsService {
   ): Promise<Reservation> {
     const row = await this.reservationRepo.findOne({
       where: { id: reservationId, condominiumId },
+      relations: ['area'],
     });
     if (!row) throw new NotFoundException('Reserva não encontrada.');
     return row;

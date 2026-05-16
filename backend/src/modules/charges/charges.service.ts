@@ -24,6 +24,8 @@ import {
   assertChargeTransition,
   isTerminalStatus,
 } from './charge-status.machine';
+import { toChargeResponse } from './charge.mapper';
+import { ChargeResponseDto } from './dto/charge-response.dto';
 
 @Injectable()
 export class ChargesService {
@@ -45,8 +47,12 @@ export class ChargesService {
 
   /** Listagem completa do condomínio — só ADMIN/SUB_ADMIN devem chamar
    * (controller já enforca via RolesGuard). */
-  async list(condominiumId: string): Promise<Charge[]> {
-    return this.chargesRepo.findByCondo(condominiumId);
+  async list(condominiumId: string): Promise<ChargeResponseDto[]> {
+    const [charges, condo] = await Promise.all([
+      this.chargesRepo.findByCondo(condominiumId),
+      this.condoRepo.findOne({ where: { id: condominiumId } }),
+    ]);
+    return charges.map((c) => toChargeResponse(c, condo));
   }
 
   /** Cobranças do usuário autenticado em um condomínio (US-08).
@@ -54,7 +60,7 @@ export class ChargesService {
   async listMineInCondo(
     userId: string,
     condominiumId: string,
-  ): Promise<Charge[]> {
+  ): Promise<ChargeResponseDto[]> {
     const residents = await this.residentRepo
       .createQueryBuilder('r')
       .innerJoin('r.unit', 'u')
@@ -63,7 +69,47 @@ export class ChargesService {
       .getMany();
     const unitIds = residents.map((r) => r.unitId);
     if (unitIds.length === 0) return [];
-    return this.chargesRepo.findByUnits(unitIds);
+    const [charges, condo] = await Promise.all([
+      this.chargesRepo.findByUnits(unitIds),
+      this.condoRepo.findOne({ where: { id: condominiumId } }),
+    ]);
+    return charges.map((c) => toChargeResponse(c, condo));
+  }
+
+  /** Detalhe de uma cobrança específica para morador/admin.
+   * Valida que pertence ao condomínio informado. */
+  async getOneInCondo(
+    condominiumId: string,
+    chargeId: string,
+  ): Promise<ChargeResponseDto> {
+    const charge = await this.findInCondo(condominiumId, chargeId);
+    const condo = await this.condoRepo.findOne({
+      where: { id: condominiumId },
+    });
+    return toChargeResponse(charge, condo);
+  }
+
+  /** Detalhe da cobrança do morador autenticado: além de pertencer ao
+   * condomínio, valida que a unidade da cobrança está vinculada ao
+   * usuário (evita acesso indireto a cobranças de outros moradores). */
+  async getMineInCondo(
+    userId: string,
+    condominiumId: string,
+    chargeId: string,
+  ): Promise<ChargeResponseDto> {
+    const charge = await this.findInCondo(condominiumId, chargeId);
+    const linked = await this.residentRepo
+      .createQueryBuilder('r')
+      .where('r.user_id = :userId', { userId })
+      .andWhere('r.unit_id = :unitId', { unitId: charge.unitId })
+      .getCount();
+    if (linked === 0) {
+      throw new NotFoundException('Cobrança não encontrada.');
+    }
+    const condo = await this.condoRepo.findOne({
+      where: { id: condominiumId },
+    });
+    return toChargeResponse(charge, condo);
   }
 
   // ── Criação manual ────────────────────────────────────────────────

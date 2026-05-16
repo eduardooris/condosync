@@ -43,6 +43,17 @@ export class ChargeResponseDto {
 
   @ApiProperty({ example: '2026-04-01T09:00:00.000Z' })
   updatedAt: Date;
+
+  /**
+   * BR Code Pix (copia e cola). `null` quando a cobrança não está em
+   * aberto ou o condomínio ainda não configurou chave Pix.
+   */
+  @ApiPropertyOptional({
+    example:
+      '00020126480014BR.GOV.BCB.PIX0114+5511999999999520400005303986540565.405802BR5925EDIFICIO AURORA6009SAO PAULO62070503TX-2026-056304ABCD',
+    nullable: true,
+  })
+  pixCode: string | null;
 }
 
 export class GenerateMonthResponseDto {

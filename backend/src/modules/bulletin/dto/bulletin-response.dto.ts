@@ -20,6 +20,9 @@ export class BulletinResponseDto {
   @ApiPropertyOptional({ example: '2026-05-30T23:59:59.000Z', nullable: true })
   expiresAt: Date | null;
 
+  @ApiProperty({ example: false, description: 'Fixado no topo da listagem.' })
+  pinned: boolean;
+
   @ApiPropertyOptional({
     example: 'd1a6ee0d-8b86-4c36-bbe2-066d88f5d886',
     nullable: true,

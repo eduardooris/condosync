@@ -45,6 +45,14 @@ export class Document {
   @Column({ name: 'storage_key' })
   storageKey: string;
 
+  /** Tamanho do arquivo em bytes (gravado no upload). */
+  @Column({ name: 'size_bytes', type: 'bigint', nullable: true })
+  sizeBytes: string | null;
+
+  /** Mime type detectado no upload. */
+  @Column({ name: 'mime_type', type: 'varchar', length: 120, nullable: true })
+  mimeType: string | null;
+
   @Column({ name: 'created_by_user_id', type: 'uuid', nullable: true })
   createdByUserId: string | null;
 

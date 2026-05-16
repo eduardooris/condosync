@@ -36,14 +36,18 @@ export class BulletinService {
     );
     const rank: Record<BulletinPriority, number> = {
       [BulletinPriority.URGENT]: 0,
-      [BulletinPriority.ATTENTION]: 1,
-      [BulletinPriority.INFO]: 2,
+      [BulletinPriority.MAINTENANCE]: 1,
+      [BulletinPriority.ATTENTION]: 2,
+      [BulletinPriority.EVENT]: 3,
+      [BulletinPriority.INFO]: 4,
     };
-    return [...rows].sort(
-      (a, b) =>
-        rank[a.priority] - rank[b.priority] ||
-        b.createdAt.getTime() - a.createdAt.getTime(),
-    );
+    // Fixados sempre primeiro; depois prioridade; depois recência.
+    return [...rows].sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      const byPriority = rank[a.priority] - rank[b.priority];
+      if (byPriority !== 0) return byPriority;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
   }
 
   async create(
@@ -57,6 +61,7 @@ export class BulletinService {
       body: dto.body,
       priority: dto.priority,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+      pinned: dto.pinned ?? false,
       createdByUserId: userId,
     });
     const saved = await this.bulletinRepo.save(row);

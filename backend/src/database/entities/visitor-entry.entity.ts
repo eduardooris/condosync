@@ -17,6 +17,15 @@ export enum VisitorEntryStatus {
   CANCELED = 'CANCELED',
 }
 
+export enum VisitorEntryType {
+  /** Visita social (familiares, amigos). */
+  VISITA = 'VISITA',
+  /** Prestador de serviço (eletricista, encanador, etc.). */
+  PRESTADOR = 'PRESTADOR',
+  /** Entregador/motoboy. */
+  ENTREGA = 'ENTREGA',
+}
+
 @Entity('visitor_entries')
 export class VisitorEntry {
   @PrimaryGeneratedColumn('uuid')
@@ -58,6 +67,13 @@ export class VisitorEntry {
     default: VisitorEntryStatus.EXPECTED,
   })
   status: VisitorEntryStatus;
+
+  @Column({
+    type: 'enum',
+    enum: VisitorEntryType,
+    default: VisitorEntryType.VISITA,
+  })
+  type: VisitorEntryType;
 
   @Column({ name: 'notes', type: 'text', nullable: true })
   notes: string | null;

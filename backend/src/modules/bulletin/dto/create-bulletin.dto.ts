@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { BulletinPriority } from '../../../common/enums';
 
 export class CreateBulletinDto {
@@ -19,4 +25,9 @@ export class CreateBulletinDto {
   @IsOptional()
   @IsDateString()
   expiresAt?: string;
+
+  @ApiPropertyOptional({ description: 'Fixar no topo da listagem.' })
+  @IsOptional()
+  @IsBoolean()
+  pinned?: boolean;
 }

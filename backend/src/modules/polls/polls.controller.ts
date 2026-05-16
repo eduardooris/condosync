@@ -60,8 +60,11 @@ export class PollsController {
     type: PollResponseDto,
     isArray: true,
   })
-  list(@Param('condominiumId', ParseUUIDPipe) condominiumId: string) {
-    return this.service.list(condominiumId);
+  list(
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.service.list(condominiumId, user.id);
   }
 
   @Get('participation')
@@ -102,8 +105,9 @@ export class PollsController {
   getOne(
     @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
     @Param('pollId', ParseUUIDPipe) pollId: string,
+    @CurrentUser() user: RequestUser,
   ) {
-    return this.service.getOne(condominiumId, pollId);
+    return this.service.getOne(condominiumId, pollId, user.id);
   }
 
   @Post(':pollId/close')

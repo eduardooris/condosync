@@ -13,6 +13,14 @@ export class PollOptionResponseDto {
 
   @ApiProperty({ example: 0 })
   sortOrder: number;
+
+  /**
+   * Quantidade de votos nesta opção. Vale `0` para enquetes em aberto
+   * em que o usuário ainda não votou (RN-04.3 — não vazar resultado
+   * parcial). Após o voto ou encerramento, vem populado.
+   */
+  @ApiProperty({ example: 12 })
+  votes: number;
 }
 
 export class PollResponseDto {
@@ -51,6 +59,17 @@ export class PollResponseDto {
 
   @ApiProperty({ type: [PollOptionResponseDto] })
   options: PollOptionResponseDto[];
+
+  /** Total de votos. Sempre exposto, mesmo em enquetes abertas. */
+  @ApiProperty({ example: 18 })
+  totalVotes: number;
+
+  /**
+   * Opção em que a unidade do usuário autenticado votou; `null` se
+   * ainda não votou ou se ele não é responsável financeiro.
+   */
+  @ApiPropertyOptional({ example: 'opt-1', nullable: true })
+  voted: string | null;
 
   @ApiProperty({ example: '2026-04-22T11:00:00.000Z' })
   createdAt: Date;

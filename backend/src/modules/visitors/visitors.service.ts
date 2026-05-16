@@ -13,6 +13,7 @@ import { Unit } from '../../database/entities/unit.entity';
 import {
   VisitorEntry,
   VisitorEntryStatus,
+  VisitorEntryType,
 } from '../../database/entities/visitor-entry.entity';
 import { UserCondominium } from '../../database/entities/user-condominium.entity';
 import {
@@ -70,6 +71,7 @@ export class VisitorsService {
       expectedAt: new Date(dto.expectedAt),
       notes: dto.notes?.trim() || null,
       status: VisitorEntryStatus.EXPECTED,
+      type: dto.type ?? VisitorEntryType.VISITA,
     });
     return this.visitorRepo.save(row);
   }

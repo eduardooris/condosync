@@ -76,7 +76,7 @@ export class AuthController {
 
   @Public()
   @Throttle({ auth: { limit: 5, ttl: 60_000 } })
-  @Post('forgot-password')
+  @Post(['forgot-password', 'forgot'])
   @ApiOperation({
     summary: 'Solicita link de redefinição de senha',
     description:

@@ -66,4 +66,6 @@ export enum BulletinPriority {
   INFO = 'INFO',
   ATTENTION = 'ATTENTION',
   URGENT = 'URGENT',
+  EVENT = 'EVENT',
+  MAINTENANCE = 'MAINTENANCE',
 }

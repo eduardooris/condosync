@@ -56,6 +56,15 @@ export class Notification {
   @Column({ type: 'jsonb', nullable: true })
   payload: Record<string, unknown> | null;
 
+  /**
+   * URL relativa para navegação contextual no app/PWA (ex.:
+   * `/charges/:id`, `/polls/:id`). Derivado de `type` + `payload`
+   * no momento da criação. Permite ao cliente abrir a tela certa ao
+   * tocar/clicar na notificação.
+   */
+  @Column({ name: 'deeplink', type: 'varchar', length: 255, nullable: true })
+  deeplink: string | null;
+
   @Column({ name: 'read_at', type: 'timestamptz', nullable: true })
   readAt: Date | null;
 

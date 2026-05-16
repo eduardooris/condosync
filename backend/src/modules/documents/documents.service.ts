@@ -77,6 +77,8 @@ export class DocumentsService {
       documentDate: dto.documentDate.slice(0, 10),
       visibility: dto.visibility,
       storageKey,
+      sizeBytes: file.size != null ? String(file.size) : null,
+      mimeType: file.mimetype || null,
       createdByUserId: userId,
     });
     const saved = await this.documentsRepo.save(row);

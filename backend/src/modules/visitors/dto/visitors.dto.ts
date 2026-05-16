@@ -9,7 +9,10 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ParcelStatus } from '../../../database/entities/parcel.entity';
-import { VisitorEntryStatus } from '../../../database/entities/visitor-entry.entity';
+import {
+  VisitorEntryStatus,
+  VisitorEntryType,
+} from '../../../database/entities/visitor-entry.entity';
 
 export class CreateVisitorEntryDto {
   @ApiProperty({ example: '82f1c46f-f7f7-4f9e-82cb-cbd38341f5f0' })
@@ -37,6 +40,15 @@ export class CreateVisitorEntryDto {
   @IsString()
   @MaxLength(500)
   notes?: string;
+
+  @ApiPropertyOptional({
+    enum: VisitorEntryType,
+    example: VisitorEntryType.VISITA,
+    description: 'Tipo do visitante. Default: VISITA.',
+  })
+  @IsOptional()
+  @IsEnum(VisitorEntryType)
+  type?: VisitorEntryType;
 }
 
 export class UpdateVisitorEntryStatusDto {
@@ -92,6 +104,8 @@ export class VisitorEntryResponseDto {
   @ApiPropertyOptional({ nullable: true }) visitorDocument: string | null;
   @ApiProperty() expectedAt: Date;
   @ApiProperty({ enum: VisitorEntryStatus }) status: VisitorEntryStatus;
+  @ApiProperty({ enum: VisitorEntryType, example: VisitorEntryType.VISITA })
+  type: VisitorEntryType;
   @ApiPropertyOptional({ nullable: true }) notes: string | null;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;

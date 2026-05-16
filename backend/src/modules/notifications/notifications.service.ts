@@ -13,7 +13,47 @@ export interface CreateNotificationInput {
   title: string;
   body: string;
   payload?: Record<string, unknown> | null;
+  /** Quando omitido, é derivado de `type + payload` por resolveDeeplink. */
+  deeplink?: string | null;
 }
+
+/**
+ * Deriva a URL relativa do recurso para abrir no app/PWA ao tocar
+ * na notificação. Retorna `null` quando não há rota associada
+ * (notificações genéricas como `BALANCE_NEGATIVE`).
+ */
+const resolveDeeplink = (
+  type: NotificationType,
+  payload?: Record<string, unknown> | null,
+): string | null => {
+  const p = (payload ?? {}) as Record<string, unknown>;
+  switch (type) {
+    case NotificationType.CHARGE_CREATED:
+    case NotificationType.CHARGE_OVERDUE:
+    case NotificationType.CHARGE_PAID:
+      return typeof p.chargeId === 'string' ? `/charges/${p.chargeId}` : null;
+    case NotificationType.POLL_CREATED:
+    case NotificationType.POLL_CLOSED:
+      return typeof p.pollId === 'string' ? `/polls/${p.pollId}` : null;
+    case NotificationType.OCCURRENCE_STATUS:
+      return typeof p.occurrenceId === 'string'
+        ? `/occurrences/${p.occurrenceId}`
+        : null;
+    case NotificationType.BULLETIN_NEW:
+      return typeof p.bulletinId === 'string'
+        ? `/bulletin/${p.bulletinId}`
+        : '/bulletin';
+    case NotificationType.DOCUMENT_NEW:
+      return typeof p.documentId === 'string'
+        ? `/documents/${p.documentId}`
+        : '/documents';
+    case NotificationType.MEMBER_PENDING_APPROVAL:
+      return '/residents';
+    case NotificationType.BALANCE_NEGATIVE:
+    default:
+      return null;
+  }
+};
 
 @Injectable()
 export class NotificationsService {
@@ -40,6 +80,7 @@ export class NotificationsService {
       title: input.title,
       body: input.body,
       payload: input.payload ?? null,
+      deeplink: input.deeplink ?? resolveDeeplink(input.type, input.payload),
       readAt: null,
     });
     return this.repo.save(row);
@@ -57,6 +98,7 @@ export class NotificationsService {
         title: i.title,
         body: i.body,
         payload: i.payload ?? null,
+        deeplink: i.deeplink ?? resolveDeeplink(i.type, i.payload),
         readAt: null,
       }),
     );

@@ -17,9 +17,11 @@ import { PollStatus, UnitStatus } from '../../common/enums';
 import { CreatePollDto } from './dto/create-poll.dto';
 import { PollsRepository } from './polls.repository';
 import {
+  PollResponseDto,
   PollResultsResponseDto,
   PollVoteResponseDto,
 } from './dto/poll-response.dto';
+import { toPollResponse } from './poll.mapper';
 import { PollMyParticipationResponseDto } from './dto/poll-my-participation.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../../database/entities/notification.entity';
@@ -126,9 +128,45 @@ export class PollsService {
     }
   }
 
-  async list(condominiumId: string): Promise<Partial<Poll>[]> {
+  async list(
+    condominiumId: string,
+    userId: string,
+  ): Promise<PollResponseDto[]> {
     const polls = await this.pollsRepo.findByCondo(condominiumId);
-    return polls.map((p) => this.sanitizePollForViewer(p));
+    if (polls.length === 0) return [];
+    const voterUnitId = await this.findVoterUnitId(condominiumId, userId);
+    // Carrega votos por enquete (uma query por enquete já que findByCondo não
+    // popula relação `votes`); o número de enquetes em aberto por condomínio
+    // é tipicamente baixo (<10), portanto aceitável.
+    return Promise.all(
+      polls.map(async (p) => {
+        const withVotes = await this.pollsRepo.findByIdWithVotes(
+          condominiumId,
+          p.id,
+        );
+        return toPollResponse(
+          withVotes ?? p,
+          withVotes?.votes ?? [],
+          voterUnitId,
+        );
+      }),
+    );
+  }
+
+  /** Resolve a unitId em que o usuário é responsável financeiro
+   * (única que tem direito a voto, RN-04.2). */
+  private async findVoterUnitId(
+    condominiumId: string,
+    userId: string,
+  ): Promise<string | null> {
+    const resident = await this.residentRepo
+      .createQueryBuilder('r')
+      .innerJoin('r.unit', 'u')
+      .where('r.user_id = :userId', { userId })
+      .andWhere('r.is_financial_responsible = true')
+      .andWhere('u.condominium_id = :condominiumId', { condominiumId })
+      .getOne();
+    return resident?.unitId ?? null;
   }
 
   /**
@@ -173,12 +211,17 @@ export class PollsService {
     return { items };
   }
 
-  async getOne(condominiumId: string, pollId: string): Promise<Partial<Poll>> {
+  async getOne(
+    condominiumId: string,
+    pollId: string,
+    userId: string,
+  ): Promise<PollResponseDto> {
     const p = await this.pollsRepo.findByIdWithVotes(condominiumId, pollId);
     if (!p) {
       throw new NotFoundException('Enquete não encontrada.');
     }
-    return this.sanitizePollForViewer(p);
+    const voterUnitId = await this.findVoterUnitId(condominiumId, userId);
+    return toPollResponse(p, p.votes ?? [], voterUnitId);
   }
 
   /**

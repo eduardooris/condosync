@@ -37,6 +37,14 @@ export class NotificationResponseDto {
   payload: Record<string, unknown> | null;
 
   @ApiPropertyOptional({
+    example: '/charges/ch-1',
+    nullable: true,
+    description:
+      'URL relativa para abrir a tela do recurso ao tocar/clicar na notificação.',
+  })
+  deeplink: string | null;
+
+  @ApiPropertyOptional({
     example: '2026-04-22T11:00:00.000Z',
     nullable: true,
   })

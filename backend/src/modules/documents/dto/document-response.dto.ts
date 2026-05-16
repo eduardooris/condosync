@@ -27,6 +27,20 @@ export class DocumentResponseDto {
   storageKey: string;
 
   @ApiPropertyOptional({
+    example: '1474560',
+    nullable: true,
+    description: 'Tamanho do arquivo em bytes (string para evitar overflow).',
+  })
+  sizeBytes: string | null;
+
+  @ApiPropertyOptional({
+    example: 'application/pdf',
+    nullable: true,
+    description: 'MIME type informado no upload.',
+  })
+  mimeType: string | null;
+
+  @ApiPropertyOptional({
     example: 'd1a6ee0d-8b86-4c36-bbe2-066d88f5d886',
     nullable: true,
   })

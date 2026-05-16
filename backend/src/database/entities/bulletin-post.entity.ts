@@ -39,6 +39,13 @@ export class BulletinPost {
   @Column({ name: 'expires_at', type: 'timestamptz', nullable: true })
   expiresAt: Date | null;
 
+  /**
+   * Quando `true`, o post é fixado no topo da listagem (selo "fixado"
+   * no PWA/app). Apenas ADMIN/SUB_ADMIN pode fixar.
+   */
+  @Column({ type: 'boolean', default: false })
+  pinned: boolean;
+
   @Column({ name: 'created_by_user_id', type: 'uuid', nullable: true })
   createdByUserId: string | null;
 

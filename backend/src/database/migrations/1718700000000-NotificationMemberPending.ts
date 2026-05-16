@@ -6,9 +6,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * quando um morador conclui o autocadastro via link genérico e
  * fica aguardando aprovação.
  */
-export class NotificationMemberPending1718700000000
-  implements MigrationInterface
-{
+export class NotificationMemberPending1718700000000 implements MigrationInterface {
   // Postgres não permite `ALTER TYPE ... ADD VALUE` dentro de uma
   // transação. Idempotente via `IF NOT EXISTS`.
   public transaction = false as const;

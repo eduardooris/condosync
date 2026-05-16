@@ -56,6 +56,12 @@ export class ReservationResponseDto {
   @ApiProperty({ example: '4e2b30b1-509f-4633-872d-57bb41a1f3d7' })
   areaId: string;
 
+  @ApiProperty({
+    example: 'Salão de festas',
+    description: 'Nome denormalizado da área (evita join no cliente).',
+  })
+  areaName: string;
+
   @ApiProperty({ example: '82f1c46f-f7f7-4f9e-82cb-cbd38341f5f0' })
   unitId: string;
 

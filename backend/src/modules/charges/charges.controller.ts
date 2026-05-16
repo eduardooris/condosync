@@ -72,6 +72,23 @@ export class CondominiumChargesController {
     return this.service.list(condominiumId);
   }
 
+  @Get(':chargeId')
+  @ApiOperation({ summary: 'Detalhe de uma cobrança específica (admin)' })
+  @ApiOkResponse({
+    description: 'Cobrança encontrada.',
+    type: ChargeResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Cobrança não encontrada no condomínio informado.',
+    type: ErrorResponseDto,
+  })
+  getOne(
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @Param('chargeId', ParseUUIDPipe) chargeId: string,
+  ) {
+    return this.service.getOneInCondo(condominiumId, chargeId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Cria cobrança manual para uma unidade' })
   @ApiCreatedResponse({
@@ -186,5 +203,27 @@ export class CondominiumMyChargesController {
     @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
   ) {
     return this.service.listMineInCondo(user.id, condominiumId);
+  }
+
+  @Get(':chargeId')
+  @ApiOperation({
+    summary: 'Detalhe de uma cobrança do usuário autenticado',
+    description:
+      'Retorna a cobrança com o `pixCode` calculado quando em aberto.',
+  })
+  @ApiOkResponse({
+    description: 'Cobrança encontrada.',
+    type: ChargeResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Cobrança não encontrada no condomínio.',
+    type: ErrorResponseDto,
+  })
+  getMine(
+    @CurrentUser() user: RequestUser,
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @Param('chargeId', ParseUUIDPipe) chargeId: string,
+  ) {
+    return this.service.getMineInCondo(user.id, condominiumId, chargeId);
   }
 }
