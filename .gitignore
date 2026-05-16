@@ -5,7 +5,6 @@
 **/.env.*
 !.env.example
 !**/.env.example
-!backend/.env.production.example
 !infra/.env.prod.example
 !infra/.env.prod.ip-only.example
 condosync-app/

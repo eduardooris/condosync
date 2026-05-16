@@ -33,8 +33,6 @@ A arquitetura principal é composta por:
 Persistência: Postgres (schemas dedicados por serviço onde aplicável, ex.: `message_server` / `whatsmeow` no message-server)
 Auth: Keycloak (realm `main`)
 Filas/Cache: Redis (Bull) — filas além de cobranças/WhatsApp: ocorrências, mural, checagem de saldo, auto-fechamento de enquetes, notificações in-app
-
-**Env em produção:** `.env` na raiz (postgres/redis/keycloak) + `backend/.env` (API). Ver `/.env.example` e `backend/.env.production.example`.
 Storage: S3-compatible (MinIO em dev)
 Infra local: compose modular em `infra/dev/` (incluído pelo `docker-compose.yml` na raiz); atalhos em `scripts/dev.sh`
 ```

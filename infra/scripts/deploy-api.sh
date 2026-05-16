@@ -13,8 +13,7 @@
 #
 # Variáveis opcionais:
 #   COMPOSE_DIR        — default: /opt/condosync/infra
-#   ENV_FILE           — default: $REPO_ROOT/.env (raiz; postgres/redis/keycloak)
-#   backend/.env       — config da API Nest (obrigatório na VPS)
+#   ENV_FILE           — default: $COMPOSE_DIR/.env.prod
 #   API_IMAGE          — default: ghcr.io/condosync/condosync-api
 #   PREVIOUS_TAG_FILE  — default: $COMPOSE_DIR/.api-previous-tag
 #   HEALTH_RETRIES     — default: 30 (× 3s = 90s)
@@ -24,17 +23,7 @@
 set -euo pipefail
 
 COMPOSE_DIR="${COMPOSE_DIR:-/opt/condosync/infra}"
-REPO_ROOT="${REPO_ROOT:-$(cd "$COMPOSE_DIR/.." && pwd)}"
-BACKEND_ENV="${BACKEND_ENV:-$REPO_ROOT/backend/.env}"
-if [[ -z "${ENV_FILE:-}" ]]; then
-  if [[ -f "$REPO_ROOT/.env" ]]; then
-    ENV_FILE="$REPO_ROOT/.env"
-  elif [[ -f "$COMPOSE_DIR/.env.prod" ]]; then
-    ENV_FILE="$COMPOSE_DIR/.env.prod"
-  else
-    ENV_FILE="$REPO_ROOT/.env"
-  fi
-fi
+ENV_FILE="${ENV_FILE:-$COMPOSE_DIR/.env.prod}"
 API_IMAGE="${API_IMAGE:-ghcr.io/condosync/condosync-api}"
 PREVIOUS_TAG_FILE="${PREVIOUS_TAG_FILE:-$COMPOSE_DIR/.api-previous-tag}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-30}"
@@ -43,12 +32,6 @@ EXTRA_COMPOSE_FILE="${EXTRA_COMPOSE_FILE:-}"
 : "${IMAGE_TAG:?IMAGE_TAG não definido (use o SHA do commit)}"
 
 cd "$COMPOSE_DIR"
-
-if [[ ! -f "$BACKEND_ENV" ]]; then
-  echo "[deploy-api] ✗ $BACKEND_ENV não encontrado."
-  echo "  Copie: cp $REPO_ROOT/backend/.env.production.example $BACKEND_ENV"
-  exit 1
-fi
 
 log() { echo "[deploy-api] $*"; }
 

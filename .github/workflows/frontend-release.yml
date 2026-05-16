@@ -57,14 +57,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # Repo Vars (Settings → Secrets and variables → Actions → Variables):
-          #   VITE_PUBLIC_URL        ex: https://condosync.duckdns.org (preferido; = PUBLIC_URL do backend)
-          #   VITE_API_BASE_URL      alias legado (mesmo valor, sem /api/v1)
+          #   VITE_API_BASE_URL      ex: http://18.228.119.6/api/v1   (IP-only)
+          #                          ex: https://app.condosync.com.br/api/v1 (DNS)
           #   VITE_KEYCLOAK_URL      ex: http://18.228.119.6/auth     (IP-only)
           #                          ex: https://auth.condosync.com.br (DNS)
           #   VITE_KEYCLOAK_REALM    default: main
           #   VITE_KEYCLOAK_CLIENT_ID default: main-frontend
           build-args: |
-            VITE_PUBLIC_URL=${{ vars.VITE_PUBLIC_URL || vars.VITE_API_BASE_URL }}
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
             VITE_KEYCLOAK_URL=${{ vars.VITE_KEYCLOAK_URL }}
             VITE_KEYCLOAK_REALM=${{ vars.VITE_KEYCLOAK_REALM }}

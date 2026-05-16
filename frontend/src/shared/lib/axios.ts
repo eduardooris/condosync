@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { useAuthStore } from '@/shared/stores/auth.store';
-import { getPublicOrigin } from '@/shared/lib/public-origin';
 
-const ORIGIN = getPublicOrigin();
+// Origem da API. Em produção é o domínio público (ex.:
+// `https://app.condosync.com.br`) e o nginx encaminha `/api/v1/*` para o
+// container `api`. Em dev usamos o host do Nest direto (3000).
+const ORIGIN =
+  import.meta.env.VITE_API_BASE_URL ??
+  import.meta.env.VITE_API_URL ??
+  'http://localhost:3000';
 
 // O backend tem prefixo global `api/v1` (ver `backend/src/main.ts`). Os
 // services chamam endpoints relativos (ex.: `/condominiums/:id/charges`).

@@ -2,11 +2,7 @@
 set -euo pipefail
 
 COMPOSE_DIR="${COMPOSE_DIR:-/opt/condosync/infra}"
-REPO_ROOT="${REPO_ROOT:-$(cd "$COMPOSE_DIR/.." && pwd)}"
-ENV_FILE="${ENV_FILE:-}"
-if [[ -z "$ENV_FILE" ]]; then
-  [[ -f "$REPO_ROOT/.env" ]] && ENV_FILE="$REPO_ROOT/.env" || ENV_FILE="$COMPOSE_DIR/.env.prod"
-fi
+ENV_FILE="${ENV_FILE:-$COMPOSE_DIR/.env.prod}"
 MESSAGE_SERVER_IMAGE="${MESSAGE_SERVER_IMAGE:-ghcr.io/condosync/condosync-message-server}"
 PREVIOUS_TAG_FILE="${PREVIOUS_TAG_FILE:-$COMPOSE_DIR/.message-server-previous-tag}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-35}"

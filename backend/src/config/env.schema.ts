@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { resolvePublicUrls } from './resolve-public-urls';
 
 export const envSchema = z
   .object({
@@ -45,15 +44,10 @@ export const envSchema = z
     KEYCLOAK_ADMIN_CLIENT_SECRET: z.string().optional(),
 
     /**
-     * URL pública canônica (sem trailing slash) quando PWA e API compartilham
-     * o mesmo domínio (nginx). Em produção, prefira só esta variável.
+     * URL pública do frontend (sem trailing slash). Usada para montar links
+     * de convite enviados pelo backend (ex.: `${APP_PUBLIC_URL}/invite/<token>`).
      */
-    PUBLIC_URL: z.string().url().optional(),
-    /**
-     * Override da URL do PWA (convites, QR `/portaria/...`). Se omitida, usa
-     * `PUBLIC_URL` ou, em dev, `http://localhost:5173`.
-     */
-    APP_PUBLIC_URL: z.string().url().optional(),
+    APP_PUBLIC_URL: z.string().url().default('http://localhost:5173'),
 
     CORS_ORIGINS: z
       .string()
@@ -110,12 +104,8 @@ export const envSchema = z
     IMAGE_TAG: z.string().default('local'),
 
     // ── Portaria virtual (intercom WebRTC) ─────────────────────────
-    /**
-     * Override da URL pública da API / Socket.IO. Se omitida, usa `PUBLIC_URL`
-     * ou, em dev, `http://localhost:3000` (em prod sem `PUBLIC_URL`, espelha
-     * `APP_PUBLIC_URL` quando definida).
-     */
-    API_PUBLIC_URL: z.string().url().optional(),
+    /** URL pública da API (sem trailing slash). Usada em `wsUrl` do Socket.IO. */
+    API_PUBLIC_URL: z.string().url().default('http://localhost:3000'),
     INTERCOM_GUEST_JWT_SECRET: z
       .string()
       .min(16)
@@ -193,15 +183,6 @@ export const envSchema = z
         });
       }
     }
-  })
-  .transform((env) => {
-    const { publicUrl, appPublicUrl, apiPublicUrl } = resolvePublicUrls(env);
-    return {
-      ...env,
-      PUBLIC_URL: publicUrl,
-      APP_PUBLIC_URL: appPublicUrl,
-      API_PUBLIC_URL: apiPublicUrl,
-    };
   });
 
 export type Env = z.infer<typeof envSchema>;

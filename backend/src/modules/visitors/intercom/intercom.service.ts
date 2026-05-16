@@ -85,8 +85,12 @@ export class IntercomService {
     private readonly gateway: IntercomGateway,
     config: ConfigService<Env, true>,
   ) {
-    this.appPublicUrl = config.get('APP_PUBLIC_URL', { infer: true });
-    this.apiPublicUrl = config.get('API_PUBLIC_URL', { infer: true });
+    this.appPublicUrl = (
+      config.get('APP_PUBLIC_URL', { infer: true }) ?? ''
+    ).replace(/\/$/, '');
+    this.apiPublicUrl = (
+      config.get('API_PUBLIC_URL', { infer: true }) ?? 'http://localhost:3000'
+    ).replace(/\/$/, '');
     this.ringTimeoutSec = config.get('INTERCOM_RING_TIMEOUT_SEC', {
       infer: true,
     });
