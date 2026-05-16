@@ -1,60 +1,26 @@
-# CondoSync — Override exclusivo do serviço `api`
+# CondoSync — Override do serviço `api`
 #
-# Use SEMPRE em conjunto com `docker-compose.prod.yml`:
+#   cd infra
+#   docker compose -f docker-compose.prod.yml -f docker-compose.api.yml \
+#     --env-file ../.env up -d --no-deps api
 #
-#   IMAGE_TAG=<sha> docker compose \
-#     -f docker-compose.prod.yml -f docker-compose.api.yml \
-#     --env-file .env.prod pull api
-#
-#   IMAGE_TAG=<sha> docker compose \
-#     -f docker-compose.prod.yml -f docker-compose.api.yml \
-#     --env-file .env.prod up -d --no-deps api
-#
-# O serviço NÃO tem `build:` aqui — a imagem deve ser publicada no GHCR
-# (ou em outro registry compatível) pelo pipeline de CI antes do deploy.
+# • `../.env` (raiz) → senhas postgres/redis/keycloak no compose
+# • `../backend/.env` → toda config da API Nest
 
 services:
   api:
-    # Imagem versionada. Em produção sempre usar SHA do commit; `latest`
-    # serve apenas como fallback para o primeiro boot.
     image: ${API_IMAGE:-ghcr.io/condosync/condosync-api}:${IMAGE_TAG:-latest}
     container_name: condosync-api
     restart: always
     pull_policy: always
+    env_file:
+      - path: ../backend/.env
+        required: true
     environment:
       NODE_ENV: production
-      PORT: 3000
-      AUTH_PROVIDER: keycloak
       KEYCLOAK_BASE_URL: http://keycloak:8080
-      KEYCLOAK_REALM: main
-      KEYCLOAK_ISSUER: https://${AUTH_DOMAIN}/realms/main
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
-      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-condo-backend-admin}
-      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
-      PUBLIC_URL: ${PUBLIC_URL:-https://${APP_DOMAIN}}
-      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
-      API_PUBLIC_URL: ${API_PUBLIC_URL:-}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      CORS_ORIGINS: https://${APP_DOMAIN}
-      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
-      STORAGE_BUCKET: ${STORAGE_BUCKET}
-      S3_REGION: ${S3_REGION:-us-east-1}
-      S3_ENDPOINT: ${S3_ENDPOINT:-}
-      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
-      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
-      MESSAGE_SERVER_BASE_URL: ${MESSAGE_SERVER_BASE_URL:-http://message-server:8080}
-      MESSAGE_SERVER_API_KEY: ${MESSAGE_SERVER_API_KEY:-}
-      MESSAGE_SERVER_TIMEOUT_MS: ${MESSAGE_SERVER_TIMEOUT_MS:-10000}
-      MESSAGE_SERVER_COMPANY_ID: ${MESSAGE_SERVER_COMPANY_ID:-condosync}
-      MESSAGE_SERVER_INSTANCE_NAME: ${MESSAGE_SERVER_INSTANCE_NAME:-CondoSync}
-      MESSAGE_SERVER_INSTANCE_ID: ${MESSAGE_SERVER_INSTANCE_ID:-}
-      MESSAGE_SERVER_WEBHOOK_SECRET: ${MESSAGE_SERVER_WEBHOOK_SECRET:-}
-      THROTTLE_TTL: ${THROTTLE_TTL:-60}
-      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-120}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/main
+      MESSAGE_SERVER_BASE_URL: http://message-server:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,9 +29,6 @@ services:
       keycloak:
         condition: service_started
       message-server:
-        # imagem distroless não permite healthcheck via wget/curl; usamos
-        # service_started. Se a API precisar do message-server pronto, retry
-        # interno do client cuida da janela inicial.
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/v1/health/ready"]

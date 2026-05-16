@@ -87,21 +87,34 @@ serviço `api`.
 Migração para DNS (depois de comprar):
 
 1. Apontar `A record` do `APP_DOMAIN` e `AUTH_DOMAIN` para o IP da EC2.
-2. Editar `.env.prod` trocando IP por domínios reais e `APP_PUBLIC_URL=https://...`.
+2. Editar `.env` na raiz e `backend/.env` (domínios e `PUBLIC_URL`).
 3. Reabrir `443` no Security Group.
 4. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d` (sem o override IP).
 5. `bash infra/scripts/init-ssl.sh` para emitir certificados.
 6. Descomentar blocos HTTPS em `nginx/nginx.conf`.
 7. Rebuild do frontend (workflow `frontend-release` com novos build-args).
 
+## Variáveis de ambiente (dois arquivos)
+
+| Arquivo | O que configura |
+| --- | --- |
+| **`.env` na raiz** | `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, Keycloak admin/DB, `KC_HOSTNAME`, domínios |
+| **`backend/.env`** | API Nest: `DATABASE_URL`, `REDIS_URL`, R2, intercom, `PUBLIC_URL`, secrets da app |
+
+As senhas de Postgres e Redis devem ser **iguais** nos dois arquivos (`DATABASE_URL` / `REDIS_URL`).
+
+```bash
+cp .env.example .env
+cp backend/.env.production.example backend/.env
+nano .env
+nano backend/.env
+```
+
 ## Primeira subida
 
 ```bash
-cp infra/.env.prod.example infra/.env.prod
-nano infra/.env.prod
-
 cd infra
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+docker compose -f docker-compose.prod.yml -f docker-compose.api.yml --env-file ../.env up -d
 
 # Opcional TLS inicial
 ./scripts/init-ssl.sh
