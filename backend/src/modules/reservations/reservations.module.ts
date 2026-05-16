@@ -7,9 +7,7 @@ import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ReservationArea, Reservation, Unit]),
-  ],
+  imports: [TypeOrmModule.forFeature([ReservationArea, Reservation, Unit])],
   controllers: [ReservationsController],
   providers: [ReservationsService],
 })

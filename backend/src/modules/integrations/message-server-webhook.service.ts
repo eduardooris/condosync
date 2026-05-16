@@ -37,7 +37,8 @@ export class MessageServerWebhookService {
     const secret = this.config.get('MESSAGE_SERVER_WEBHOOK_SECRET', {
       infer: true,
     });
-    const isProd = this.config.get('NODE_ENV', { infer: true }) === 'production';
+    const isProd =
+      this.config.get('NODE_ENV', { infer: true }) === 'production';
     if (!secret || secret.trim().length === 0) {
       if (isProd) {
         throw new UnauthorizedException(
@@ -63,7 +64,8 @@ export class MessageServerWebhookService {
 
   verifyBearer(authorizationHeader: string | undefined): void {
     const apiKey = this.config.get('MESSAGE_SERVER_API_KEY', { infer: true });
-    const isProd = this.config.get('NODE_ENV', { infer: true }) === 'production';
+    const isProd =
+      this.config.get('NODE_ENV', { infer: true }) === 'production';
     if (!apiKey || apiKey.trim().length === 0) {
       if (isProd) {
         throw new UnauthorizedException(

@@ -483,5 +483,4 @@ export class ChargesService {
     await this.enqueueChargeResend(chargeId);
     return { enqueued: true };
   }
-
 }

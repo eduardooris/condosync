@@ -17,3 +17,9 @@ export type PollMyParticipationItem = {
   selectedOptionId: string | null;
 };
 export type Document = components['schemas']['DocumentResponseDto'];
+
+export type {
+  IntercomSessionStatus,
+  PortariaUnit,
+  CreateIntercomSessionResponse,
+} from '@/shared/types/intercom';

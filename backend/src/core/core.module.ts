@@ -12,10 +12,7 @@ import { TenantMembershipService } from '../common/services/tenant-membership.se
 
 @Global()
 @Module({
-  imports: [
-    AuthModule,
-    TypeOrmModule.forFeature([UserCondominium, Resident]),
-  ],
+  imports: [AuthModule, TypeOrmModule.forFeature([UserCondominium, Resident])],
   providers: [
     JwtAuthGuard,
     RolesGuard,

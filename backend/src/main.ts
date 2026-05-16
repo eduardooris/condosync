@@ -115,6 +115,7 @@ async function bootstrap(): Promise<void> {
     .addTag('documents', 'Documentos com URL assinada')
     .addTag('dashboard', 'Indicadores financeiros agregados')
     .addTag('notifications', 'Notificações in-app do usuário')
+    .addTag('intercom', 'Portaria virtual — interfone por QR e WebRTC')
     .build();
 
   const document = SwaggerModule.createDocument(app, swagger, {

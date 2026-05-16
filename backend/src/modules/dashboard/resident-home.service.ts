@@ -131,7 +131,10 @@ export class ResidentHomeService {
     userId: string,
     condominiumId: string,
   ): Promise<string> {
-    await this.tenantMembership.requireApprovedMembership(userId, condominiumId);
+    await this.tenantMembership.requireApprovedMembership(
+      userId,
+      condominiumId,
+    );
     return condominiumId;
   }
 

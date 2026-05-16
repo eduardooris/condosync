@@ -102,6 +102,21 @@ export const envSchema = z
       .default('info'),
     /** Tag publicada da imagem (usada em healthz/version). */
     IMAGE_TAG: z.string().default('local'),
+
+    // ── Portaria virtual (intercom WebRTC) ─────────────────────────
+    /** URL pública da API (sem trailing slash). Usada em `wsUrl` do Socket.IO. */
+    API_PUBLIC_URL: z.string().url().default('http://localhost:3000'),
+    INTERCOM_GUEST_JWT_SECRET: z
+      .string()
+      .min(16)
+      .default('dev-intercom-guest-secret-change-me'),
+    INTERCOM_GUEST_JWT_TTL_SEC: z.coerce.number().int().positive().default(900),
+    INTERCOM_RING_TIMEOUT_SEC: z.coerce.number().int().positive().default(45),
+    /** STUN servers separados por vírgula (ex.: stun:stun.l.google.com:19302). */
+    WEBRTC_STUN_URLS: z.string().default('stun:stun.l.google.com:19302'),
+    WEBRTC_TURN_URL: z.string().optional(),
+    WEBRTC_TURN_USERNAME: z.string().optional(),
+    WEBRTC_TURN_CREDENTIAL: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (!env.KEYCLOAK_ISSUER) {
@@ -141,8 +156,7 @@ export const envSchema = z
       if (!env.MESSAGE_SERVER_WEBHOOK_SECRET?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            'MESSAGE_SERVER_WEBHOOK_SECRET é obrigatório em produção',
+          message: 'MESSAGE_SERVER_WEBHOOK_SECRET é obrigatório em produção',
           path: ['MESSAGE_SERVER_WEBHOOK_SECRET'],
         });
       }

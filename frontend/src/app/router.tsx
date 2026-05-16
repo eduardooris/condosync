@@ -57,6 +57,10 @@ const AcceptInvitePage = lazyPage(
   () => import('@/domains/invitations/pages/AcceptInvitePage'),
   'AcceptInvitePage',
 );
+const PortariaPage = lazyPage(
+  () => import('@/domains/intercom/pages/PortariaPage'),
+  'PortariaPage',
+);
 
 const withSuspense = (component: ReactNode) => <Suspense fallback={<Spinner size="lg" />}>{component}</Suspense>;
 
@@ -67,6 +71,7 @@ export const router = createBrowserRouter([
   { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
   { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
   { path: '/invite/:token', element: withSuspense(<AcceptInvitePage />) },
+  { path: '/portaria/:accessToken', element: withSuspense(<PortariaPage />) },
   {
     element: <ProtectedRoute minRole="RESIDENT" />,
     children: [

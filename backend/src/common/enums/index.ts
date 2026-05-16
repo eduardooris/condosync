@@ -69,3 +69,30 @@ export enum BulletinPriority {
   EVENT = 'EVENT',
   MAINTENANCE = 'MAINTENANCE',
 }
+
+/** Sessão de interfone / portaria virtual (doc 05). */
+export enum IntercomSessionStatus {
+  INITIATED = 'INITIATED',
+  RINGING = 'RINGING',
+  PREVIEW = 'PREVIEW',
+  ANSWERED = 'ANSWERED',
+  ENDED = 'ENDED',
+  MISSED = 'MISSED',
+  CANCELED_BY_VISITOR = 'CANCELED_BY_VISITOR',
+  REJECTED = 'REJECTED',
+  FAILED = 'FAILED',
+}
+
+export enum IntercomSessionUpdateReason {
+  ANSWERED_BY_OTHER = 'ANSWERED_BY_OTHER',
+  TIMEOUT = 'TIMEOUT',
+  VISITOR_LEFT = 'VISITOR_LEFT',
+  REJECTED = 'REJECTED',
+  ENDED = 'ENDED',
+}
+
+export enum DevicePlatform {
+  IOS = 'IOS',
+  ANDROID = 'ANDROID',
+  WEB = 'WEB',
+}

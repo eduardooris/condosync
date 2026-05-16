@@ -63,4 +63,8 @@ export const queryKeys = {
     list: (condominiumId: string | undefined) => ['reservations', condominiumId] as const,
     areas: (condominiumId: string | undefined) => ['reservation-areas', condominiumId] as const,
   },
+  intercom: {
+    tokens: (condominiumId: string | undefined) => ['intercom', 'tokens', condominiumId] as const,
+    sessions: (condominiumId: string | undefined) => ['intercom', 'sessions', condominiumId] as const,
+  },
 };
