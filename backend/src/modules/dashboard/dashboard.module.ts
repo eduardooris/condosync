@@ -7,7 +7,6 @@ import { Expense } from '../../database/entities/expense.entity';
 import { Notification } from '../../database/entities/notification.entity';
 import { Parcel } from '../../database/entities/parcel.entity';
 import { Reservation } from '../../database/entities/reservation.entity';
-import { Resident } from '../../database/entities/resident.entity';
 import { UserCondominium } from '../../database/entities/user-condominium.entity';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
@@ -23,7 +22,6 @@ import { ResidentHomeService } from './resident-home.service';
       Condominium,
       Parcel,
       Reservation,
-      Resident,
       UserCondominium,
       BulletinPost,
       Notification,

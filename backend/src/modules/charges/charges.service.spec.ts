@@ -5,9 +5,9 @@ import { ChargesService } from './charges.service';
 import { ChargesRepository } from './charges.repository';
 import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
-import { UserCondominium } from '../../database/entities/user-condominium.entity';
-import { Resident } from '../../database/entities/resident.entity';
-import { ChargeStatus, UserRole } from '../../common/enums';
+import { ForbiddenException } from '@nestjs/common';
+import { ChargeStatus } from '../../common/enums';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { QUEUE_WHATSAPP_SEND } from '../../queues/queue-names';
 
 describe('ChargesService', () => {
@@ -26,8 +26,11 @@ describe('ChargesService', () => {
   };
   const unitRepo = { findOne: jest.fn(), find: jest.fn() };
   const condoRepo = { findOne: jest.fn(), find: jest.fn() };
-  const ucRepo = { findOne: jest.fn() };
-  const residentRepo = { createQueryBuilder: jest.fn() };
+  const tenantMembership = {
+    assertAdminOrSub: jest.fn(),
+    resolveMineUnitIds: jest.fn(),
+    assertUserOwnsUnit: jest.fn(),
+  };
   const whatsappQueue = { add: jest.fn() };
 
   beforeEach(async () => {
@@ -38,8 +41,10 @@ describe('ChargesService', () => {
         { provide: ChargesRepository, useValue: chargesRepo },
         { provide: getRepositoryToken(Unit), useValue: unitRepo },
         { provide: getRepositoryToken(Condominium), useValue: condoRepo },
-        { provide: getRepositoryToken(UserCondominium), useValue: ucRepo },
-        { provide: getRepositoryToken(Resident), useValue: residentRepo },
+        {
+          provide: TenantMembershipService,
+          useValue: tenantMembership,
+        },
         {
           provide: getQueueToken(QUEUE_WHATSAPP_SEND),
           useValue: whatsappQueue,
@@ -55,7 +60,11 @@ describe('ChargesService', () => {
       unit: { condominiumId: 'cond1' },
       status: ChargeStatus.PENDING,
     });
-    ucRepo.findOne.mockResolvedValue({ role: UserRole.RESIDENT });
+    tenantMembership.assertAdminOrSub.mockRejectedValue(
+      new ForbiddenException(
+        'Apenas síndico ou subsíndico podem executar esta ação.',
+      ),
+    );
     await expect(service.markPaid('u1', 'ch1')).rejects.toThrow(
       /síndico ou subsíndico/,
     );
@@ -67,7 +76,7 @@ describe('ChargesService', () => {
       unit: { condominiumId: 'cond1' },
       status: ChargeStatus.PENDING,
     });
-    ucRepo.findOne.mockResolvedValue({ role: UserRole.ADMIN });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
     chargesRepo.save.mockImplementation(async (c) => c);
     const out = await service.markPaid('u1', 'ch1');
     expect(out.status).toBe(ChargeStatus.PAID);
@@ -80,7 +89,7 @@ describe('ChargesService', () => {
       unit: { condominiumId: 'cond1' },
       status: ChargeStatus.PAID,
     });
-    ucRepo.findOne.mockResolvedValue({ role: UserRole.ADMIN });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
     await expect(service.markPaid('u1', 'ch1')).rejects.toThrow(
       /Transição de status inválida|já está com status/,
     );

@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { Resident } from '../../database/entities/resident.entity';
 import { Unit } from '../../database/entities/unit.entity';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { OccurrenceStatus, UserRole } from '../../common/enums';
 import { CreateOccurrenceDto } from './dto/create-occurrence.dto';
 import { Occurrence } from '../../database/entities/occurrence.entity';
@@ -48,6 +49,7 @@ export class OccurrencesService {
     private readonly residentRepo: Repository<Resident>,
     @InjectRepository(Unit)
     private readonly unitRepo: Repository<Unit>,
+    private readonly tenantMembership: TenantMembershipService,
     @InjectQueue(QUEUE_WHATSAPP_SEND)
     private readonly whatsappQueue: Queue,
     @Inject(STORAGE_ADAPTER)
@@ -89,14 +91,11 @@ export class OccurrencesService {
     if (!unit) {
       throw new NotFoundException('Unidade não encontrada.');
     }
-    const author = await this.residentRepo.findOne({
-      where: { unitId: dto.unitId, userId },
-    });
-    if (!author) {
-      throw new ForbiddenException(
-        'Você precisa estar cadastrado como morador desta unidade para abrir ocorrências.',
-      );
-    }
+    const author = await this.tenantMembership.findResidentOnOwnedUnit(
+      userId,
+      condominiumId,
+      dto.unitId,
+    );
 
     let attachmentKey: string | null = null;
     if (file) {
@@ -134,14 +133,11 @@ export class OccurrencesService {
       throw new NotFoundException('Anexo não encontrado.');
     }
     if (!this.isPrivileged(viewerRole)) {
-      const author = await this.residentRepo.findOne({
-        where: { id: o.authorResidentId },
-      });
-      if (!author || author.userId !== viewerUserId) {
-        throw new ForbiddenException(
-          'Apenas autor ou síndico podem baixar este anexo.',
-        );
-      }
+      await this.tenantMembership.assertUserOwnsUnit(
+        viewerUserId,
+        condominiumId,
+        o.unitId,
+      );
     }
     const expiresIn = 300;
     const url = await this.storage.getSignedUrl(

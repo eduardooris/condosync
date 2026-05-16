@@ -7,6 +7,9 @@ import {
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CondominiumMemberGuard } from '../../common/guards/condominium-member.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../../common/enums';
 import { ApiStandardResponses } from '../../common/decorators/api-standard-responses.decorator';
 import { DashboardService } from './dashboard.service';
 import {
@@ -17,7 +20,8 @@ import {
 @ApiTags('dashboard')
 @ApiStandardResponses({ notFound: false })
 @Controller('condominiums/:condominiumId/dashboard')
-@UseGuards(CondominiumMemberGuard)
+@UseGuards(CondominiumMemberGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
 export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 

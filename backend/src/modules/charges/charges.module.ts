@@ -3,8 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Charge } from '../../database/entities/charge.entity';
 import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
-import { UserCondominium } from '../../database/entities/user-condominium.entity';
-import { Resident } from '../../database/entities/resident.entity';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { ChargesService } from './charges.service';
 import {
@@ -20,13 +18,7 @@ import { BalanceCheckProcessor } from './processors/balance-check.processor';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Charge,
-      Unit,
-      Condominium,
-      UserCondominium,
-      Resident,
-    ]),
+    TypeOrmModule.forFeature([Charge, Unit, Condominium]),
     DashboardModule,
   ],
   controllers: [

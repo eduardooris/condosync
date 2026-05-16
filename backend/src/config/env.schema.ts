@@ -138,6 +138,21 @@ export const envSchema = z
           path: ['S3_ACCESS_KEY_ID'],
         });
       }
+      if (!env.MESSAGE_SERVER_WEBHOOK_SECRET?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'MESSAGE_SERVER_WEBHOOK_SECRET é obrigatório em produção',
+          path: ['MESSAGE_SERVER_WEBHOOK_SECRET'],
+        });
+      }
+      if (!env.MESSAGE_SERVER_API_KEY?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'MESSAGE_SERVER_API_KEY é obrigatório em produção',
+          path: ['MESSAGE_SERVER_API_KEY'],
+        });
+      }
     }
 
     // CORS aberto (`*`) só é permitido fora de produção.

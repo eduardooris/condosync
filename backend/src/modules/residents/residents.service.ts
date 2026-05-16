@@ -32,6 +32,7 @@ import {
 } from '../../adapters/whatsapp/whatsapp.adapter';
 import { MembershipStatus } from '../../database/entities/user-condominium.entity';
 import { UsersService } from '../users/users.service';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 
 @Injectable()
 export class ResidentsService {
@@ -53,6 +54,7 @@ export class ResidentsService {
     private readonly whatsapp: IWhatsAppAdapter,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly tenantMembership: TenantMembershipService,
   ) {}
 
   private async loadUnit(condominiumId: string, unitId: string): Promise<Unit> {
@@ -609,26 +611,6 @@ export class ResidentsService {
     condominiumId: string,
     userId: string,
   ): Promise<Resident> {
-    const membership = await this.membershipRepo.findOne({
-      where: { condominiumId, userId, status: MembershipStatus.APPROVED },
-    });
-    if (!membership) {
-      throw new NotFoundException('Vínculo do condomínio não encontrado.');
-    }
-    if (!membership.unitId) {
-      throw new BadRequestException(
-        'Seu perfil neste condomínio não está vinculado a uma unidade.',
-      );
-    }
-    const resident = await this.residentRawRepo.findOne({
-      where: { unitId: membership.unitId, userId },
-      order: { updatedAt: 'DESC' },
-    });
-    if (!resident) {
-      throw new NotFoundException(
-        'Cadastro de morador não encontrado para sua unidade.',
-      );
-    }
-    return resident;
+    return this.tenantMembership.findMyResidentOrFail(condominiumId, userId);
   }
 }

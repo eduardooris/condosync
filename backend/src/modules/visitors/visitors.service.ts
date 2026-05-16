@@ -6,16 +6,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserRole } from '../../common/enums';
 import { Parcel, ParcelStatus } from '../../database/entities/parcel.entity';
 import { Resident } from '../../database/entities/resident.entity';
 import { Unit } from '../../database/entities/unit.entity';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import {
   VisitorEntry,
   VisitorEntryStatus,
   VisitorEntryType,
 } from '../../database/entities/visitor-entry.entity';
-import { UserCondominium } from '../../database/entities/user-condominium.entity';
 import {
   CreateParcelDto,
   CreateVisitorEntryDto,
@@ -34,8 +33,7 @@ export class VisitorsService {
     private readonly unitRepo: Repository<Unit>,
     @InjectRepository(Resident)
     private readonly residentRepo: Repository<Resident>,
-    @InjectRepository(UserCondominium)
-    private readonly membershipRepo: Repository<UserCondominium>,
+    private readonly tenantMembership: TenantMembershipService,
   ) {}
 
   async listVisitors(condominiumId: string): Promise<VisitorEntry[]> {
@@ -54,14 +52,11 @@ export class VisitorsService {
       where: { id: dto.unitId, condominiumId },
     });
     if (!unit) throw new NotFoundException('Unidade não encontrada.');
-    const resident = await this.residentRepo.findOne({
-      where: { unitId: dto.unitId, userId },
-    });
-    if (!resident) {
-      throw new ForbiddenException(
-        'Você precisa estar vinculado como morador desta unidade para cadastrar visitante.',
-      );
-    }
+    const resident = await this.tenantMembership.findResidentOnOwnedUnit(
+      userId,
+      condominiumId,
+      dto.unitId,
+    );
     const row = this.visitorRepo.create({
       condominiumId,
       unitId: dto.unitId,
@@ -151,19 +146,6 @@ export class VisitorsService {
     userId: string,
     condominiumId: string,
   ): Promise<void> {
-    const membership = await this.membershipRepo.findOne({
-      where: { userId, condominiumId },
-    });
-    if (!membership) {
-      throw new ForbiddenException('Você não pertence a este condomínio.');
-    }
-    if (
-      membership.role !== UserRole.ADMIN &&
-      membership.role !== UserRole.SUB_ADMIN
-    ) {
-      throw new ForbiddenException(
-        'Apenas síndico ou subsíndico podem executar esta ação.',
-      );
-    }
+    await this.tenantMembership.assertAdminOrSub(userId, condominiumId);
   }
 }

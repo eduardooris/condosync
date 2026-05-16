@@ -46,6 +46,8 @@ export class ExpensesController {
   constructor(private readonly service: ExpensesService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
   @ApiOperation({ summary: 'Lista despesas do condomínio' })
   @ApiOkResponse({
     description: 'Despesas retornadas com sucesso.',
@@ -57,6 +59,8 @@ export class ExpensesController {
   }
 
   @Get('summary')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUB_ADMIN)
   @ApiOperation({ summary: 'Resumo de despesas por categoria/período' })
   @ApiOkResponse({
     description: 'Resumo calculado com sucesso.',

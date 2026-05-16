@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,12 +10,8 @@ import { IsNull, Repository } from 'typeorm';
 import { endOfMonth } from 'date-fns';
 import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
-import {
-  MembershipStatus,
-  UserCondominium,
-} from '../../database/entities/user-condominium.entity';
-import { Resident } from '../../database/entities/resident.entity';
-import { ChargeStatus, UnitStatus, UserRole } from '../../common/enums';
+import { ChargeStatus, UnitStatus } from '../../common/enums';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { CreateChargeDto } from './dto/create-charge.dto';
 import { UpdateChargeDto } from './dto/update-charge.dto';
 import { Charge } from '../../database/entities/charge.entity';
@@ -38,10 +33,7 @@ export class ChargesService {
     private readonly unitRepo: Repository<Unit>,
     @InjectRepository(Condominium)
     private readonly condoRepo: Repository<Condominium>,
-    @InjectRepository(UserCondominium)
-    private readonly ucRepo: Repository<UserCondominium>,
-    @InjectRepository(Resident)
-    private readonly residentRepo: Repository<Resident>,
+    private readonly tenantMembership: TenantMembershipService,
     @InjectQueue(QUEUE_WHATSAPP_SEND)
     private readonly whatsappQueue: Queue,
   ) {}
@@ -64,7 +56,10 @@ export class ChargesService {
     userId: string,
     condominiumId: string,
   ): Promise<ChargeResponseDto[]> {
-    const unitIds = await this.resolveMineUnitIds(userId, condominiumId);
+    const unitIds = await this.tenantMembership.resolveMineUnitIds(
+      userId,
+      condominiumId,
+    );
     if (unitIds.length === 0) return [];
     const [charges, condo] = await Promise.all([
       this.chargesRepo.findByUnits(unitIds),
@@ -95,7 +90,11 @@ export class ChargesService {
     chargeId: string,
   ): Promise<ChargeResponseDto> {
     const charge = await this.findInCondo(condominiumId, chargeId);
-    await this.assertUserOwnsChargeUnit(userId, condominiumId, charge.unitId);
+    await this.tenantMembership.assertUserOwnsUnit(
+      userId,
+      condominiumId,
+      charge.unitId,
+    );
     const condo = await this.condoRepo.findOne({
       where: { id: condominiumId },
     });
@@ -227,7 +226,10 @@ export class ChargesService {
     if (!charge) {
       throw new NotFoundException('Cobrança não encontrada.');
     }
-    await this.assertAdminOrSub(userId, charge.unit.condominiumId);
+    await this.tenantMembership.assertAdminOrSub(
+      userId,
+      charge.unit.condominiumId,
+    );
     assertChargeTransition(charge.status, ChargeStatus.PAID);
     charge.status = ChargeStatus.PAID;
     charge.paidAt = paidAt ?? new Date();
@@ -251,7 +253,11 @@ export class ChargesService {
     paidAt?: Date,
   ): Promise<ChargeResponseDto> {
     const charge = await this.findInCondo(condominiumId, chargeId);
-    await this.assertUserOwnsChargeUnit(userId, condominiumId, charge.unitId);
+    await this.tenantMembership.assertUserOwnsUnit(
+      userId,
+      condominiumId,
+      charge.unitId,
+    );
     assertChargeTransition(charge.status, ChargeStatus.PAID);
     charge.status = ChargeStatus.PAID;
     charge.paidAt = paidAt ?? new Date();
@@ -277,7 +283,10 @@ export class ChargesService {
     if (!charge) {
       throw new NotFoundException('Cobrança não encontrada.');
     }
-    await this.assertAdminOrSub(userId, charge.unit.condominiumId);
+    await this.tenantMembership.assertAdminOrSub(
+      userId,
+      charge.unit.condominiumId,
+    );
     assertChargeTransition(charge.status, ChargeStatus.EXEMPT);
     charge.status = ChargeStatus.EXEMPT;
     charge.exemptReason = trimmed;
@@ -293,7 +302,10 @@ export class ChargesService {
     if (!charge) {
       throw new NotFoundException('Cobrança não encontrada.');
     }
-    await this.assertAdminOrSub(userId, charge.unit.condominiumId);
+    await this.tenantMembership.assertAdminOrSub(
+      userId,
+      charge.unit.condominiumId,
+    );
     assertChargeTransition(charge.status, ChargeStatus.CANCELED);
     charge.status = ChargeStatus.CANCELED;
     charge.canceledAt = new Date();
@@ -367,23 +379,6 @@ export class ChargesService {
       throw new NotFoundException('Cobrança não encontrada.');
     }
     return charge;
-  }
-
-  private async assertAdminOrSub(
-    userId: string,
-    condominiumId: string,
-  ): Promise<void> {
-    const row = await this.ucRepo.findOne({
-      where: { userId, condominiumId },
-    });
-    if (!row) {
-      throw new ForbiddenException('Você não pertence a este condomínio.');
-    }
-    if (row.role !== UserRole.ADMIN && row.role !== UserRole.SUB_ADMIN) {
-      throw new ForbiddenException(
-        'Apenas síndico ou subsíndico podem executar esta ação.',
-      );
-    }
   }
 
   private currentBillingMonth(): string {
@@ -467,7 +462,7 @@ export class ChargesService {
     condominiumId: string,
     chargeId: string,
   ): Promise<{ enqueued: true }> {
-    await this.assertAdminOrSub(userId, condominiumId);
+    await this.tenantMembership.assertAdminOrSub(userId, condominiumId);
     const charge = await this.findInCondo(condominiumId, chargeId);
     if (
       charge.status !== ChargeStatus.PENDING &&
@@ -489,46 +484,4 @@ export class ChargesService {
     return { enqueued: true };
   }
 
-  /**
-   * Unidades do morador no condomínio: `residents.user_id` e/ou
-   * `user_condominiums.unit_id` (membership aprovado), alinhado a
-   * `ResidentsService.findMyResidentOrFail`.
-   */
-  private async resolveMineUnitIds(
-    userId: string,
-    condominiumId: string,
-  ): Promise<string[]> {
-    const [residents, membership] = await Promise.all([
-      this.residentRepo
-        .createQueryBuilder('r')
-        .innerJoin('r.unit', 'u')
-        .where('r.user_id = :userId', { userId })
-        .andWhere('u.condominium_id = :condominiumId', { condominiumId })
-        .getMany(),
-      this.ucRepo.findOne({
-        where: {
-          userId,
-          condominiumId,
-          status: MembershipStatus.APPROVED,
-        },
-      }),
-    ]);
-
-    const unitIds = new Set(residents.map((r) => r.unitId));
-    if (membership?.unitId) {
-      unitIds.add(membership.unitId);
-    }
-    return [...unitIds];
-  }
-
-  private async assertUserOwnsChargeUnit(
-    userId: string,
-    condominiumId: string,
-    unitId: string,
-  ): Promise<void> {
-    const unitIds = await this.resolveMineUnitIds(userId, condominiumId);
-    if (!unitIds.includes(unitId)) {
-      throw new NotFoundException('Cobrança não encontrada.');
-    }
-  }
 }

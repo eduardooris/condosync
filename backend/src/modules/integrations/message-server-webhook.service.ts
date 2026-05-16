@@ -37,7 +37,15 @@ export class MessageServerWebhookService {
     const secret = this.config.get('MESSAGE_SERVER_WEBHOOK_SECRET', {
       infer: true,
     });
-    if (!secret || secret.trim().length === 0) return;
+    const isProd = this.config.get('NODE_ENV', { infer: true }) === 'production';
+    if (!secret || secret.trim().length === 0) {
+      if (isProd) {
+        throw new UnauthorizedException(
+          'MESSAGE_SERVER_WEBHOOK_SECRET não configurado.',
+        );
+      }
+      return;
+    }
     if (!signatureHeader) {
       throw new UnauthorizedException('Assinatura webhook ausente.');
     }
@@ -55,7 +63,15 @@ export class MessageServerWebhookService {
 
   verifyBearer(authorizationHeader: string | undefined): void {
     const apiKey = this.config.get('MESSAGE_SERVER_API_KEY', { infer: true });
-    if (!apiKey || apiKey.trim().length === 0) return;
+    const isProd = this.config.get('NODE_ENV', { infer: true }) === 'production';
+    if (!apiKey || apiKey.trim().length === 0) {
+      if (isProd) {
+        throw new UnauthorizedException(
+          'MESSAGE_SERVER_API_KEY não configurada.',
+        );
+      }
+      return;
+    }
     if (!authorizationHeader) {
       throw new UnauthorizedException('Authorization ausente.');
     }

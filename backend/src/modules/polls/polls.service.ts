@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { Resident } from '../../database/entities/resident.entity';
 import { Unit } from '../../database/entities/unit.entity';
 import { UserCondominium } from '../../database/entities/user-condominium.entity';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { Poll } from '../../database/entities/poll.entity';
 import { PollVote } from '../../database/entities/poll-vote.entity';
 import { PollStatus, UnitStatus } from '../../common/enums';
@@ -41,6 +42,7 @@ export class PollsService {
     private readonly notifications: NotificationsService,
     @InjectQueue(QUEUE_WHATSAPP_SEND)
     private readonly whatsappQueue: Queue,
+    private readonly tenantMembership: TenantMembershipService,
   ) {}
 
   async create(
@@ -252,14 +254,10 @@ export class PollsService {
     if (!poll) {
       throw new NotFoundException('Enquete não encontrada.');
     }
-    const member = await this.ucRepo.findOne({
-      where: { userId, condominiumId: poll.condominiumId },
-    });
-    if (!member) {
-      throw new ForbiddenException(
-        'Você não pertence ao condomínio desta enquete.',
-      );
-    }
+    await this.tenantMembership.requireApprovedMembership(
+      userId,
+      poll.condominiumId,
+    );
     return this.vote(poll.condominiumId, pollId, userId, optionId);
   }
 

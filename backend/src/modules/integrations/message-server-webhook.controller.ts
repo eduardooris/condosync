@@ -6,11 +6,13 @@ import {
   HttpCode,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
+import { MessageServerInternalGuard } from '../../common/guards/message-server-internal.guard';
 import { MessageServerWebhookService } from './message-server-webhook.service';
 
 @ApiExcludeController()
@@ -22,6 +24,7 @@ export class MessageServerWebhookController {
   @HttpCode(202)
   @SkipThrottle({ default: true, auth: true })
   @Public()
+  @UseGuards(MessageServerInternalGuard)
   async refreshQRCode(): Promise<{
     status: 'created' | 'reconnected';
     instanceId?: string;
@@ -32,6 +35,7 @@ export class MessageServerWebhookController {
   @Get('qr/latest')
   @SkipThrottle({ default: true, auth: true })
   @Public()
+  @UseGuards(MessageServerInternalGuard)
   async latestQRCode(): Promise<{
     code: string;
     createdAt: Date;
@@ -44,6 +48,7 @@ export class MessageServerWebhookController {
   @Get('qr/latest/image-url')
   @SkipThrottle({ default: true, auth: true })
   @Public()
+  @UseGuards(MessageServerInternalGuard)
   async latestQRCodeImageUrl(): Promise<{
     imageUrl: string;
     createdAt: Date;
@@ -62,6 +67,7 @@ export class MessageServerWebhookController {
   @Get('qr/current')
   @SkipThrottle({ default: true, auth: true })
   @Public()
+  @UseGuards(MessageServerInternalGuard)
   async currentQRCode(): Promise<{
     status: 'ready' | 'connected';
     imageUrl?: string;

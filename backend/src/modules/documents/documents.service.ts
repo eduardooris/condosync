@@ -20,6 +20,7 @@ import { DocumentVisibility, UserRole } from '../../common/enums';
 import { UserCondominium } from '../../database/entities/user-condominium.entity';
 import { Document } from '../../database/entities/document.entity';
 import { Resident } from '../../database/entities/resident.entity';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { DocumentsRepository } from './documents.repository';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../../database/entities/notification.entity';
@@ -39,6 +40,7 @@ export class DocumentsService {
     private readonly notifications: NotificationsService,
     @InjectQueue(QUEUE_WHATSAPP_SEND)
     private readonly whatsappQueue: Queue,
+    private readonly tenantMembership: TenantMembershipService,
   ) {}
 
   private bucket(): string {
@@ -46,10 +48,10 @@ export class DocumentsService {
   }
 
   async list(condominiumId: string, userId: string): Promise<Document[]> {
-    const uc = await this.ucRepo.findOne({ where: { userId, condominiumId } });
-    if (!uc) {
-      throw new NotFoundException();
-    }
+    const uc = await this.tenantMembership.requireApprovedMembership(
+      userId,
+      condominiumId,
+    );
     return this.documentsRepo.findByCondo(condominiumId, uc.role);
   }
 
@@ -156,10 +158,10 @@ export class DocumentsService {
     if (!d) {
       throw new NotFoundException('Documento não encontrado.');
     }
-    const uc = await this.ucRepo.findOne({ where: { userId, condominiumId } });
-    if (!uc) {
-      throw new NotFoundException();
-    }
+    const uc = await this.tenantMembership.requireApprovedMembership(
+      userId,
+      condominiumId,
+    );
     if (
       d.visibility === DocumentVisibility.ADMIN_ONLY &&
       uc.role !== UserRole.ADMIN &&

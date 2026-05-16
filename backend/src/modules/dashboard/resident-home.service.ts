@@ -8,7 +8,6 @@ import {
   Reservation,
   ReservationStatus,
 } from '../../database/entities/reservation.entity';
-import { Resident } from '../../database/entities/resident.entity';
 import { UserCondominium } from '../../database/entities/user-condominium.entity';
 import { BulletinPost } from '../../database/entities/bulletin-post.entity';
 import { Notification } from '../../database/entities/notification.entity';
@@ -16,6 +15,8 @@ import { ChargeStatus } from '../../common/enums';
 import { toChargeResponse } from '../charges/charge.mapper';
 import { toReservationResponse } from '../reservations/reservation.mapper';
 import { ResidentHomeSummaryDto } from './dto/resident-home.dto';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
+import { MembershipStatus } from '../../database/entities/user-condominium.entity';
 
 /**
  * Compõe o resumo da Home do morador a partir das tabelas existentes
@@ -27,8 +28,6 @@ export class ResidentHomeService {
   constructor(
     @InjectRepository(UserCondominium)
     private readonly membershipRepo: Repository<UserCondominium>,
-    @InjectRepository(Resident)
-    private readonly residentRepo: Repository<Resident>,
     @InjectRepository(Charge)
     private readonly chargeRepo: Repository<Charge>,
     @InjectRepository(Condominium)
@@ -41,6 +40,7 @@ export class ResidentHomeService {
     private readonly bulletinRepo: Repository<BulletinPost>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    private readonly tenantMembership: TenantMembershipService,
   ) {}
 
   /**
@@ -117,7 +117,10 @@ export class ResidentHomeService {
   // ── helpers ──────────────────────────────────────────────────────
 
   private async resolveDefaultCondominium(userId: string): Promise<string> {
-    const m = await this.membershipRepo.findOne({ where: { userId } });
+    const m = await this.membershipRepo.findOne({
+      where: { userId, status: MembershipStatus.APPROVED },
+      order: { createdAt: 'DESC' },
+    });
     if (!m) {
       throw new NotFoundException('Usuário não pertence a nenhum condomínio.');
     }
@@ -128,12 +131,7 @@ export class ResidentHomeService {
     userId: string,
     condominiumId: string,
   ): Promise<string> {
-    const m = await this.membershipRepo.findOne({
-      where: { userId, condominiumId },
-    });
-    if (!m) {
-      throw new NotFoundException('Você não pertence a este condomínio.');
-    }
+    await this.tenantMembership.requireApprovedMembership(userId, condominiumId);
     return condominiumId;
   }
 
@@ -141,13 +139,10 @@ export class ResidentHomeService {
     userId: string,
     condominiumId: string,
   ): Promise<Charge[]> {
-    const residents = await this.residentRepo
-      .createQueryBuilder('r')
-      .innerJoin('r.unit', 'u')
-      .where('r.user_id = :userId', { userId })
-      .andWhere('u.condominium_id = :condominiumId', { condominiumId })
-      .getMany();
-    const unitIds = residents.map((r) => r.unitId);
+    const unitIds = await this.tenantMembership.resolveMineUnitIds(
+      userId,
+      condominiumId,
+    );
     if (unitIds.length === 0) return [];
     return this.chargeRepo
       .createQueryBuilder('c')
@@ -163,13 +158,10 @@ export class ResidentHomeService {
     userId: string,
     condominiumId: string,
   ): Promise<Parcel[]> {
-    const residents = await this.residentRepo
-      .createQueryBuilder('r')
-      .innerJoin('r.unit', 'u')
-      .where('r.user_id = :userId', { userId })
-      .andWhere('u.condominium_id = :condominiumId', { condominiumId })
-      .getMany();
-    const unitIds = residents.map((r) => r.unitId);
+    const unitIds = await this.tenantMembership.resolveMineUnitIds(
+      userId,
+      condominiumId,
+    );
     if (unitIds.length === 0) return [];
     return this.parcelRepo.find({
       where: { unitId: In(unitIds), status: ParcelStatus.RECEIVED },
@@ -182,12 +174,17 @@ export class ResidentHomeService {
     userId: string,
     condominiumId: string,
   ): Promise<Reservation | null> {
+    const unitIds = await this.tenantMembership.resolveMineUnitIds(
+      userId,
+      condominiumId,
+    );
+    if (unitIds.length === 0) return null;
+
     return this.reservationRepo
       .createQueryBuilder('r')
       .leftJoinAndSelect('r.area', 'area')
-      .innerJoin('residents', 'res', 'res.user_id = :userId', { userId })
       .where('r.condominium_id = :condominiumId', { condominiumId })
-      .andWhere('r.unit_id = res.unit_id')
+      .andWhere('r.unit_id IN (:...unitIds)', { unitIds })
       .andWhere('r.start_at >= NOW()')
       .andWhere('r.status IN (:...statuses)', {
         statuses: [ReservationStatus.PENDING, ReservationStatus.APPROVED],

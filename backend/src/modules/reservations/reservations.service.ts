@@ -12,9 +12,8 @@ import {
   Reservation,
   ReservationStatus,
 } from '../../database/entities/reservation.entity';
-import { Resident } from '../../database/entities/resident.entity';
 import { Unit } from '../../database/entities/unit.entity';
-import { UserCondominium } from '../../database/entities/user-condominium.entity';
+import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import {
   CreateReservationAreaDto,
   UpdateReservationAreaDto,
@@ -36,10 +35,7 @@ export class ReservationsService {
     private readonly reservationRepo: Repository<Reservation>,
     @InjectRepository(Unit)
     private readonly unitRepo: Repository<Unit>,
-    @InjectRepository(Resident)
-    private readonly residentRepo: Repository<Resident>,
-    @InjectRepository(UserCondominium)
-    private readonly membershipRepo: Repository<UserCondominium>,
+    private readonly tenantMembership: TenantMembershipService,
   ) {}
 
   async listAreas(condominiumId: string): Promise<ReservationArea[]> {
@@ -110,14 +106,11 @@ export class ReservationsService {
       throw new NotFoundException('Área de reserva não encontrada ou inativa.');
     }
     if (!unit) throw new NotFoundException('Unidade não encontrada.');
-    const resident = await this.residentRepo.findOne({
-      where: { unitId: unit.id, userId },
-    });
-    if (!resident) {
-      throw new ForbiddenException(
-        'Você precisa estar vinculado como morador da unidade para reservar.',
-      );
-    }
+    const resident = await this.tenantMembership.findResidentOnOwnedUnit(
+      userId,
+      condominiumId,
+      unit.id,
+    );
     const startAt = new Date(dto.startAt);
     const endAt = new Date(dto.endAt);
     if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
@@ -239,22 +232,23 @@ export class ReservationsService {
     ) {
       throw new BadRequestException('A reserva já foi encerrada.');
     }
-    const membership = await this.membershipRepo.findOne({
-      where: { condominiumId, userId },
-    });
-    if (!membership) {
-      throw new ForbiddenException('Você não pertence a este condomínio.');
-    }
+    const membership = await this.tenantMembership.requireApprovedMembership(
+      userId,
+      condominiumId,
+    );
     const isAdmin =
       membership.role === UserRole.ADMIN ||
       membership.role === UserRole.SUB_ADMIN;
-    const actorResident = await this.residentRepo.findOne({
-      where: { userId, unitId: row.unitId },
-    });
-    if (!isAdmin && !actorResident) {
-      throw new ForbiddenException(
-        'Apenas o solicitante da unidade ou administração podem cancelar.',
+    if (!isAdmin) {
+      const unitIds = await this.tenantMembership.resolveMineUnitIds(
+        userId,
+        condominiumId,
       );
+      if (!unitIds.includes(row.unitId)) {
+        throw new ForbiddenException(
+          'Apenas o solicitante da unidade ou administração podem cancelar.',
+        );
+      }
     }
     row.status = ReservationStatus.CANCELED;
     row.cancelReason = dto.reason?.trim() || null;
