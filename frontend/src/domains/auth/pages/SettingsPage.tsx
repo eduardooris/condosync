@@ -33,8 +33,6 @@ import { useUIStore, type UITheme } from '@/shared/stores/ui.store';
 import { queryKeys } from '@/shared/lib/queryKeys';
 import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
 import { cn } from '@/shared/utils/cn';
-import { IntercomAdminPanel } from '@/domains/intercom/components/IntercomAdminPanel';
-
 const CONDO_CONFIG_SECTIONS: {
   id: string;
   label: string;
@@ -245,10 +243,6 @@ export function SettingsPage() {
           </ul>
         </GlassCard>
       )}
-
-      {canManageCondo && condominium?.id ? (
-        <IntercomAdminPanel condominiumId={condominium.id} />
-      ) : null}
 
       <EditProfileDialog
         open={editProfileOpen}

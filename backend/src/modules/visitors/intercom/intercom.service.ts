@@ -31,6 +31,7 @@ import {
   CreateIntercomSessionDto,
   CreateIntercomSessionResponseDto,
   IceServerDto,
+  IntercomAccessTokenDetailDto,
   IntercomAccessTokenListItemDto,
   IntercomAccessTokenResponseDto,
   IntercomSessionHistoryItemDto,
@@ -453,6 +454,7 @@ export class IntercomService {
       this.tokenRepo.create({
         condominiumId,
         tokenHash: hashIntercomToken(raw),
+        tokenSecret: raw,
         label: dto.label?.trim() || null,
         createdByUserId: userId,
       }),
@@ -476,13 +478,22 @@ export class IntercomService {
       where: { condominiumId },
       order: { createdAt: 'DESC' },
     });
-    return rows.map((r) => ({
-      id: r.id,
-      label: r.label,
-      createdAt: r.createdAt,
-      revokedAt: r.revokedAt,
-      portariaPathHint: '/portaria/<token-na-criacao>',
-    }));
+    return rows.map((r) => this.toTokenListItem(r));
+  }
+
+  async getAccessTokenDetail(
+    condominiumId: string,
+    userId: string,
+    tokenId: string,
+  ): Promise<IntercomAccessTokenDetailDto> {
+    await this.tenantMembership.assertAdminOrSub(userId, condominiumId);
+    const row = await this.tokenRepo.findOne({
+      where: { id: tokenId, condominiumId },
+    });
+    if (!row) {
+      throw new NotFoundException('Token de portaria não encontrado.');
+    }
+    return this.toTokenDetail(row);
   }
 
   async revokeAccessToken(
@@ -580,6 +591,29 @@ export class IntercomService {
       );
     }
     return stale.length;
+  }
+
+  private toTokenListItem(row: IntercomAccessToken): IntercomAccessTokenListItemDto {
+    return {
+      id: row.id,
+      label: row.label,
+      createdAt: row.createdAt,
+      revokedAt: row.revokedAt,
+      canRevealLink: Boolean(row.tokenSecret && !row.revokedAt),
+    };
+  }
+
+  private toTokenDetail(row: IntercomAccessToken): IntercomAccessTokenDetailDto {
+    const canReveal = Boolean(row.tokenSecret && !row.revokedAt);
+    return {
+      id: row.id,
+      label: row.label,
+      createdAt: row.createdAt,
+      revokedAt: row.revokedAt,
+      portariaUrl: canReveal
+        ? `${this.appPublicUrl}/portaria/${row.tokenSecret}`
+        : null,
+    };
   }
 
   async resolveAccessToken(raw: string): Promise<IntercomAccessToken> {

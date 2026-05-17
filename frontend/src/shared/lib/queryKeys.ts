@@ -65,6 +65,8 @@ export const queryKeys = {
   },
   intercom: {
     tokens: (condominiumId: string | undefined) => ['intercom', 'tokens', condominiumId] as const,
+    tokenDetail: (condominiumId: string | undefined, tokenId: string | undefined) =>
+      ['intercom', 'token', condominiumId, tokenId] as const,
     sessions: (condominiumId: string | undefined) => ['intercom', 'sessions', condominiumId] as const,
   },
 };

@@ -32,6 +32,9 @@ export function useIntercomAdmin(condominiumId: string | undefined) {
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: queryKeys.intercom.tokens(condominiumId) });
     void qc.invalidateQueries({ queryKey: queryKeys.intercom.sessions(condominiumId) });
+    void qc.invalidateQueries({
+      queryKey: ['intercom', 'token', condominiumId],
+    });
   };
 
   const createTokenMutation = useMutation({
@@ -39,7 +42,7 @@ export function useIntercomAdmin(condominiumId: string | undefined) {
       intercomAdminService.createToken(condominiumId!, label),
     onSuccess: () => {
       invalidate();
-      toast.success('Link da portaria gerado. Copie ou baixe o QR agora — o token completo só aparece uma vez.');
+      toast.success('Link da portaria gerado.');
     },
     onError: (err) => toast.error(extractError(err)),
   });
@@ -60,6 +63,5 @@ export function useIntercomAdmin(condominiumId: string | undefined) {
     isLoading: tokensQuery.isLoading || sessionsQuery.isLoading,
     createTokenMutation,
     revokeTokenMutation,
-    lastCreated: createTokenMutation.data ?? null,
   };
 }

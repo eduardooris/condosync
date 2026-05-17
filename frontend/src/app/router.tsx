@@ -61,6 +61,10 @@ const PortariaPage = lazyPage(
   () => import('@/domains/intercom/pages/PortariaPage'),
   'PortariaPage',
 );
+const IntercomPortariaAdminPage = lazyPage(
+  () => import('@/domains/intercom/pages/IntercomPortariaAdminPage'),
+  'IntercomPortariaAdminPage',
+);
 
 const withSuspense = (component: ReactNode) => <Suspense fallback={<Spinner size="lg" />}>{component}</Suspense>;
 
@@ -100,6 +104,14 @@ export const router = createBrowserRouter([
           { path: 'polls', element: withSuspense(<PollsPage />) },
           { path: 'reservations', element: withSuspense(<ReservationsPage />) },
           { path: 'visitors', element: withSuspense(<VisitorsPage />) },
+          {
+            path: 'portaria-admin',
+            element: withSuspense(
+              <ProtectedRoute minRole="SUB_ADMIN">
+                <IntercomPortariaAdminPage />
+              </ProtectedRoute>,
+            ),
+          },
           { path: 'correspondences', element: withSuspense(<CorrespondencesPage />) },
           { path: 'notifications', element: withSuspense(<NotificationsPage />) },
           { path: 'settings', element: withSuspense(<SettingsPage />) },

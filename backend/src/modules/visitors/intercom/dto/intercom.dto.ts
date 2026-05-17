@@ -141,10 +141,29 @@ export class IntercomAccessTokenListItemDto {
   revokedAt?: Date | null;
 
   @ApiProperty({
-    example: 'http://localhost:5173/portaria/<token-na-criacao>',
-    description: 'URL pública; o token bruto só é retornado na criação.',
+    description: 'Indica se o link/QR pode ser exibido novamente (tokens criados após suporte a consulta).',
   })
-  portariaPathHint: string;
+  canRevealLink: boolean;
+}
+
+export class IntercomAccessTokenDetailDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiPropertyOptional()
+  label?: string | null;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiPropertyOptional()
+  revokedAt?: Date | null;
+
+  @ApiProperty({
+    example: 'http://localhost:5173/portaria/abc123',
+    description: 'Ausente se o token foi criado antes do armazenamento consultável ou se revogado.',
+  })
+  portariaUrl?: string | null;
 }
 
 export class RegisterDeviceDto {

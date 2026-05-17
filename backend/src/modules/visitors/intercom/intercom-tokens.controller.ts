@@ -24,6 +24,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { RequestUser } from '../../../common/interfaces/request-user.interface';
 import {
   CreateIntercomAccessTokenDto,
+  IntercomAccessTokenDetailDto,
   IntercomAccessTokenListItemDto,
   IntercomAccessTokenResponseDto,
   IntercomSessionHistoryItemDto,
@@ -58,6 +59,17 @@ export class IntercomTokensController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.intercom.listAccessTokens(condominiumId, user.id);
+  }
+
+  @Get('tokens/:tokenId')
+  @ApiOperation({ summary: 'Detalhe do token (link e QR da portaria)' })
+  @ApiOkResponse({ type: IntercomAccessTokenDetailDto })
+  getToken(
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @Param('tokenId', ParseUUIDPipe) tokenId: string,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.intercom.getAccessTokenDetail(condominiumId, user.id, tokenId);
   }
 
   @Delete('tokens/:tokenId')

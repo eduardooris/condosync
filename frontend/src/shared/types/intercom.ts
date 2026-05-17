@@ -60,7 +60,15 @@ export interface IntercomAccessTokenListItem {
   label?: string | null;
   createdAt: string;
   revokedAt?: string | null;
-  portariaPathHint: string;
+  canRevealLink: boolean;
+}
+
+export interface IntercomAccessTokenDetail {
+  id: string;
+  label?: string | null;
+  createdAt: string;
+  revokedAt?: string | null;
+  portariaUrl?: string | null;
 }
 
 export interface IntercomSessionHistoryItem {

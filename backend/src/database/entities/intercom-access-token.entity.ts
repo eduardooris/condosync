@@ -23,6 +23,10 @@ export class IntercomAccessToken {
   @Column({ name: 'token_hash', type: 'varchar', length: 64, unique: true })
   tokenHash: string;
 
+  /** Valor bruto do token (só leitura admin) para exibir QR/link novamente. */
+  @Column({ name: 'token_secret', type: 'varchar', length: 64, nullable: true })
+  tokenSecret: string | null;
+
   @Column({ type: 'varchar', length: 120, nullable: true })
   label: string | null;
 

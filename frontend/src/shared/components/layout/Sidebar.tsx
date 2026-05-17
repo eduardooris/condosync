@@ -15,6 +15,7 @@ import {
   CalendarDays,
   UserRoundPlus,
   PackageCheck,
+  DoorOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -55,6 +56,7 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
     items: [
       { to: '/units', label: 'Unidades & moradores', icon: Building2 },
       { to: '/visitors', label: 'Visitantes', icon: UserRoundPlus },
+      { to: '/portaria-admin', label: 'Portaria virtual', icon: DoorOpen },
       { to: '/correspondences', label: 'Correspondências', icon: PackageCheck },
     ],
   },
