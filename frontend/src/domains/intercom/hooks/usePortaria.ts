@@ -172,7 +172,9 @@ export function usePortaria(accessToken: string) {
           const stream = await peer.acquireLocalMedia();
           setLocalStream(stream);
         }
-        peer.setOnRemoteStream(setRemoteStream);
+        peer.setOnRemoteStream((stream) => {
+          setRemoteStream(new MediaStream(stream.getTracks()));
+        });
         webrtcRef.current = peer;
         await peer.startPeer(created.iceServers);
       } catch (err) {

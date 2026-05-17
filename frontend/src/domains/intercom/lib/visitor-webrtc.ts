@@ -52,7 +52,12 @@ export class VisitorWebRtcSession {
       if (!this.remoteStream) {
         this.remoteStream = new MediaStream();
       }
-      this.remoteStream.addTrack(ev.track);
+      const exists = this.remoteStream
+        .getTracks()
+        .some((t) => t.id === ev.track.id);
+      if (!exists) {
+        this.remoteStream.addTrack(ev.track);
+      }
       this.onRemoteStream?.(this.remoteStream);
     };
     this.pc.onicecandidate = (ev) => {
