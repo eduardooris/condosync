@@ -3,13 +3,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import {
+  ArrowLeft,
   Building2,
   Loader2,
   PhoneCall,
   PhoneOff,
   User,
-  Video,
 } from 'lucide-react';
+import { PortariaUnitCard } from '@/domains/intercom/components/PortariaUnitCard';
 import { RemoteResidentPlayback } from '@/domains/intercom/components/RemoteResidentPlayback';
 import { VideoPreview } from '@/domains/intercom/components/VideoPreview';
 import { usePortaria } from '@/domains/intercom/hooks/usePortaria';
@@ -21,7 +22,6 @@ import { Button } from '@/shared/components/ui/Button';
 import { FieldError } from '@/shared/components/ui/FieldError';
 import { Input } from '@/shared/components/ui/Input';
 import { Label } from '@/shared/components/ui/Label';
-import { NativeSelect } from '@/shared/components/ui/NativeSelect';
 import { Spinner } from '@/shared/components/ui/Spinner';
 
 export function PortariaPage() {
@@ -32,6 +32,8 @@ export function PortariaPage() {
     resolver: zodResolver(portariaVisitorSchema),
     defaultValues: { unitId: '', visitorName: '' },
   });
+
+  const selectedUnit = portaria.units.find((u) => u.id === portaria.selectedUnitId);
 
   if (portaria.unitsLoading) {
     return (
@@ -66,10 +68,7 @@ export function PortariaPage() {
     );
   }
 
-  if (
-    portaria.step === 'calling' ||
-    portaria.step === 'in_call'
-  ) {
+  if (portaria.step === 'calling' || portaria.step === 'in_call') {
     return (
       <PageShell>
         <motion.div
@@ -84,14 +83,12 @@ export function PortariaPage() {
             <h1 className="mt-1 text-ds-2xl font-bold text-ds-body">
               {form.getValues('visitorName')}
             </h1>
+            {selectedUnit ? (
+              <p className="mt-1 text-ds-sm text-ds-dim">{selectedUnit.label}</p>
+            ) : null}
           </header>
 
-          <VideoPreview
-            stream={portaria.localStream}
-            muted
-            mirror
-            label="Você"
-          />
+          <VideoPreview stream={portaria.localStream} muted mirror label="Você" />
           <RemoteResidentPlayback stream={portaria.remoteStream} />
 
           <div className="flex flex-col gap-3">
@@ -118,33 +115,61 @@ export function PortariaPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mx-auto w-full max-w-lg space-y-6"
+          className="mx-auto w-full max-w-lg space-y-5"
         >
-          <header className="text-center">
-            <h1 className="text-ds-2xl font-bold text-ds-body">Pronto para chamar</h1>
-            <p className="mt-2 text-ds-sm text-ds-dim">
-              Confira sua imagem e toque em chamar a unidade.
+          <header>
+            <button
+              type="button"
+              onClick={portaria.backToUnits}
+              className="mb-4 flex items-center gap-1.5 text-ds-sm text-ds-dim transition hover:text-ds-body"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Escolher outra unidade
+            </button>
+            <h1 className="text-ds-2xl font-bold text-ds-body">
+              {selectedUnit?.label ?? 'Unidade'}
+            </h1>
+            <p className="mt-1 text-ds-sm text-ds-dim">
+              Informe seu nome e confira a câmera antes de chamar.
             </p>
           </header>
 
-          <VideoPreview stream={portaria.localStream} muted mirror label="Pré-visualização" />
+          <VideoPreview stream={portaria.localStream} muted mirror label="Você" />
 
-          <Button
-            className="w-full"
-            disabled={portaria.isStartingCall}
-            onClick={form.handleSubmit((data) => void portaria.startCall(data.unitId, data.visitorName))}
-          >
-            {portaria.isStartingCall ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <PhoneCall className="h-4 w-4" />
+          <form
+            className="ds-surface-elevated space-y-4 p-5"
+            onSubmit={form.handleSubmit((data) =>
+              void portaria.startCall(data.unitId, data.visitorName),
             )}
-            Chamar unidade
-          </Button>
+          >
+            <input type="hidden" {...form.register('unitId')} />
 
-          <Button variant="ghost" onClick={() => portaria.setStep('form')}>
-            Voltar
-          </Button>
+            <div>
+              <Label htmlFor="portaria-name" className="mb-1.5 flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                Seu nome
+              </Label>
+              <Input
+                id="portaria-name"
+                placeholder="Como o morador vai te ver"
+                autoFocus
+                invalid={Boolean(form.formState.errors.visitorName)}
+                {...form.register('visitorName')}
+              />
+              {form.formState.errors.visitorName ? (
+                <FieldError>{form.formState.errors.visitorName.message}</FieldError>
+              ) : null}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={portaria.isStartingCall}>
+              {portaria.isStartingCall ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PhoneCall className="h-4 w-4" />
+              )}
+              Chamar morador
+            </Button>
+          </form>
         </motion.div>
       </PageShell>
     );
@@ -155,7 +180,7 @@ export function PortariaPage() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mx-auto w-full max-w-md"
+        className="mx-auto w-full max-w-lg"
       >
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/20 text-brand-400">
@@ -165,61 +190,41 @@ export function PortariaPage() {
             Portaria virtual
           </h1>
           <p className="mt-2 text-ds-sm text-ds-dim">
-            Selecione a unidade e informe seu nome para chamar o morador.
+            Toque na unidade que deseja chamar.
           </p>
         </div>
 
-        <form
-          className="ds-surface-elevated space-y-5 p-6"
-          onSubmit={form.handleSubmit(() => void portaria.requestMedia())}
-        >
-          <div>
-            <Label htmlFor="portaria-unit" className="mb-1.5 flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5" />
-              Unidade
-            </Label>
-            <NativeSelect
-              id="portaria-unit"
-              invalid={Boolean(form.formState.errors.unitId)}
-              {...form.register('unitId')}
-            >
-              <option value="">Selecione…</option>
-              {portaria.units.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.label}
-                </option>
-              ))}
-            </NativeSelect>
-            {form.formState.errors.unitId ? (
-              <FieldError>{form.formState.errors.unitId.message}</FieldError>
-            ) : null}
+        {portaria.mediaError ? (
+          <p className="mb-4 text-center text-ds-sm text-ds-danger">{portaria.mediaError}</p>
+        ) : null}
+
+        {portaria.units.length === 0 ? (
+          <div className="ds-surface-elevated p-6 text-center">
+            <p className="text-ds-sm text-ds-dim">Nenhuma unidade disponível no momento.</p>
           </div>
+        ) : (
+          <ul className="space-y-3">
+            {portaria.units.map((unit) => (
+              <li key={unit.id}>
+                <PortariaUnitCard
+                  unit={unit}
+                  disabled={portaria.isSelectingUnit}
+                  onSelect={(unitId) => {
+                    form.setValue('unitId', unitId, { shouldValidate: true });
+                    void portaria.selectUnit(unitId);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
 
-          <div>
-            <Label htmlFor="portaria-name" className="mb-1.5 flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5" />
-              Seu nome
-            </Label>
-            <Input
-              id="portaria-name"
-              placeholder="Como o morador vai te ver"
-              invalid={Boolean(form.formState.errors.visitorName)}
-              {...form.register('visitorName')}
-            />
-            {form.formState.errors.visitorName ? (
-              <FieldError>{form.formState.errors.visitorName.message}</FieldError>
-            ) : null}
-          </div>
-
-          {portaria.mediaError ? (
-            <p className="text-ds-sm text-ds-danger">{portaria.mediaError}</p>
-          ) : null}
-
-          <Button type="submit" className="w-full">
-            <Video className="h-4 w-4" />
-            Continuar — câmera e microfone
-          </Button>
-        </form>
+        {portaria.isSelectingUnit ? (
+          <p className="mt-4 flex items-center justify-center gap-2 text-ds-sm text-ds-dim">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Abrindo câmera…
+          </p>
+        ) : null}
       </motion.div>
     </PageShell>
   );

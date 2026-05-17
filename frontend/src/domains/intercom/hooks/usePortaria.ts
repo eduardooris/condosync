@@ -36,6 +36,8 @@ export function usePortaria(accessToken: string) {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isStartingCall, setIsStartingCall] = useState(false);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [isSelectingUnit, setIsSelectingUnit] = useState(false);
 
   const unitsQuery = useQuery({
     queryKey: ['portaria', 'units', accessToken],
@@ -90,21 +92,44 @@ export function usePortaria(accessToken: string) {
     }
   }, [statusQuery.data?.status, step, cleanupCall]);
 
-  const requestMedia = useCallback(async () => {
+  const releaseLocalMedia = useCallback(() => {
+    webrtcRef.current?.stop();
+    webrtcRef.current = null;
+    localStream?.getTracks().forEach((t) => t.stop());
+    setLocalStream(null);
+  }, [localStream]);
+
+  const selectUnit = useCallback(
+    async (unitId: string) => {
+      setMediaError(null);
+      setIsSelectingUnit(true);
+      setSelectedUnitId(unitId);
+      try {
+        releaseLocalMedia();
+        const peer = new VisitorWebRtcSession(() => {});
+        const stream = await peer.acquireLocalMedia();
+        webrtcRef.current = peer;
+        setLocalStream(stream);
+        setStep('preview');
+      } catch {
+        setMediaError(
+          'Permita o acesso à câmera e ao microfone para chamar a unidade.',
+        );
+        setSelectedUnitId(null);
+        setStep('form');
+      } finally {
+        setIsSelectingUnit(false);
+      }
+    },
+    [releaseLocalMedia],
+  );
+
+  const backToUnits = useCallback(() => {
+    releaseLocalMedia();
+    setSelectedUnitId(null);
     setMediaError(null);
-    try {
-      const peer = new VisitorWebRtcSession(() => {});
-      const stream = await peer.acquireLocalMedia();
-      webrtcRef.current?.stop();
-      webrtcRef.current = peer;
-      setLocalStream(stream);
-      setStep('preview');
-    } catch {
-      setMediaError(
-        'Permita o acesso à câmera e ao microfone para chamar a unidade.',
-      );
-    }
-  }, []);
+    setStep('form');
+  }, [releaseLocalMedia]);
 
   const startCall = useCallback(
     async (unitId: string, visitorName: string) => {
@@ -221,12 +246,14 @@ export function usePortaria(accessToken: string) {
 
   const reset = useCallback(() => {
     cleanupCall();
+    releaseLocalMedia();
     setSession(null);
     setCallStatus(null);
     setStatusLabel('');
+    setSelectedUnitId(null);
     setStep('form');
     setMediaError(null);
-  }, [cleanupCall]);
+  }, [cleanupCall, releaseLocalMedia]);
 
   return {
     units: (unitsQuery.data ?? []) as PortariaUnit[],
@@ -244,7 +271,10 @@ export function usePortaria(accessToken: string) {
     remoteStream,
     mediaError,
     isStartingCall,
-    requestMedia,
+    isSelectingUnit,
+    selectedUnitId,
+    selectUnit,
+    backToUnits,
     startCall,
     cancelCall,
     endCall,
