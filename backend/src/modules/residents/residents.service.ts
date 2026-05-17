@@ -24,6 +24,7 @@ import { Resident } from '../../database/entities/resident.entity';
 import { FinancialResponsibleHistory } from '../../database/entities/financial-responsible-history.entity';
 import { ResidentsRepository } from './residents.repository';
 import { NeighborResidentResponseDto } from './dto/resident-response.dto';
+import { MyResidentProfileResponseDto } from './dto/my-resident-profile.dto';
 import { UnitStatus as UnitStatusEnum, UserRole } from '../../common/enums';
 import { KeycloakAdminClient } from '../../adapters/auth/keycloak-admin.client';
 import {
@@ -218,15 +219,19 @@ export class ResidentsService {
     return rows;
   }
 
-  async getMyProfile(condominiumId: string, userId: string): Promise<Resident> {
-    return this.findMyResidentOrFail(condominiumId, userId);
+  async getMyProfile(
+    condominiumId: string,
+    userId: string,
+  ): Promise<MyResidentProfileResponseDto> {
+    const resident = await this.findMyResidentOrFail(condominiumId, userId);
+    return this.toMyResidentProfileDto(resident);
   }
 
   async updateMyProfile(
     condominiumId: string,
     userId: string,
     dto: { fullName?: string; phoneWhatsapp?: string },
-  ): Promise<Resident> {
+  ): Promise<MyResidentProfileResponseDto> {
     const resident = await this.findMyResidentOrFail(condominiumId, userId);
     if (dto.fullName !== undefined) {
       const next = dto.fullName.trim();
@@ -244,7 +249,8 @@ export class ResidentsService {
       }
       resident.phoneWhatsapp = normalizeBrazilWhatsapp(next);
     }
-    return this.residentsRepo.save(resident);
+    const saved = await this.residentsRepo.save(resident);
+    return this.toMyResidentProfileDto(saved);
   }
 
   async update(
@@ -605,6 +611,26 @@ export class ResidentsService {
       .where('unit_id = :unitId', { unitId })
       .andWhere('ended_at IS NULL')
       .execute();
+  }
+
+  private async toMyResidentProfileDto(
+    resident: Resident,
+  ): Promise<MyResidentProfileResponseDto> {
+    const unit = await this.unitRepo.findOne({
+      where: { id: resident.unitId },
+    });
+    if (!unit) {
+      throw new NotFoundException('Unidade do morador não encontrada.');
+    }
+    return {
+      id: resident.id,
+      unitId: resident.unitId,
+      fullName: resident.fullName,
+      phoneWhatsapp: resident.phoneWhatsapp,
+      isFinancialResponsible: resident.isFinancialResponsible,
+      block: unit.block,
+      number: unit.number,
+    };
   }
 
   private async findMyResidentOrFail(

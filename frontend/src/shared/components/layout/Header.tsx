@@ -51,7 +51,7 @@ export function Header({ onOpenCommandPalette }: HeaderProps) {
           <span className="min-w-0 flex-1 truncate">
             {condominium ? `Buscar em ${condominium.name}…` : 'Buscar…'}
           </span>
-          <kbd className="hidden shrink-0 rounded-ds-sm border border-ds-stroke bg-ds-surface px-1.5 py-0.5 text-[10px] font-semibold text-ds-subtle dark:border-transparent dark:bg-white/[0.06] ds-sm:inline">
+          <kbd className="hidden shrink-0 rounded-ds-sm border border-ds-stroke bg-ds-surface px-1.5 py-0.5 text-[11px] font-semibold text-ds-subtle dark:border-transparent dark:bg-white/[0.06] ds-sm:inline">
             ⌘K
           </kbd>
         </button>
@@ -66,11 +66,11 @@ export function Header({ onOpenCommandPalette }: HeaderProps) {
           type="button"
           aria-label="Notificações"
           onClick={() => navigate('/notifications')}
-          className="relative flex h-8 w-8 items-center justify-center rounded-ds-md bg-ds-surface text-ds-dim transition hover:bg-ds-elevated hover:text-ds-body dark:bg-white/[0.03] dark:hover:bg-white/[0.08] ds-sm:h-9 ds-sm:w-9"
+          className="relative flex h-10 w-10 items-center justify-center rounded-ds-md bg-ds-surface text-ds-dim transition hover:bg-ds-elevated hover:text-ds-body dark:bg-white/[0.03] dark:hover:bg-white/[0.08] ds-sm:h-11 ds-sm:w-11"
         >
           <Bell className="h-4 w-4" strokeWidth={1.75} aria-hidden />
           {unread > 0 ? (
-            <span className="absolute -right-1 -top-1 rounded-ds-pill bg-ds-danger px-1 py-0.5 text-[10px] font-bold leading-none text-ds-on-primary ring-2 ring-ds-deep">
+            <span className="absolute -right-1 -top-1 rounded-ds-pill bg-ds-danger px-1 py-0.5 text-[11px] font-bold leading-none text-ds-on-primary ring-2 ring-ds-deep">
               {unread > 99 ? '99+' : unread}
             </span>
           ) : null}

@@ -32,6 +32,12 @@ export class MyResidentProfileResponseDto {
     description: 'Indica se o morador é o responsável financeiro da unidade.',
   })
   isFinancialResponsible: boolean;
+
+  @ApiProperty({ example: 'A', description: 'Bloco da unidade vinculada.' })
+  block: string;
+
+  @ApiProperty({ example: '101', description: 'Número/apto da unidade vinculada.' })
+  number: string;
 }
 
 export class UpdateMyResidentProfileDto {

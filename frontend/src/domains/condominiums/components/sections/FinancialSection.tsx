@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { DayOfMonthGrid } from '@/shared/components/ui/DayOfMonthGrid';
 import { FormField } from '@/shared/components/ui/FormField';
 import { Input } from '@/shared/components/ui/Input';
+import { NativeSelect } from '@/shared/components/ui/NativeSelect';
 import { SectionCard, SectionShell } from '@/domains/condominiums/components/SectionShell';
 import {
   condominiumsService,
@@ -111,9 +112,8 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
       >
         <div className="grid gap-3 ds-md:grid-cols-[12rem_1fr]">
           <FormField label="Tipo da chave" htmlFor="fin-pix-type" required>
-            <select
+            <NativeSelect
               id="fin-pix-type"
-              className="h-10 w-full rounded-ds-md border border-ds-stroke bg-ds-elevated/70 px-3 text-ds-sm text-ds-body"
               value={pixKeyType}
               onChange={(e) => setPixKeyType(e.target.value as PixKeyType)}
             >
@@ -122,7 +122,7 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
                   {item.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </FormField>
           <FormField label="Valor da chave" htmlFor="fin-pix-value" required>
             <Input

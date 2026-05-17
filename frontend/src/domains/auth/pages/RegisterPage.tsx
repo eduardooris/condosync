@@ -150,7 +150,7 @@ export function RegisterPage() {
           <BrandMark size="sm" rounded="lg" />
           <div className="leading-tight">
             <p className="text-ds-md font-bold tracking-tight text-ds-body">CondoSync</p>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               Criar conta
             </p>
           </div>
@@ -166,7 +166,7 @@ export function RegisterPage() {
       {stage !== 'success' ? (
         <div className="relative z-10 mt-6 px-5 ds-md:px-10">
           <div className="mx-auto flex max-w-xl items-center gap-3">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               Passo {currentIndex + 1} de {stageOrder.length}
             </span>
             <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-ds-surface dark:bg-white/[0.05]">
@@ -177,7 +177,7 @@ export function RegisterPage() {
                 transition={{ duration: reduce ? 0 : 0.4, ease: [0.25, 0.1, 0.25, 1] }}
               />
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               {stageLabels[stage as Exclude<Stage, 'success'>]}
             </span>
           </div>
@@ -266,7 +266,7 @@ export function RegisterPage() {
                             />
                           ))}
                         </div>
-                        <p className="text-[10px] font-medium uppercase tracking-widest text-ds-subtle">
+                        <p className="text-[11px] font-medium uppercase tracking-widest text-ds-subtle">
                           Força: <span className="text-ds-dim">{strength.label}</span>
                         </p>
                       </div>
@@ -431,7 +431,7 @@ function StageHeader({
       <div className="flex h-11 w-11 items-center justify-center rounded-ds-xl bg-gradient-to-br from-brand-300/30 to-brand-500/10 text-brand-700 ring-1 ring-brand-400/30 dark:text-brand-300">
         {icon}
       </div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
         {eyebrow}
       </p>
       <h1 className="text-ds-2xl font-bold tracking-tight text-ds-body ds-md:text-[28px]">

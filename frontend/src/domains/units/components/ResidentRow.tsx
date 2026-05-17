@@ -90,17 +90,17 @@ export function ResidentRow({
             {resident.fullName}
           </p>
           {resident.isFinancialResponsible ? (
-            <span className="inline-flex items-center gap-1 rounded-ds-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+            <span className="inline-flex items-center gap-1 rounded-ds-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
               <ShieldCheck className="h-3 w-3" aria-hidden />
               Responsável
             </span>
           ) : null}
           {hasAppAccess ? (
-            <span className="rounded-ds-md bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:text-brand-300">
+            <span className="rounded-ds-md bg-brand-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-brand-700 dark:text-brand-300">
               App ativo
             </span>
           ) : (
-            <span className="rounded-ds-md bg-ds-surface px-1.5 py-0.5 text-[10px] font-semibold text-ds-subtle">
+            <span className="rounded-ds-md bg-ds-surface px-1.5 py-0.5 text-[11px] font-semibold text-ds-subtle">
               Sem app
             </span>
           )}

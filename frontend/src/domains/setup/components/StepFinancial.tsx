@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { CalendarDays, Coins, Send } from 'lucide-react';
 import { FormField } from '@/shared/components/ui/FormField';
 import { Input } from '@/shared/components/ui/Input';
+import { NativeSelect } from '@/shared/components/ui/NativeSelect';
 import { SetupShell } from '@/domains/setup/components/SetupShell';
 import { useSetupStore } from '@/domains/setup/store/setup.store';
 import { condominiumsService } from '@/domains/condominiums/services/condominiums.service';
@@ -155,9 +156,8 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
           </div>
           <div className="grid gap-3 ds-md:grid-cols-[12rem_1fr]">
             <FormField label="Tipo da chave" htmlFor="setup-pix-type" required>
-              <select
+              <NativeSelect
                 id="setup-pix-type"
-                className="h-10 w-full rounded-ds-md border border-ds-stroke bg-ds-elevated/70 px-3 text-ds-sm text-ds-body"
                 value={pixKeyType}
                 onChange={(e) =>
                   setPixKeyType(
@@ -170,7 +170,7 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
                     {item.label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </FormField>
             <FormField label="Valor da chave" htmlFor="setup-pix-value" required>
               <Input

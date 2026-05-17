@@ -157,7 +157,7 @@ export function UnitsListColumn({
                   <button
                     type="button"
                     onClick={() => toggleBlock(block)}
-                    className="flex w-full items-center gap-2 px-2 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-subtle transition hover:text-ds-body"
+                    className="flex w-full items-center gap-2 px-2 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-ds-subtle transition hover:text-ds-body"
                     aria-expanded={!isCollapsed}
                   >
                     <ChevronDown

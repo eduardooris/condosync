@@ -261,7 +261,7 @@ export function OccurrencesPage() {
                 placeholder="Buscar…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full rounded-ds-md bg-[var(--ds-input-well-bg)] pl-9 pr-4 text-ds-sm text-ds-body placeholder:text-ds-subtle backdrop-blur-sm transition hover:bg-[var(--ds-input-well-bg-hover)] focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                className="h-11 w-full rounded-ds-md bg-[var(--ds-input-well-bg)] pl-9 pr-4 text-ds-sm text-ds-body placeholder:text-ds-subtle backdrop-blur-sm transition hover:bg-[var(--ds-input-well-bg-hover)] focus:outline-none focus:ring-2 focus:ring-amber-400/40"
               />
             </div>
 

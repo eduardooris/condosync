@@ -86,17 +86,17 @@ export function ChargeDetailDialog({
 
         <div className="space-y-4 text-ds-sm">
           <div className="rounded-ds-lg border border-ds-stroke/60 bg-ds-surface dark:bg-white/[0.02] px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle">Unidade</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle">Unidade</p>
             <p className="mt-1 font-semibold text-ds-body">{unitLabel}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 ds-sm:grid-cols-2">
             <div className="rounded-ds-lg border border-ds-stroke/60 bg-ds-surface dark:bg-white/[0.02] px-3 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle">Valor</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle">Valor</p>
               <p className="mt-1 font-bold tabular-nums text-ds-body">{formatBrl(charge.amount ?? 0)}</p>
             </div>
             <div className="rounded-ds-lg border border-ds-stroke/60 bg-ds-surface dark:bg-white/[0.02] px-3 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle">Vencimento</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle">Vencimento</p>
               <p className="mt-1 font-semibold text-ds-body">
                 {charge.dueDate ? formatChargeDueDate(String(charge.dueDate)) : '—'}
               </p>
@@ -105,14 +105,14 @@ export function ChargeDetailDialog({
 
           {charge.description?.trim() ? (
             <div className="rounded-ds-lg border border-ds-stroke/60 bg-ds-surface dark:bg-white/[0.02] px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle">Descrição</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle">Descrição</p>
               <p className="mt-1 text-ds-body">{charge.description.trim()}</p>
             </div>
           ) : null}
 
           <div className="flex items-center justify-between gap-3 rounded-ds-lg border border-ds-stroke/60 bg-ds-surface dark:bg-white/[0.02] px-4 py-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle">Status</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle">Status</p>
               <div className="mt-2">
                 <Badge status={status} />
               </div>
@@ -120,7 +120,7 @@ export function ChargeDetailDialog({
           </div>
 
           <div className="rounded-ds-lg border border-brand-400/25 bg-brand-500/[0.06] px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-200/90">Pagamento (Pix)</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-brand-200/90">Pagamento (Pix)</p>
             {condominiumLoading ? (
               <p className="mt-2 text-ds-dim">Carregando dados do condomínio…</p>
             ) : hasPix ? (
@@ -147,7 +147,7 @@ export function ChargeDetailDialog({
 
           {(wa || tel) && (
             <div className="rounded-ds-lg border border-ds-stroke/60 bg-ds-surface dark:bg-white/[0.02] px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle">Administração</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle">Administração</p>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 {wa ? (
                   <a

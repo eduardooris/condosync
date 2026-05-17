@@ -162,7 +162,7 @@ export function SettingsPage() {
 
         {/* Active condominium */}
         <GlassCard variant="default">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
             Condomínio ativo
           </p>
           <div className="mt-3 flex items-start gap-3">
@@ -193,7 +193,7 @@ export function SettingsPage() {
       {canManageCondo && condominium?.id && (
         <GlassCard variant="default">
           <header className="mb-4 flex flex-col gap-1">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               Condomínio
             </p>
             <h2 className="text-ds-lg font-semibold text-ds-body">Configurações de {condominium.name}</h2>
@@ -256,7 +256,7 @@ export function SettingsPage() {
       <GlassCard variant="default">
         <header className="mb-4 flex flex-col gap-3 ds-sm:flex-row ds-sm:items-center ds-sm:justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               Aplicativo
             </p>
             <h2 className="mt-1 text-ds-lg font-semibold text-ds-body">Instalar na tela inicial</h2>
@@ -275,7 +275,7 @@ export function SettingsPage() {
       <GlassCard variant="default">
         <header className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               Preferências
             </p>
             <h2 className="mt-1 text-ds-lg font-semibold text-ds-body">Personalização</h2>
@@ -317,7 +317,7 @@ export function SettingsPage() {
       <GlassCard variant="default" className="border-ds-danger/20">
         <header className="mb-3 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-danger/80">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-danger/80">
               Sessão
             </p>
             <h2 className="mt-1 text-ds-lg font-semibold text-ds-body">Sair da conta</h2>

@@ -116,7 +116,7 @@ export function LoginPage() {
             <BrandMark size="md" rounded="xl" />
             <div>
               <span className="block text-ds-lg font-extrabold tracking-tight text-ds-body">CondoSync</span>
-              <span className="block text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+              <span className="block text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
                 Gestão inteligente
               </span>
             </div>

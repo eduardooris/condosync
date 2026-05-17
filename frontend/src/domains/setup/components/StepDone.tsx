@@ -105,7 +105,7 @@ export function StepDone({ onFinish }: StepDoneProps) {
 
         {/* Next steps */}
         <div className="rounded-ds-2xl border border-ds-stroke-subtle bg-white/[0.02] p-4">
-          <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+          <p className="mb-3 px-1 text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
             Próximos passos sugeridos
           </p>
           <ul className="grid gap-2">
@@ -137,7 +137,7 @@ export function StepDone({ onFinish }: StepDoneProps) {
 function SummaryCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
     <div className="rounded-ds-2xl border border-ds-stroke-subtle bg-white/[0.025] p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">{label}</p>
       <p className="mt-1.5 text-2xl font-bold tracking-tight text-ds-body">{value}</p>
       <p className="mt-0.5 text-ds-xs text-ds-subtle">{hint}</p>
     </div>

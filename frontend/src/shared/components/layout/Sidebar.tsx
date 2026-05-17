@@ -160,7 +160,7 @@ export function Sidebar({ onOpenCommandPalette }: SidebarProps) {
           {sections.map((section, sectionIdx) => (
             <div key={section.id} className={cn(sectionIdx > 0 && 'mt-4')}>
               {sidebarOpen ? (
-                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-300/55">
+                <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-300/55">
                   {section.label}
                 </p>
               ) : null}
@@ -220,7 +220,7 @@ export function Sidebar({ onOpenCommandPalette }: SidebarProps) {
             {sidebarOpen ? (
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-semibold text-ds-body">{user?.name ?? 'Visitante'}</p>
-                <p className="truncate text-[10px] text-brand-300/60">{user?.email ?? ''}</p>
+                <p className="truncate text-[11px] text-brand-300/60">{user?.email ?? ''}</p>
               </div>
             ) : null}
             <button

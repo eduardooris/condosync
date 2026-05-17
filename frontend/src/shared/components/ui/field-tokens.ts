@@ -8,7 +8,8 @@ import { cn } from '@/shared/utils/cn';
 export function fieldControlClassName(options?: { invalid?: boolean; className?: string }) {
   const { invalid, className } = options ?? {};
   return cn(
-    'w-full h-10 rounded-ds-md border border-transparent px-3.5 text-ds-sm text-ds-body',
+    // h-11 = 44px → bate o tap target mínimo do iOS HIG, melhora alvo para idosos.
+    'w-full h-11 rounded-ds-md border border-transparent px-3.5 text-ds-sm text-ds-body',
     'bg-[rgba(8,12,28,0.6)] backdrop-blur-sm',
     'placeholder:text-ds-subtle',
     'transition-[color,background-color,box-shadow,border-color] duration-200',

@@ -67,7 +67,7 @@ export function SetupShell({
           <BrandMark size="sm" rounded="lg" />
           <div className="leading-tight">
             <p className="text-[15px] font-bold tracking-tight text-ds-body">CondoSync</p>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
               Configuração inicial
             </p>
           </div>
@@ -91,7 +91,7 @@ export function SetupShell({
       {!hideProgress ? (
         <div className="relative z-10 mt-6 px-5 ds-md:mt-8 ds-md:px-10">
           <div className="mx-auto flex max-w-3xl items-center gap-3">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/60">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/60">
               Passo {current} de {totalSteps}
             </span>
             <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-ds-surface dark:bg-white/[0.05]">
@@ -102,7 +102,7 @@ export function SetupShell({
                 transition={{ duration: reduce ? 0 : 0.45, ease: [0.25, 0.1, 0.25, 1] }}
               />
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/60">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/60">
               {STEP_LABELS[step]}
             </span>
           </div>
@@ -119,7 +119,7 @@ export function SetupShell({
           className={cn('mx-auto w-full min-w-0 max-w-2xl', step === 'welcome' && 'max-w-3xl')}
         >
           {eyebrow ? (
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
               {eyebrow}
             </p>
           ) : null}

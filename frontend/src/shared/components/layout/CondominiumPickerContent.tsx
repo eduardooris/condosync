@@ -55,7 +55,7 @@ export function CondominiumPickerContent({
       >
         <Search className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
         <span className="flex-1 font-medium">Buscar no app</span>
-        <kbd className="hidden rounded-ds-sm border border-ds-stroke bg-ds-surface px-1.5 py-0.5 text-[10px] font-semibold text-ds-subtle dark:border-transparent dark:bg-white/[0.06] ds-sm:inline">
+        <kbd className="hidden rounded-ds-sm border border-ds-stroke bg-ds-surface px-1.5 py-0.5 text-[11px] font-semibold text-ds-subtle dark:border-transparent dark:bg-white/[0.06] ds-sm:inline">
           ⌘K
         </kbd>
       </button>
@@ -88,7 +88,7 @@ export function CondominiumPickerContent({
                     <span className="block truncate text-ds-sm font-semibold leading-snug">{condo.name}</span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span className="truncate text-[11px] text-ds-subtle">{condo.cnpj}</span>
-                      <span className="rounded-ds-pill bg-ds-surface px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ds-dim ring-1 ring-ds-stroke/80 dark:bg-white/[0.06] dark:ring-white/10">
+                      <span className="rounded-ds-pill bg-ds-surface px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ds-dim ring-1 ring-ds-stroke/80 dark:bg-white/[0.06] dark:ring-white/10">
                         {ROLE_HINT[condo.role] ?? condo.role}
                       </span>
                     </span>

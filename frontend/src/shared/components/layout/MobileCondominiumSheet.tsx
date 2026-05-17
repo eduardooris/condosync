@@ -49,7 +49,7 @@ export function MobileCondominiumSheet({ onOpenCommandPalette }: MobileCondomini
         aria-hidden
       />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-ds-subtle">Condomínio</span>
+        <span className="block truncate text-[11px] font-semibold uppercase tracking-wide text-ds-subtle">Condomínio</span>
         <span className="block truncate text-ds-xs font-semibold leading-tight text-ds-body ds-sm:text-ds-sm">{label}</span>
       </span>
       {multi ? (

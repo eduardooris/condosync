@@ -82,7 +82,7 @@ export function ResidentsSection({ condominiumId, unit, canEdit }: ResidentsSect
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-ds-dim" aria-hidden />
           <h3 className="text-ds-sm font-semibold text-ds-body">Moradores</h3>
-          <span className="rounded-ds-pill bg-ds-surface px-2 py-0.5 text-[10px] font-semibold text-ds-dim">
+          <span className="rounded-ds-pill bg-ds-surface px-2 py-0.5 text-[11px] font-semibold text-ds-dim">
             {residents.length}
           </span>
         </div>

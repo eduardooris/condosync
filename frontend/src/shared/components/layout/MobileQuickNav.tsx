@@ -73,7 +73,7 @@ export function MobileQuickNav() {
                   to={to}
                   end={end}
                   className={cn(
-                    'flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-ds-lg px-1 py-1 text-[10px] font-semibold transition',
+                    'flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-ds-lg px-1 py-1 text-[11px] font-semibold transition',
                     active
                       ? 'bg-brand-500/18 text-brand-900 dark:text-white'
                       : 'text-ds-subtle hover:bg-ds-surface hover:text-ds-body dark:hover:bg-white/[0.05]',
@@ -96,7 +96,7 @@ export function MobileQuickNav() {
             <button
               type="button"
               onClick={() => setMoreOpen(true)}
-              className="flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-1 rounded-ds-lg px-1 py-1 text-[10px] font-semibold text-ds-subtle transition hover:bg-ds-surface hover:text-ds-body dark:hover:bg-white/[0.05]"
+              className="flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-1 rounded-ds-lg px-1 py-1 text-[11px] font-semibold text-ds-subtle transition hover:bg-ds-surface hover:text-ds-body dark:hover:bg-white/[0.05]"
               aria-label="Abrir menu completo"
             >
               <MoreHorizontal className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
@@ -118,7 +118,7 @@ export function MobileQuickNav() {
           <div className="space-y-5">
             {sections.map((section) => (
               <div key={section.id} className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-subtle">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ds-subtle">
                   {section.label}
                 </p>
                 <ul className="grid grid-cols-2 gap-2">

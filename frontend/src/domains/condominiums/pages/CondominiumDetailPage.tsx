@@ -109,7 +109,7 @@ export function CondominiumDetailPage() {
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block text-ds-sm font-semibold">{label}</span>
-                      {hint ? <span className="hidden text-[10px] text-ds-subtle ds-md:block">{hint}</span> : null}
+                      {hint ? <span className="hidden text-[11px] text-ds-subtle ds-md:block">{hint}</span> : null}
                     </span>
                     {active ? (
                       <span className="hidden h-1.5 w-1.5 rounded-full bg-brand-600 dark:bg-brand-300 ds-md:block" aria-hidden />

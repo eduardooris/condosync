@@ -57,7 +57,7 @@ export function UnitDetailPanel({
             <Home className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-subtle">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-ds-subtle">
               Unidade
             </p>
             <h2 className="truncate text-ds-xl font-bold text-ds-body">
@@ -85,7 +85,7 @@ export function UnitDetailPanel({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="inline-flex h-9 items-center gap-1.5 rounded-ds-md border border-ds-stroke px-3 text-ds-xs font-semibold text-ds-body transition hover:bg-ds-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus"
+                className="inline-flex h-11 items-center gap-1.5 rounded-ds-md border border-ds-stroke px-3.5 text-ds-sm font-semibold text-ds-body transition hover:bg-ds-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus"
                 aria-label="Mais ações"
               >
                 <MoreHorizontal className="h-4 w-4" aria-hidden />

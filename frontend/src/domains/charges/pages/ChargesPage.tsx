@@ -180,7 +180,7 @@ export function ChargesPage() {
         </div>
 
         <div className="min-w-0 w-full ds-md:w-auto ds-md:max-w-full">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ds-subtle ds-md:sr-only">
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-ds-subtle ds-md:sr-only">
             Status
           </p>
           <div className="-mx-1 flex min-w-0 touch-pan-x">
@@ -242,7 +242,7 @@ export function ChargesPage() {
       ) : (
         <GlassCard className="max-w-full overflow-hidden p-2 ds-md:p-0">
           {/* Cabeçalho tipo tabela — desktop */}
-          <div className="hidden border-b border-ds-stroke/50 bg-ds-surface px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-ds-subtle dark:bg-white/[0.03] ds-md:grid ds-md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_minmax(0,1fr)] ds-md:gap-4">
+          <div className="hidden border-b border-ds-stroke/50 bg-ds-surface px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-ds-subtle dark:bg-white/[0.03] ds-md:grid ds-md:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_minmax(0,1fr)] ds-md:gap-4">
             <span>Unidade</span>
             <span className="text-right">Valor</span>
             <span className="text-right">Vencimento</span>
@@ -290,7 +290,7 @@ export function ChargesPage() {
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-3 ds-md:block ds-md:text-right">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle ds-md:hidden">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle ds-md:hidden">
                       Valor
                     </span>
                     <p className="text-right text-ds-sm font-bold tabular-nums text-ds-body">
@@ -298,7 +298,7 @@ export function ChargesPage() {
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-3 ds-md:block ds-md:text-right">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle ds-md:hidden">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle ds-md:hidden">
                       Vencimento
                     </span>
                     <p className="text-right text-[11px] text-ds-dim ds-md:text-ds-sm">
@@ -306,7 +306,7 @@ export function ChargesPage() {
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 ds-md:items-end">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-ds-subtle ds-md:hidden">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-ds-subtle ds-md:hidden">
                       Status / ações
                     </span>
                     <div className="flex flex-col gap-2 ds-md:flex ds-md:flex-row ds-md:flex-wrap ds-md:items-center ds-md:justify-end">

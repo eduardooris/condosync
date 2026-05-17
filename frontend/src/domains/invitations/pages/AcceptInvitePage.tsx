@@ -112,7 +112,7 @@ export function AcceptInvitePage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-ds-xl bg-gradient-to-br from-brand-300/30 to-brand-500/10 text-brand-700 ring-1 ring-brand-400/30 dark:text-brand-300">
             <Building2 className="h-5 w-5" />
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
             Convite recebido
           </p>
           <h1 className="text-ds-2xl font-bold tracking-tight text-ds-body ds-md:text-[28px]">

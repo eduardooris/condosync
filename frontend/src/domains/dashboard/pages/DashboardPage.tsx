@@ -87,7 +87,7 @@ export function DashboardPage() {
         className="flex flex-wrap items-end justify-between gap-3"
       >
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-ds-secondary">
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-ds-secondary">
             {(() => {
               const first = (user?.name?.trim() ?? '').split(/\s+/).find(Boolean);
               return first ? `${greeting()}, ${first}` : greeting();

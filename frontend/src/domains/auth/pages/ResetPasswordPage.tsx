@@ -77,7 +77,7 @@ export function ResetPasswordPage() {
       >
         <div className="ds-surface-elevated p-8">
           <div className="mb-5 flex flex-col gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-800 dark:text-brand-300">
               Nova senha
             </p>
             <h1 className="text-ds-2xl font-bold tracking-tight text-ds-body">Redefinir senha</h1>

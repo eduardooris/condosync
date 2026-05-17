@@ -170,7 +170,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
         </FormField>
 
         <fieldset className="space-y-4 rounded-ds-2xl border border-ds-stroke-subtle bg-ds-surface p-4 dark:bg-white/[0.02]">
-          <legend className="px-2 text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+          <legend className="px-2 text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
             Endereço (opcional)
           </legend>
           <div className="grid gap-3 ds-sm:grid-cols-[1fr_140px]">

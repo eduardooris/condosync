@@ -52,7 +52,7 @@ export function NoCondominiumPage() {
             )}
           </motion.div>
           <p
-            className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${
+            className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
               hasPending ? 'text-amber-800 dark:text-amber-300' : 'text-brand-800 dark:text-brand-300'
             }`}
           >

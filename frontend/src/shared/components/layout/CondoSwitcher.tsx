@@ -66,7 +66,7 @@ export function CondoSwitcher({ onOpenCommandPalette }: CondoSwitcherProps) {
           <span className="block truncate text-ds-sm font-semibold text-ds-body">
             {active?.name ?? 'Selecionar condomínio'}
           </span>
-          <span className="block text-[10px] font-medium uppercase tracking-widest text-ds-subtle dark:text-brand-300/60">
+          <span className="block text-[11px] font-medium uppercase tracking-widest text-ds-subtle dark:text-brand-300/60">
             {list.length} {list.length === 1 ? 'condomínio' : 'condomínios'}
           </span>
         </span>

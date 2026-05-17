@@ -81,7 +81,7 @@ export function KpiCard({
         </div>
 
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-ds-secondary">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-ds-secondary">
             {title}
           </p>
           <p className="mt-1 text-[22px] font-extrabold tabular-nums leading-none tracking-tight text-ds-body ds-sm:text-2xl">

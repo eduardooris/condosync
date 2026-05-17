@@ -201,7 +201,7 @@ function PaletteContent({ onClose }: { onClose: () => void }) {
           placeholder="Buscar condomínio, página ou ação…"
           className="flex-1 bg-transparent text-ds-md text-ds-body placeholder:text-ds-subtle focus:outline-none"
         />
-        <kbd className="hidden rounded-ds-sm border border-ds-stroke bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-semibold text-ds-subtle ds-sm:inline">
+        <kbd className="hidden rounded-ds-sm border border-ds-stroke bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-semibold text-ds-subtle ds-sm:inline">
           Esc
         </kbd>
       </div>
@@ -212,7 +212,7 @@ function PaletteContent({ onClose }: { onClose: () => void }) {
         ) : (
           Object.entries(grouped).map(([group, groupItems]) => (
             <div key={group} className="mb-2 last:mb-0">
-              <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
+              <p className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
                 {group}
               </p>
               <ul className="space-y-0.5">
@@ -256,7 +256,7 @@ function PaletteContent({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-ds-stroke-subtle px-4 py-2 text-[10px] text-ds-subtle">
+      <div className="flex items-center justify-between border-t border-ds-stroke-subtle px-4 py-2 text-[11px] text-ds-subtle">
         <span>
           <kbd className="mr-1 rounded-ds-sm border border-ds-stroke bg-white/[0.04] px-1 py-0.5 font-semibold">↑↓</kbd>
           navegar

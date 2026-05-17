@@ -43,9 +43,12 @@ const variantClass: Record<ButtonVariant, string> = {
 };
 
 const sizeClass: Record<ButtonSize, string> = {
-  sm: 'h-8 rounded-ds-md px-3 text-ds-xs gap-1.5',
-  md: 'h-10 rounded-ds-lg px-4 text-ds-sm gap-2',
-  lg: 'h-12 rounded-ds-xl px-5 text-ds-md gap-2',
+  // Heights alinhadas com tap-target mínimo do iOS HIG (44pt) — o `md` é o
+  // default e bate exatamente os 44px; `sm` fica em 36px (chip/icon-button
+  // confortável); `lg` em 52px (CTA principal).
+  sm: 'h-9 rounded-ds-md px-3.5 text-ds-sm gap-1.5',
+  md: 'h-11 rounded-ds-lg px-4 text-ds-sm gap-2',
+  lg: 'h-[3.25rem] rounded-ds-xl px-5 text-ds-md gap-2',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

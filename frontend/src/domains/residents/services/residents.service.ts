@@ -23,6 +23,8 @@ export interface MyResidentProfile {
   fullName: string;
   phoneWhatsapp: string;
   isFinancialResponsible: boolean;
+  block: string;
+  number: string;
 }
 
 export interface UpdateMyResidentProfileInput {

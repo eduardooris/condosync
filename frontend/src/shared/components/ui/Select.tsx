@@ -15,7 +15,7 @@ export const SelectTrigger = forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-10 w-full items-center justify-between gap-2 rounded-ds-md border px-3 py-2 text-ds-sm shadow-ds-sm',
+      'flex h-11 w-full items-center justify-between gap-2 rounded-ds-md border px-3.5 py-2 text-ds-sm shadow-ds-sm',
       'border-ds-stroke bg-ds-elevated/70 text-ds-body',
       'placeholder:text-ds-subtle',
       'transition-[color,background-color,box-shadow,border-color] duration-200',

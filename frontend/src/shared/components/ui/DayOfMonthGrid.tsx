@@ -37,7 +37,7 @@ export function DayOfMonthGrid({
               disabled={disabled}
               onClick={() => onChange(day)}
               className={cn(
-                'relative flex h-8 min-h-[2rem] w-full min-w-0 max-w-full items-center justify-center rounded-ds-md text-[10px] font-semibold transition ds-sm:h-9 ds-sm:text-ds-sm',
+                'relative flex h-8 min-h-[2rem] w-full min-w-0 max-w-full items-center justify-center rounded-ds-md text-[11px] font-semibold transition ds-sm:h-9 ds-sm:text-ds-sm',
                 disabled && 'cursor-not-allowed text-ds-subtle/40',
                 !disabled && !active && 'text-ds-dim hover:bg-white/[0.06] hover:text-ds-body',
                 active &&
