@@ -121,14 +121,11 @@ export function UnitsPage() {
   const { data: onboardingChecklist = [] } = useUnitsOnboardingChecklist(condo?.id);
   const { createMutation, updateMutation } = useUnitsPage(condo?.id, editingUnitId);
 
-  if (!condo?.id) {
-    return <p className="ds-page text-ds-sm text-ds-dim">Selecione um condomínio no topo da página.</p>;
-  }
-
-  if (isLoading) return <ListSkeleton rows={6} />;
-
-  const list = data ?? [];
-  const checklistByUnitId = new Map(onboardingChecklist.map((item) => [item.unitId, item]));
+  const list = useMemo(() => data ?? [], [data]);
+  const checklistByUnitId = useMemo(
+    () => new Map(onboardingChecklist.map((item) => [item.unitId, item])),
+    [onboardingChecklist],
+  );
 
   const counts = useMemo(() => {
     const occupied = list.filter((u) => u.status === 'OCCUPIED').length;
@@ -172,6 +169,12 @@ export function UnitsPage() {
         ),
       }));
   }, [filteredUnits]);
+
+  if (!condo?.id) {
+    return <p className="ds-page text-ds-sm text-ds-dim">Selecione um condomínio no topo da página.</p>;
+  }
+
+  if (isLoading) return <ListSkeleton rows={6} />;
 
   const toggleBlock = (block: string) =>
     setCollapsedBlocks((prev) => {

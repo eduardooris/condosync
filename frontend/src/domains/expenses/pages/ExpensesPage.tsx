@@ -92,9 +92,7 @@ export function ExpensesPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useExpenses(condId);
   const { createMutation } = useExpensesPage(condId);
 
-  if (isLoading && condId) return <ListSkeleton rows={6} />;
-
-  const list = data ?? [];
+  const list = useMemo(() => data ?? [], [data]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -112,6 +110,8 @@ export function ExpensesPage() {
     () => filtered.reduce((acc, e) => acc + Number(e.amount ?? 0), 0),
     [filtered],
   );
+
+  if (isLoading && condId) return <ListSkeleton rows={6} />;
 
   if (!condId) {
     return (
