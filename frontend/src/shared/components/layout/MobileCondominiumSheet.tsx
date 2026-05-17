@@ -20,7 +20,7 @@ interface MobileCondominiumSheetProps {
 }
 
 const chipClassName = cn(
-  'flex max-w-[min(11rem,42vw)] shrink-0 items-center gap-1.5 rounded-ds-md border px-2 py-1.5 text-left ds-sm:max-w-[min(14rem,38vw)] ds-sm:gap-2 ds-sm:px-2.5 ds-sm:py-2',
+  'flex max-w-[min(11rem,42vw)] shrink-0 items-center gap-1.5 rounded-ds-lg px-2 py-1.5 text-left ds-sm:max-w-[min(14rem,38vw)] ds-sm:gap-2 ds-sm:px-2.5 ds-sm:py-2',
 );
 
 export function MobileCondominiumSheet({ onOpenCommandPalette }: MobileCondominiumSheetProps) {
@@ -64,7 +64,7 @@ export function MobileCondominiumSheet({ onOpenCommandPalette }: MobileCondomini
   if (!multi) {
     return (
       <div
-        className={cn(chipClassName, 'pointer-events-none border-transparent bg-transparent px-1 py-1.5 opacity-90 dark:opacity-80')}
+        className={cn(chipClassName, 'pointer-events-none bg-transparent px-1 py-1.5 opacity-90 dark:opacity-80')}
         aria-label={`Condomínio ativo: ${label}`}
       >
         {chipInner}
@@ -79,7 +79,7 @@ export function MobileCondominiumSheet({ onOpenCommandPalette }: MobileCondomini
         onClick={() => setOpen(true)}
         className={cn(
           chipClassName,
-          'border-ds-stroke-subtle bg-ds-surface transition active:scale-[0.98] dark:border-white/[0.08] dark:bg-white/[0.04]',
+          'bg-ds-surface shadow-ds-sm transition active:scale-[0.98] dark:bg-white/[0.04]',
         )}
         aria-haspopup="dialog"
         aria-expanded={open}

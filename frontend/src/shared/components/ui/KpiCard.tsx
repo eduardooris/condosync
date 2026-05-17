@@ -38,10 +38,9 @@ export function KpiCard({
   const card = (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-ds-xl border border-ds-stroke',
-        'bg-ds-surface shadow-ds-md backdrop-blur-sm',
-        'transition duration-300 hover:bg-ds-elevated hover:-translate-y-0.5',
-        'dark:border-transparent',
+        'group relative overflow-hidden rounded-ds-2xl',
+        'bg-ds-surface shadow-ds-card backdrop-blur-sm',
+        'transition duration-300 hover:bg-ds-elevated hover:-translate-y-0.5 hover:shadow-ds-elev',
         className,
       )}
     >
@@ -52,14 +51,14 @@ export function KpiCard({
         aria-hidden
       />
 
-      <div className="relative flex flex-col gap-3 p-4 ds-sm:p-5">
+      <div className="relative flex flex-col gap-3 p-4 ds-sm:gap-3.5 ds-sm:p-5">
         <div className="flex items-start justify-between gap-2">
           <div
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-ds-xl bg-gradient-to-br text-ds-on-primary shadow-lg',
+              'flex h-10 w-10 items-center justify-center rounded-ds-xl bg-gradient-to-br text-ds-on-primary shadow-lg ds-sm:h-11 ds-sm:w-11',
               g.bg,
             )}
-            style={{ boxShadow: `0 6px 20px ${g.glow}` }}
+            style={{ boxShadow: `0 8px 22px ${g.glow}` }}
           >
             {icon}
           </div>

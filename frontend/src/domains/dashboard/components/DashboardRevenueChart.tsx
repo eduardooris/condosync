@@ -61,7 +61,7 @@ export function DashboardRevenueChart({ data }: { data: DashboardChartRow[] | un
             suggestion="Com o tempo, você verá tendências (sazonalidade, picos de despesa) e poderá comparar meses. Cadastre cobranças, despesas e confirme pagamentos para alimentar esta visão."
           />
         ) : (
-          <div className="min-w-0 rounded-ds-lg border border-ds-stroke/60 bg-ds-surface p-2 dark:border-transparent dark:bg-white/[0.02]">
+          <div className="min-w-0 rounded-ds-xl bg-ds-surface p-2 shadow-ds-sm dark:bg-white/[0.02]">
             <div className="h-[min(320px,55vh)] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>

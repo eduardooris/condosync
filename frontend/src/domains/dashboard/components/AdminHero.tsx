@@ -34,12 +34,12 @@ export function AdminHero({ saldo, inadimplenciaUnidades, receitas, despesas, co
       initial={reduce ? false : { opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-      className="grid min-w-0 grid-cols-1 gap-4 ds-md:grid-cols-[2fr_1fr]"
+      className="grid min-w-0 grid-cols-1 gap-3 ds-sm:gap-4 ds-md:grid-cols-[2fr_1fr]"
       aria-label="Visão geral financeira"
     >
       {/* Big saldo card */}
       <div className={cn(
-        'relative overflow-hidden rounded-ds-xl border border-ds-stroke bg-gradient-to-br p-6 ring-1 ring-black/[0.03] dark:border-transparent dark:ring-0 ds-md:p-8',
+        'relative overflow-hidden rounded-ds-3xl bg-gradient-to-br p-5 shadow-ds-elev ds-sm:p-6 ds-md:p-8',
         positive
           ? 'from-emerald-100/90 via-white to-slate-100/80 dark:from-emerald-500/[0.10] dark:via-brand-500/[0.05] dark:to-brand-900/30'
           : 'from-rose-100/90 via-white to-slate-100/80 dark:from-ds-danger/[0.10] dark:via-brand-500/[0.05] dark:to-brand-900/30',
@@ -62,7 +62,7 @@ export function AdminHero({ saldo, inadimplenciaUnidades, receitas, despesas, co
 
           <p
             className={cn(
-              'mt-3 inline-flex items-center gap-2 text-4xl font-extrabold tracking-tight ds-md:text-6xl',
+              'mt-3 inline-flex items-center gap-2 text-[clamp(1.875rem,8vw,3.5rem)] font-extrabold leading-none tracking-tight tabular-nums ds-md:text-6xl',
               positive ? 'text-ds-body' : 'text-rose-700 dark:text-rose-300',
             )}
           >
@@ -71,7 +71,7 @@ export function AdminHero({ saldo, inadimplenciaUnidades, receitas, despesas, co
             ) : (
               <ArrowDown className="h-6 w-6 shrink-0 text-rose-600 dark:text-rose-400 ds-md:h-9 ds-md:w-9" strokeWidth={2.4} aria-hidden />
             )}
-            <span>{formatBrl(saldo)}</span>
+            <span className="break-all">{formatBrl(saldo)}</span>
           </p>
           <p className="mt-1 text-ds-xs text-ds-secondary">
             Receitas pagas − despesas aprovadas, desde sempre.
@@ -103,14 +103,14 @@ export function AdminHero({ saldo, inadimplenciaUnidades, receitas, despesas, co
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               to="/charges"
-              className="inline-flex items-center gap-1.5 rounded-ds-xl border border-ds-stroke bg-ds-elevated px-3 py-2 text-ds-sm font-semibold text-ds-body shadow-ds-sm transition hover:bg-ds-surface dark:border-white/10 dark:bg-white/[0.08] dark:text-white dark:shadow-none dark:hover:bg-white/[0.12]"
+              className="inline-flex items-center gap-1.5 rounded-ds-xl bg-ds-elevated px-3.5 py-2 text-ds-sm font-semibold text-ds-body shadow-ds-sm transition hover:-translate-y-0.5 hover:bg-ds-surface hover:shadow-ds-md dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.14]"
             >
               Gerenciar cobranças
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
             <Link
               to="/expenses"
-              className="inline-flex items-center gap-1.5 rounded-ds-md border border-ds-stroke bg-white/80 px-3 py-2 text-ds-sm font-semibold text-ds-body transition hover:bg-ds-surface dark:border-white/[0.08] dark:bg-white/[0.04] dark:hover:bg-white/[0.10]"
+              className="inline-flex items-center gap-1.5 rounded-ds-xl bg-white/80 px-3.5 py-2 text-ds-sm font-semibold text-ds-body shadow-ds-sm transition hover:-translate-y-0.5 hover:bg-ds-surface hover:shadow-ds-md dark:bg-white/[0.04] dark:hover:bg-white/[0.10]"
             >
               Lançar despesa
             </Link>
@@ -122,7 +122,7 @@ export function AdminHero({ saldo, inadimplenciaUnidades, receitas, despesas, co
       <Link
         to="/charges"
         className={cn(
-          'group relative flex flex-col justify-between overflow-hidden rounded-ds-xl border border-ds-stroke p-5 shadow-ds-sm transition ring-1 ring-black/[0.03] dark:border-transparent dark:shadow-none dark:ring-0',
+          'group relative flex flex-col justify-between overflow-hidden rounded-ds-2xl p-5 shadow-ds-card transition hover:-translate-y-0.5 hover:shadow-ds-elev',
           alert
             ? 'bg-gradient-to-br from-amber-50 to-amber-100/80 hover:from-amber-100 hover:to-amber-100 dark:from-amber-500/[0.14] dark:to-amber-600/[0.06] dark:hover:from-amber-500/[0.18] dark:hover:to-amber-600/[0.08]'
             : 'bg-gradient-to-br from-emerald-50 to-slate-100/90 hover:from-emerald-100/90 hover:to-slate-100 dark:from-emerald-500/[0.12] dark:to-brand-500/[0.06] dark:hover:from-emerald-500/[0.16] dark:hover:to-brand-500/[0.08]',

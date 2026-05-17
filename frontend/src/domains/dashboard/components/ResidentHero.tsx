@@ -23,10 +23,10 @@ export function ResidentHero({ saldoCondominio, condominiumName, userName }: Res
       initial={reduce ? false : { opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-      className="grid min-w-0 grid-cols-1 gap-4 ds-md:grid-cols-[2fr_1fr]"
+      className="grid min-w-0 grid-cols-1 gap-3 ds-sm:gap-4 ds-md:grid-cols-[2fr_1fr]"
       aria-label="Visão do morador"
     >
-      <div className="relative overflow-hidden rounded-ds-xl border border-ds-stroke bg-gradient-to-br from-brand-50 via-white to-slate-100/90 p-6 ring-1 ring-black/[0.03] dark:border-transparent dark:from-brand-500/[0.14] dark:via-brand-600/[0.06] dark:to-brand-900/30 dark:ring-0 ds-md:p-8">
+      <div className="relative overflow-hidden rounded-ds-3xl bg-gradient-to-br from-brand-50 via-white to-slate-100/90 p-5 shadow-ds-elev ds-sm:p-6 dark:from-brand-500/[0.14] dark:via-brand-600/[0.06] dark:to-brand-900/30 ds-md:p-8">
         <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-brand-400/20 blur-3xl" aria-hidden />
 
         <div className="relative">
@@ -41,7 +41,7 @@ export function ResidentHero({ saldoCondominio, condominiumName, userName }: Res
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               to="/charges"
-              className="inline-flex items-center gap-1.5 rounded-ds-xl border border-ds-stroke bg-ds-elevated px-4 py-2.5 text-ds-sm font-semibold text-ds-body shadow-ds-sm transition hover:bg-ds-surface dark:border-white/10 dark:bg-white/[0.08] dark:text-white dark:shadow-none dark:hover:bg-white/[0.12]"
+              className="inline-flex items-center gap-1.5 rounded-ds-xl bg-ds-elevated px-4 py-2.5 text-ds-sm font-semibold text-ds-body shadow-ds-sm transition hover:-translate-y-0.5 hover:bg-ds-surface hover:shadow-ds-md dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.14]"
             >
               <Receipt className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               Ver minhas cobranças
@@ -49,7 +49,7 @@ export function ResidentHero({ saldoCondominio, condominiumName, userName }: Res
             </Link>
             <Link
               to="/expenses"
-              className="inline-flex items-center gap-1.5 rounded-ds-md border border-ds-stroke bg-white/80 px-4 py-2.5 text-ds-sm font-semibold text-ds-body transition hover:bg-ds-surface dark:border-white/[0.08] dark:bg-white/[0.04] dark:hover:bg-white/[0.10]"
+              className="inline-flex items-center gap-1.5 rounded-ds-xl bg-white/80 px-4 py-2.5 text-ds-sm font-semibold text-ds-body shadow-ds-sm transition hover:-translate-y-0.5 hover:bg-ds-surface hover:shadow-ds-md dark:bg-white/[0.04] dark:hover:bg-white/[0.10]"
             >
               Transparência financeira
             </Link>
@@ -58,7 +58,7 @@ export function ResidentHero({ saldoCondominio, condominiumName, userName }: Res
       </div>
 
       <div className={cn(
-        'relative flex flex-col justify-between overflow-hidden rounded-ds-xl border border-ds-stroke p-5 shadow-ds-sm ring-1 ring-black/[0.03] dark:border-transparent dark:shadow-none dark:ring-0',
+        'relative flex flex-col justify-between overflow-hidden rounded-ds-2xl p-5 shadow-ds-card',
         positive
           ? 'bg-gradient-to-br from-emerald-50 to-slate-100/90 dark:from-emerald-500/[0.12] dark:to-brand-500/[0.06]'
           : 'bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-500/[0.12] dark:to-amber-600/[0.06]',

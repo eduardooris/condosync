@@ -49,12 +49,14 @@ export default {
         'ds-lg': 'var(--ds-radius-lg)',
         'ds-xl': 'var(--ds-radius-xl)',
         'ds-2xl': 'var(--ds-radius-2xl)',
+        'ds-3xl': 'var(--ds-radius-3xl)',
         'ds-pill': 'var(--ds-radius-pill)',
       },
       boxShadow: {
         'ds-sm': 'var(--ds-shadow-sm)',
         'ds-md': 'var(--ds-shadow-md)',
         'ds-elev': 'var(--ds-shadow-elev)',
+        'ds-card': 'var(--ds-shadow-card)',
         'ds-glow': 'var(--ds-shadow-glow)',
       },
       screens: {

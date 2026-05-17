@@ -15,8 +15,8 @@ export function PortariaUnitCard({ unit, onSelect, disabled }: Props) {
       disabled={disabled}
       onClick={() => onSelect(unit.id)}
       className={cn(
-        'ds-surface-elevated group flex w-full items-center gap-4 rounded-2xl border border-white/10 p-4 text-left transition',
-        'hover:border-brand-400/40 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400',
+        'ds-surface-elevated ds-card-hover group flex w-full items-center gap-4 rounded-ds-2xl p-4 text-left transition',
+        'hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400',
         disabled && 'pointer-events-none opacity-50',
       )}
     >

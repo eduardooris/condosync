@@ -78,7 +78,7 @@ export function DashboardPage() {
   const isEmpty = kpi.saldo === 0 && kpi.receitas === 0 && kpi.despesas === 0;
 
   return (
-    <div className="ds-page mx-auto max-w-7xl space-y-6">
+    <div className="ds-page mx-auto max-w-7xl space-y-4 ds-sm:space-y-5 ds-md:space-y-6">
       {/* Greeting strip */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
@@ -103,7 +103,7 @@ export function DashboardPage() {
                 key={to}
                 to={to}
                 className={cn(
-                  'flex items-center gap-2 rounded-ds-md border border-ds-stroke/70 px-3 py-2 text-ds-xs font-semibold text-ds-body shadow-ds-sm transition dark:border-transparent dark:shadow-none',
+                  'flex items-center gap-2 rounded-ds-xl px-3 py-2 text-ds-xs font-semibold text-ds-body shadow-ds-sm transition hover:shadow-ds-md',
                   `bg-gradient-to-br ${color}`,
                   'hover:-translate-y-0.5',
                 )}
@@ -126,7 +126,7 @@ export function DashboardPage() {
         >
           <Link
             to={`/condominiums/${condominium.id}?section=team`}
-            className="group flex items-start gap-3 rounded-ds-xl border border-ds-stroke border-l-2 border-l-brand-400 bg-brand-50/90 px-4 py-3.5 text-ds-sm leading-relaxed text-ds-secondary shadow-ds-sm transition hover:bg-brand-100/70 dark:border-transparent dark:bg-brand-500/[0.10] dark:text-ds-dim dark:hover:bg-brand-500/[0.16] dark:shadow-none"
+            className="group flex items-start gap-3 rounded-ds-2xl border-l-[3px] border-l-brand-400 bg-brand-50/90 px-4 py-3.5 text-ds-sm leading-relaxed text-ds-secondary shadow-ds-card transition hover:-translate-y-0.5 hover:bg-brand-100/70 hover:shadow-ds-elev dark:bg-brand-500/[0.10] dark:text-ds-dim dark:hover:bg-brand-500/[0.16]"
           >
             <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-brand-700 ring-1 ring-brand-500/30 dark:text-brand-300">
               <UserPlus className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
@@ -172,7 +172,7 @@ export function DashboardPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.4 }}
-          className="flex items-start gap-3 rounded-ds-xl border border-ds-stroke border-l-2 border-l-ds-warning/80 bg-amber-50/90 px-4 py-3.5 text-ds-sm leading-relaxed text-ds-secondary shadow-ds-sm dark:border-transparent dark:bg-amber-500/[0.08] dark:text-ds-dim dark:shadow-none"
+          className="flex items-start gap-3 rounded-ds-2xl border-l-[3px] border-l-ds-warning/80 bg-amber-50/90 px-4 py-3.5 text-ds-sm leading-relaxed text-ds-secondary shadow-ds-card dark:bg-amber-500/[0.08] dark:text-ds-dim"
           role="status"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-ds-warning" aria-hidden />
@@ -232,7 +232,7 @@ export function DashboardPage() {
         transition={{ delay: 0.3, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       >
         {chartLoading ? (
-          <div className="flex items-center gap-2 rounded-ds-xl border border-ds-stroke bg-ds-surface px-5 py-8 text-ds-sm text-ds-secondary shadow-ds-sm dark:border-transparent dark:bg-white/[0.03] dark:text-ds-dim dark:shadow-none">
+          <div className="flex items-center gap-2 rounded-ds-2xl bg-ds-surface px-5 py-8 text-ds-sm text-ds-secondary shadow-ds-card dark:bg-white/[0.03] dark:text-ds-dim">
             <Spinner />
             <span>Carregando série histórica…</span>
           </div>
