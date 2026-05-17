@@ -1,20 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0b1530"/>
-      <stop offset="1" stop-color="#06091a"/>
-    </linearGradient>
     <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#7fa3fa"/>
       <stop offset="1" stop-color="#4f7df0"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.35" r="0.7">
-      <stop offset="0" stop-color="#4f7df0" stop-opacity="0.55"/>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#4f7df0" stop-opacity="0.35"/>
       <stop offset="1" stop-color="#4f7df0" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
-  <circle cx="512" cy="380" r="420" fill="url(#glow)"/>
+  <circle cx="512" cy="512" r="500" fill="url(#glow)"/>
   <g transform="translate(232,232)">
     <rect x="40" y="220" width="160" height="340" rx="22" fill="url(#mark)" opacity="0.92"/>
     <rect x="220" y="120" width="160" height="440" rx="22" fill="url(#mark)"/>

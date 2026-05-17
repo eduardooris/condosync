@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Building2, LogIn, Mail, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { LogIn, Mail, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { BrandMark } from '@/shared/components/ui/BrandMark';
 import { useState } from 'react';
 import type { AxiosError } from 'axios';
 import { authService } from '@/domains/auth/services/auth.service';
@@ -112,9 +113,7 @@ export function LoginPage() {
           transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-ds-xl bg-gradient-to-br from-brand-300 to-brand-600 shadow-lg shadow-brand-500/30">
-              <Building2 className="h-5 w-5 text-white" strokeWidth={2} aria-hidden />
-            </div>
+            <BrandMark size="md" rounded="xl" />
             <div>
               <span className="block text-ds-lg font-extrabold tracking-tight text-ds-body">CondoSync</span>
               <span className="block text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
@@ -181,9 +180,7 @@ export function LoginPage() {
           transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <div className="mb-8 flex items-center gap-3 ds-lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-ds-xl bg-gradient-to-br from-brand-300 to-brand-600 shadow-lg shadow-brand-500/30">
-              <Building2 className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
-            </div>
+            <BrandMark size="sm" rounded="xl" />
             <span className="text-ds-lg font-extrabold tracking-tight text-ds-body">CondoSync</span>
           </div>
 

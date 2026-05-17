@@ -33,11 +33,11 @@ export function ProtectedLayout() {
   const activeCondominium = useAuthStore((state) => state.activeCondominium);
   const setActiveCondominium = useAuthStore((state) => state.setActiveCondominium);
   const setPendingMemberships = useAuthStore((state) => state.setPendingMemberships);
-  const { data: condominiums, isLoading } = useQuery({
+  const { data: condominiums, isLoading, isFetching } = useQuery({
     queryKey: queryKeys.condominiums.mine(),
     queryFn: condominiumsService.listMine,
   });
-  const { data: pending, isLoading: pendingLoading } = useQuery({
+  const { data: pending, isLoading: pendingLoading, isFetching: pendingFetching } = useQuery({
     queryKey: queryKeys.condominiums.minePending(),
     queryFn: condominiumsService.listMyPending,
   });
@@ -58,6 +58,11 @@ export function ProtectedLayout() {
 
   useEffect(() => {
     if (!condominiums || !pending) return;
+    // Não redireciona durante refetches em vôo. Cenário típico: usuário acabou
+    // de finalizar o setup; o cache marcado como stale ainda mostra `[]`, mas
+    // já existe uma requisição buscando o condomínio recém-criado — esperar
+    // ela completar evita um redirect /setup espúrio.
+    if (isFetching || pendingFetching) return;
     if (condominiums.length === 0) {
       if (emptyListNavigateDoneRef.current) return;
       emptyListNavigateDoneRef.current = true;
@@ -91,8 +96,10 @@ export function ProtectedLayout() {
     activeCondominium,
     canCreateCondominium,
     condominiums,
+    isFetching,
     navigate,
     pending,
+    pendingFetching,
     setActiveCondominium,
   ]);
 

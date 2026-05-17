@@ -24,6 +24,7 @@ import { useUIStore } from '@/shared/stores/ui.store';
 import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
 import { cn } from '@/shared/utils/cn';
 import { CondoSwitcher } from '@/shared/components/layout/CondoSwitcher';
+import { BrandMark } from '@/shared/components/ui/BrandMark';
 
 export interface NavItem {
   to: string;
@@ -130,9 +131,7 @@ export function Sidebar({ onOpenCommandPalette }: SidebarProps) {
         {/* Top: brand + condo switcher */}
         <div className="space-y-3 px-3 pb-3 pt-5">
           <div className="flex items-center gap-2.5 px-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ds-lg bg-gradient-to-br from-brand-300 to-brand-600 shadow-md shadow-brand-500/30">
-              <Building2 className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
-            </div>
+            <BrandMark size="sm" rounded="lg" />
             {sidebarOpen ? (
               <div>
                 <span className="block text-[14px] font-bold tracking-tight text-white">CondoSync</span>

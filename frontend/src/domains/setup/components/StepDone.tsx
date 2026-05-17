@@ -2,10 +2,12 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, MessageCircle, Newspaper, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import confetti from 'canvas-confetti';
 import { SetupShell } from '@/domains/setup/components/SetupShell';
 import { useSetupStore } from '@/domains/setup/store/setup.store';
 import { useAuthStore } from '@/shared/stores/auth.store';
+import { queryKeys } from '@/shared/lib/queryKeys';
 
 interface StepDoneProps {
   onFinish: () => void;
@@ -38,9 +40,18 @@ const nextSteps = [
 
 export function StepDone({ onFinish }: StepDoneProps) {
   const reduce = useReducedMotion();
+  const queryClient = useQueryClient();
   const condominium = useAuthStore((s) => s.activeCondominium);
   const financial = useSetupStore((s) => s.financial);
   const unitsCount = useSetupStore((s) => s.unitsCount);
+
+  // Pré-aquece o cache de condomínios para que QUALQUER navegação a partir
+  // daqui (botão principal ou Links de próximos passos) já encontre o novo
+  // condomínio em `condominiums.mine` no ProtectedLayout — sem isso o usuário
+  // entra num loop /setup → /units → /setup.
+  useEffect(() => {
+    void queryClient.refetchQueries({ queryKey: queryKeys.condominiums.root() });
+  }, [queryClient]);
 
   useEffect(() => {
     if (reduce) return;

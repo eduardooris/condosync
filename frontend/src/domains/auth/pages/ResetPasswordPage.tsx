@@ -2,7 +2,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Building2, KeyRound, Loader2 } from 'lucide-react';
+import { ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
+import { BrandMark } from '@/shared/components/ui/BrandMark';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { authService } from '@/domains/auth/services/auth.service';
@@ -64,9 +65,7 @@ export function ResetPasswordPage() {
       </Link>
 
       <div className="absolute right-5 top-5 flex items-center gap-2 ds-md:right-10 ds-md:top-7">
-        <div className="flex h-8 w-8 items-center justify-center rounded-ds-lg bg-gradient-to-br from-brand-300 to-brand-600 shadow-md shadow-brand-500/30">
-          <Building2 className="h-4 w-4 text-white" aria-hidden />
-        </div>
+        <BrandMark size="sm" rounded="lg" />
         <span className="text-ds-md font-bold text-ds-body">CondoSync</span>
       </div>
 

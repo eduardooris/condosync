@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 import {
   ArrowLeft,
   ArrowRight,
-  Building2,
   CheckCircle2,
   Loader2,
   Lock,
@@ -15,6 +14,7 @@ import {
   Sparkles,
   User,
 } from 'lucide-react';
+import { BrandMark } from '@/shared/components/ui/BrandMark';
 import { useMemo, useState } from 'react';
 import { authService } from '@/domains/auth/services/auth.service';
 import {
@@ -147,9 +147,7 @@ export function RegisterPage() {
 
       <header className="relative z-10 flex items-center justify-between px-5 pt-5 ds-md:px-10 ds-md:pt-7">
         <Link to="/login" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-ds-lg bg-gradient-to-br from-brand-300 to-brand-600 shadow-md shadow-brand-500/30">
-            <Building2 className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
-          </div>
+          <BrandMark size="sm" rounded="lg" />
           <div className="leading-tight">
             <p className="text-ds-md font-bold tracking-tight text-ds-body">CondoSync</p>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">

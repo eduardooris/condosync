@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Building2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { BrandMark } from '@/shared/components/ui/BrandMark';
 import { Button } from '@/shared/components/ui/Button';
 import { cn } from '@/shared/utils/cn';
 import { STEP_ORDER, stepIndex, type SetupStep } from '@/domains/setup/store/setup.store';
@@ -63,9 +64,7 @@ export function SetupShell({
       {/* Top bar */}
       <header className="relative z-10 flex items-center justify-between gap-3 px-5 pt-5 ds-md:px-10 ds-md:pt-7">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-ds-lg bg-gradient-to-br from-brand-300 to-brand-600 shadow-lg shadow-brand-500/30">
-            <Building2 className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
-          </div>
+          <BrandMark size="sm" rounded="lg" />
           <div className="leading-tight">
             <p className="text-[15px] font-bold tracking-tight text-ds-body">CondoSync</p>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-ds-dim dark:text-brand-300/70">
