@@ -32,9 +32,15 @@ EMAIL="${CERTBOT_EMAIL:-admin@${APP_DOMAIN}}"
 echo "==> Emitindo certificado para: $APP_DOMAIN e $AUTH_DOMAIN"
 echo "    E-mail: $EMAIL"
 
-# Emite certificado usando webroot (nginx já deve estar rodando)
+# Emite certificado usando webroot (nginx já deve estar rodando).
+#
+# IMPORTANTE: precisamos carregar os MESMOS compose files usados no
+# `vps-up.sh`, senão `docker compose` reclama que o serviço `frontend`
+# (definido em build.yml) não tem image nem build context.
 docker compose \
   -f "$INFRA_DIR/docker-compose.prod.yml" \
+  -f "$INFRA_DIR/docker-compose.api.yml" \
+  -f "$INFRA_DIR/docker-compose.build.yml" \
   --env-file "$ENV_FILE" \
   --profile certbot \
   run --rm certbot certonly \
@@ -57,5 +63,12 @@ echo "     - Substitua APP_DOMAIN e AUTH_DOMAIN pelos seus domínios reais"
 echo "  2. Recarregue o nginx:"
 echo "       docker exec condosync-nginx nginx -s reload"
 echo ""
+INFRA_ABS="$(realpath "$INFRA_DIR")"
 echo "Renovação automática (adicione ao crontab -e):"
-echo "  0 3 * * 1 docker compose -f $(realpath "$INFRA_DIR")/docker-compose.prod.yml --profile certbot run --rm certbot renew --quiet && docker exec condosync-nginx nginx -s reload"
+echo "  0 3 * * 1 docker compose \\"
+echo "    -f $INFRA_ABS/docker-compose.prod.yml \\"
+echo "    -f $INFRA_ABS/docker-compose.api.yml \\"
+echo "    -f $INFRA_ABS/docker-compose.build.yml \\"
+echo "    --env-file $INFRA_ABS/.env.prod \\"
+echo "    --profile certbot run --rm certbot renew --quiet \\"
+echo "    && docker exec condosync-nginx nginx -s reload"

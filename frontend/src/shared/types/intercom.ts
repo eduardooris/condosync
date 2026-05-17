@@ -14,6 +14,7 @@ export type IntercomSessionUpdateReason =
   | 'TIMEOUT'
   | 'VISITOR_LEFT'
   | 'REJECTED'
+  | 'ALL_REJECTED'
   | 'ENDED';
 
 export interface PortariaUnit {

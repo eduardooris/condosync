@@ -2,7 +2,8 @@
 # Deploy isolado do message-server — build local na VPS (sem GHCR).
 set -euo pipefail
 
-COMPOSE_DIR="${COMPOSE_DIR:-/opt/condosync/infra}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="${COMPOSE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 ENV_FILE="${ENV_FILE:-$COMPOSE_DIR/.env.prod}"
 EXTRA_COMPOSE_FILE="${EXTRA_COMPOSE_FILE:-}"
 

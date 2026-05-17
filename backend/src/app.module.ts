@@ -132,6 +132,15 @@ import {
           ttl: config.get('THROTTLE_TTL', { infer: true }) * 1000,
           limit: config.get('THROTTLE_AUTH_LIMIT', { infer: true }),
         },
+        {
+          // RN-10.10: limite específico por (IP, accessToken) na criação
+          // de sessões de portaria. Aplicado via
+          // `IntercomPublicThrottlerGuard` no controller público.
+          name: 'intercom-sessions',
+          ttl:
+            config.get('INTERCOM_PUBLIC_RATE_TTL_SEC', { infer: true }) * 1000,
+          limit: config.get('INTERCOM_PUBLIC_RATE_LIMIT', { infer: true }),
+        },
       ],
     }),
     ScheduleModule.forRoot(),

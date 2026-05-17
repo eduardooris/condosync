@@ -88,7 +88,13 @@ export enum IntercomSessionUpdateReason {
   TIMEOUT = 'TIMEOUT',
   VISITOR_LEFT = 'VISITOR_LEFT',
   REJECTED = 'REJECTED',
+  ALL_REJECTED = 'ALL_REJECTED',
   ENDED = 'ENDED',
+}
+
+export enum IntercomRejectPolicy {
+  CONTINUE_RINGING = 'continue_ringing',
+  ALL_REJECTED = 'all_rejected',
 }
 
 export enum DevicePlatform {

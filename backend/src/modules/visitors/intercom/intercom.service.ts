@@ -1,14 +1,15 @@
 import {
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { In, LessThan, Repository } from 'typeorm';
 import { Env } from '../../../config/env.schema';
 import {
+  IntercomRejectPolicy,
   IntercomSessionStatus,
   IntercomSessionUpdateReason,
   UnitStatus,
@@ -56,10 +57,10 @@ const IDEMPOTENCY_WINDOW_MS = 30_000;
 
 @Injectable()
 export class IntercomService {
-  private readonly logger = new Logger(IntercomService.name);
   private readonly appPublicUrl: string;
   private readonly apiPublicUrl: string;
   private readonly ringTimeoutSec: number;
+  private readonly rejectPolicy: IntercomRejectPolicy;
   private readonly stunUrls: string;
   private readonly turnUrl?: string;
   private readonly turnUsername?: string;
@@ -83,6 +84,8 @@ export class IntercomService {
     private readonly tenantMembership: TenantMembershipService,
     private readonly guestJwt: IntercomGuestJwtService,
     private readonly gateway: IntercomGateway,
+    @InjectPinoLogger(IntercomService.name)
+    private readonly logger: PinoLogger,
     config: ConfigService<Env, true>,
   ) {
     this.appPublicUrl = (
@@ -94,6 +97,9 @@ export class IntercomService {
     this.ringTimeoutSec = config.get('INTERCOM_RING_TIMEOUT_SEC', {
       infer: true,
     });
+    this.rejectPolicy = config.get('INTERCOM_REJECT_POLICY', {
+      infer: true,
+    }) as IntercomRejectPolicy;
     this.stunUrls = config.get('WEBRTC_STUN_URLS', { infer: true });
     this.turnUrl = config.get('WEBRTC_TURN_URL', { infer: true });
     this.turnUsername = config.get('WEBRTC_TURN_USERNAME', { infer: true });
@@ -191,6 +197,17 @@ export class IntercomService {
 
     const unitLabel = formatUnitLabel(unit.block, unit.number);
     await this.dispatchRing(session, unitLabel);
+
+    this.logger.info(
+      {
+        condominium_id: session.condominiumId,
+        session_id: session.id,
+        unit_id: session.unitId,
+        access_token_id: access.id,
+        ring_expires_at: ringExpiresAt.toISOString(),
+      },
+      'intercom.session.created',
+    );
 
     return this.buildSessionResponse(session);
   }
@@ -296,6 +313,18 @@ export class IntercomService {
 
     const updated = await this.loadSessionOrFail(sessionId);
     await this.logEvent(updated.id, 'accepted', { residentId: resident.id });
+    this.logger.info(
+      {
+        condominium_id: updated.condominiumId,
+        session_id: updated.id,
+        unit_id: updated.unitId,
+        from_status: refreshed.status,
+        to_status: IntercomSessionStatus.ANSWERED,
+        resident_id: resident.id,
+        user_id: userId,
+      },
+      'intercom.session.accepted',
+    );
 
     this.gateway.emitSessionUpdate(updated);
     const others = await this.residentUserIdsForUnit(updated.unitId, userId);
@@ -323,8 +352,61 @@ export class IntercomService {
     if (isIntercomTerminal(session.status)) {
       return this.toStatusDto(session);
     }
+
     await this.logEvent(session.id, 'rejected', { userId });
-    return this.toStatusDto(session);
+    this.logger.info(
+      {
+        condominium_id: session.condominiumId,
+        session_id: session.id,
+        unit_id: session.unitId,
+        user_id: userId,
+        reject_policy: this.rejectPolicy,
+      },
+      'intercom.session.rejected',
+    );
+
+    if (this.rejectPolicy !== IntercomRejectPolicy.ALL_REJECTED) {
+      // Policy `continue_ringing` (default): sessão segue em RINGING até
+      // alguém aceitar ou estourar o timeout. Outros moradores ainda podem
+      // atender, conforme RN-BE-10.5.
+      return this.toStatusDto(session);
+    }
+
+    // Policy `all_rejected`: contar usuários distintos que rejeitaram e
+    // comparar com o conjunto de moradores elegíveis. Se todos recusaram,
+    // transicionar a sessão para REJECTED com razão ALL_REJECTED.
+    const eligibleUserIds = await this.residentUserIdsForUnit(session.unitId);
+    if (eligibleUserIds.length === 0) {
+      return this.toStatusDto(session);
+    }
+
+    const rejectedUserIds = await this.distinctRejectedUserIds(session.id);
+    const allRejected = eligibleUserIds.every((id) => rejectedUserIds.has(id));
+    if (!allRejected) {
+      return this.toStatusDto(session);
+    }
+
+    return this.transitionSession(
+      session,
+      IntercomSessionStatus.REJECTED,
+      IntercomSessionUpdateReason.ALL_REJECTED,
+    );
+  }
+
+  private async distinctRejectedUserIds(
+    sessionId: string,
+  ): Promise<Set<string>> {
+    const events = await this.eventRepo.find({
+      where: { sessionId, event: 'rejected' },
+    });
+    const ids = new Set<string>();
+    for (const ev of events) {
+      const payload = (ev.payloadJson ?? {}) as { userId?: unknown };
+      if (typeof payload.userId === 'string' && payload.userId.length > 0) {
+        ids.add(payload.userId);
+      }
+    }
+    return ids;
   }
 
   async endSession(
@@ -586,13 +668,25 @@ export class IntercomService {
     to: IntercomSessionStatus,
     reason?: IntercomSessionUpdateReason,
   ): Promise<IntercomSessionStatusDto> {
-    assertIntercomTransition(session.status, to);
+    const from = session.status;
+    assertIntercomTransition(from, to);
     session.status = to;
     if (isIntercomTerminal(to)) {
       session.endedAt = new Date();
     }
     const saved = await this.sessionRepo.save(session);
     await this.logEvent(saved.id, `status_${to}`, { reason });
+    this.logger.info(
+      {
+        condominium_id: saved.condominiumId,
+        session_id: saved.id,
+        unit_id: saved.unitId,
+        from_status: from,
+        to_status: to,
+        reason: reason ?? null,
+      },
+      'intercom.session.transition',
+    );
     this.gateway.emitSessionUpdate(saved, reason);
     return this.toStatusDto(saved);
   }

@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -22,6 +23,7 @@ import {
   IntercomSessionStatusDto,
   PortariaUnitDto,
 } from './dto/intercom.dto';
+import { IntercomPublicThrottlerGuard } from './intercom-public-throttler.guard';
 import { IntercomService } from './intercom.service';
 
 @ApiTags('intercom')
@@ -45,6 +47,8 @@ export class IntercomPublicController {
 
   @Public()
   @Post(':accessToken/sessions')
+  @UseGuards(IntercomPublicThrottlerGuard)
+  @Throttle({ 'intercom-sessions': { limit: 10, ttl: 300_000 } })
   @ApiOperation({ summary: 'Inicia sessão de interfone' })
   @ApiCreatedResponse({ type: CreateIntercomSessionResponseDto })
   createSession(

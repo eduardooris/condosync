@@ -10,6 +10,7 @@ import { VisitorEntry } from '../../../database/entities/visitor-entry.entity';
 import { IntercomDevicesController } from './intercom-devices.controller';
 import { IntercomGuestJwtService } from './intercom-guest-jwt.service';
 import { IntercomPublicController } from './intercom-public.controller';
+import { IntercomPublicThrottlerGuard } from './intercom-public-throttler.guard';
 import { IntercomScheduler } from './intercom.scheduler';
 import { IntercomSessionsController } from './intercom-sessions.controller';
 import { IntercomTokensController } from './intercom-tokens.controller';
@@ -39,6 +40,7 @@ import { IntercomService } from './intercom.service';
     IntercomGateway,
     IntercomGuestJwtService,
     IntercomScheduler,
+    IntercomPublicThrottlerGuard,
   ],
   exports: [IntercomService],
 })

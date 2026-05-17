@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -8,6 +8,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Server, Socket } from 'socket.io';
 import {
   AUTH_ADAPTER,
@@ -47,14 +48,14 @@ interface SocketAuth {
 export class IntercomGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
-  private readonly logger = new Logger(IntercomGateway.name);
-
   @WebSocketServer()
   server: Server;
 
   constructor(
     private readonly guestJwt: IntercomGuestJwtService,
     @Inject(AUTH_ADAPTER) private readonly authAdapter: IAuthAdapter,
+    @InjectPinoLogger(IntercomGateway.name)
+    private readonly logger: PinoLogger,
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
@@ -83,7 +84,11 @@ export class IntercomGateway
       });
     } catch (err) {
       this.logger.warn(
-        `WS desconectado na autenticação: ${err instanceof Error ? err.message : err}`,
+        {
+          err_message: err instanceof Error ? err.message : String(err),
+          socket_id: client.id,
+        },
+        'intercom.ws.auth_failed',
       );
       client.disconnect(true);
     }

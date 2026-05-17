@@ -1,144 +1,351 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitialSchema1700000000000 implements MigrationInterface {
-    name = 'InitialSchema1700000000000'
+  name = 'InitialSchema1700000000000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`CREATE TABLE "residents" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "unit_id" uuid NOT NULL, "user_id" uuid, "full_name" character varying NOT NULL, "cpf" character varying(14) NOT NULL, "phone_whatsapp" character varying NOT NULL, "email" character varying, "is_financial_responsible" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_residents_unit_cpf" UNIQUE ("unit_id", "cpf"), CONSTRAINT "PK_4c8d0413ee0e9a4ebbf500f7365" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."charges_status_enum" AS ENUM('PENDING', 'PAID', 'OVERDUE', 'EXEMPT', 'CANCELED')`);
-        await queryRunner.query(`CREATE TABLE "charges" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "unit_id" uuid NOT NULL, "billing_month" character varying(7) NOT NULL, "amount" numeric(12,2) NOT NULL, "due_date" date NOT NULL, "description" text, "status" "public"."charges_status_enum" NOT NULL DEFAULT 'PENDING', "paid_at" TIMESTAMP WITH TIME ZONE, "exempt_reason" text, "canceled_at" TIMESTAMP WITH TIME ZONE, "cancel_reason" text, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_0c6feb10df0fa460714f8464dce" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "poll_options" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "poll_id" uuid NOT NULL, "label" character varying NOT NULL, "sort_order" integer NOT NULL DEFAULT '0', CONSTRAINT "PK_f52aac4865d291e3658dedf9083" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."polls_status_enum" AS ENUM('OPEN', 'CLOSED')`);
-        await queryRunner.query(`CREATE TABLE "polls" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "title" character varying NOT NULL, "description" text, "quorum_percent" numeric(5,2) NOT NULL DEFAULT '0', "closes_at" TIMESTAMP WITH TIME ZONE NOT NULL, "closed_at" TIMESTAMP WITH TIME ZONE, "is_anonymous" boolean NOT NULL DEFAULT true, "status" "public"."polls_status_enum" NOT NULL DEFAULT 'OPEN', "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_b9bbb8fc7b142553c518ddffbb6" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "poll_votes" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "poll_id" uuid NOT NULL, "unit_id" uuid NOT NULL, "option_id" uuid NOT NULL, "voted_by_resident_id" uuid NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_4fe54f4695e289486735bed7efd" UNIQUE ("poll_id", "unit_id"), CONSTRAINT "PK_b94b2749fdb5f5dd3836b8f907a" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."occurrences_status_enum" AS ENUM('OPEN', 'UNDER_REVIEW', 'RESOLVED', 'ARCHIVED')`);
-        await queryRunner.query(`CREATE TABLE "occurrences" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "unit_id" uuid NOT NULL, "author_resident_id" uuid NOT NULL, "title" character varying NOT NULL, "category" character varying NOT NULL, "description" text NOT NULL, "status" "public"."occurrences_status_enum" NOT NULL DEFAULT 'OPEN', "is_anonymous" boolean NOT NULL DEFAULT false, "attachment_storage_key" character varying, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_04fa3cf0bb8ea79b707dbfabe0a" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."units_type_enum" AS ENUM('APARTMENT', 'HOUSE', 'COMMERCIAL')`);
-        await queryRunner.query(`CREATE TYPE "public"."units_status_enum" AS ENUM('OCCUPIED', 'VACANT')`);
-        await queryRunner.query(`CREATE TABLE "units" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "block" character varying NOT NULL, "number" character varying NOT NULL, "type" "public"."units_type_enum" NOT NULL DEFAULT 'APARTMENT', "status" "public"."units_status_enum" NOT NULL DEFAULT 'VACANT', "is_exempt" boolean NOT NULL DEFAULT false, "exemption_reason" text, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_1e6919e64406bf02c525ac91b22" UNIQUE ("condominium_id", "block", "number"), CONSTRAINT "PK_5a8f2f064919b587d93936cb223" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."expenses_category_enum" AS ENUM('MAINTENANCE', 'CLEANING', 'CONCIERGE', 'LEGAL', 'OTHER')`);
-        await queryRunner.query(`CREATE TYPE "public"."expenses_approval_status_enum" AS ENUM('PENDING', 'APPROVED')`);
-        await queryRunner.query(`CREATE TABLE "expenses" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "description" character varying NOT NULL, "amount" numeric(12,2) NOT NULL, "expense_date" date NOT NULL, "category" "public"."expenses_category_enum" NOT NULL, "vendor" character varying, "storage_key" character varying, "approval_status" "public"."expenses_approval_status_enum" NOT NULL DEFAULT 'APPROVED', "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_94c3ceb17e3140abc9282c20610" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."bulletin_posts_priority_enum" AS ENUM('INFO', 'ATTENTION', 'URGENT', 'EVENT', 'MAINTENANCE')`);
-        await queryRunner.query(`CREATE TABLE "bulletin_posts" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "title" character varying NOT NULL, "body" text NOT NULL, "priority" "public"."bulletin_posts_priority_enum" NOT NULL DEFAULT 'INFO', "expires_at" TIMESTAMP WITH TIME ZONE, "pinned" boolean NOT NULL DEFAULT false, "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_d642c997ccf0e10c2c48467135d" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."documents_visibility_enum" AS ENUM('ALL', 'ADMIN_ONLY')`);
-        await queryRunner.query(`CREATE TABLE "documents" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "title" character varying NOT NULL, "description" text, "category" character varying NOT NULL, "document_date" date NOT NULL, "visibility" "public"."documents_visibility_enum" NOT NULL DEFAULT 'ALL', "storage_key" character varying NOT NULL, "size_bytes" bigint, "mime_type" character varying(120), "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_ac51aa5181ee2036f5ca482857c" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."condominiums_pix_key_type_enum" AS ENUM('CPF', 'CNPJ', 'EMAIL', 'PHONE', 'EVP')`);
-        await queryRunner.query(`CREATE TABLE "condominiums" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "cnpj" character varying NOT NULL, "address" jsonb, "photo_url" character varying, "monthly_fee_amount" numeric(12,2) NOT NULL DEFAULT '0', "billing_generation_day" integer NOT NULL DEFAULT '1', "billing_due_day" integer NOT NULL DEFAULT '10', "pix_key_type" "public"."condominiums_pix_key_type_enum", "pix_key_value" character varying(255), "admin_contact_phone" character varying(20), "archived_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_72b384c406b4575f20c517d20f5" UNIQUE ("cnpj"), CONSTRAINT "PK_bb7509828f6270f35097b88e752" PRIMARY KEY ("id")); COMMENT ON COLUMN "condominiums"."billing_generation_day" IS 'Day of month to generate charges (1-28)'; COMMENT ON COLUMN "condominiums"."billing_due_day" IS 'Due day of month (1-28)'`);
-        await queryRunner.query(`CREATE TYPE "public"."user_condominiums_role_enum" AS ENUM('ADMIN', 'SUB_ADMIN', 'RESPONSIBLE', 'RESIDENT')`);
-        await queryRunner.query(`CREATE TYPE "public"."user_condominiums_status_enum" AS ENUM('PENDING', 'APPROVED')`);
-        await queryRunner.query(`CREATE TABLE "user_condominiums" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" uuid NOT NULL, "condominium_id" uuid NOT NULL, "role" "public"."user_condominiums_role_enum" NOT NULL DEFAULT 'RESIDENT', "status" "public"."user_condominiums_status_enum" NOT NULL DEFAULT 'APPROVED', "unit_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e9bed84a4f6b77c43dee8ede4ca" UNIQUE ("user_id", "condominium_id"), CONSTRAINT "PK_85cbdccbc193275ee511cfe372b" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "users" ("id" uuid NOT NULL, "email" character varying NOT NULL, "full_name" character varying, "phone_whatsapp" character varying(32), "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."condominium_invitations_type_enum" AS ENUM('EMAIL_DIRECT', 'GENERIC_LINK')`);
-        await queryRunner.query(`CREATE TYPE "public"."condominium_invitations_role_enum" AS ENUM('ADMIN', 'SUB_ADMIN', 'RESPONSIBLE', 'RESIDENT')`);
-        await queryRunner.query(`CREATE TYPE "public"."condominium_invitations_status_enum" AS ENUM('ACTIVE', 'REVOKED', 'EXHAUSTED')`);
-        await queryRunner.query(`CREATE TABLE "condominium_invitations" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "created_by_user_id" uuid NOT NULL, "type" "public"."condominium_invitations_type_enum" NOT NULL, "token_hash" character varying(64) NOT NULL, "email" character varying(320), "role" "public"."condominium_invitations_role_enum" NOT NULL, "unit_id" uuid, "resident_id" uuid, "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL, "max_uses" integer NOT NULL DEFAULT '1', "used_count" integer NOT NULL DEFAULT '0', "status" "public"."condominium_invitations_status_enum" NOT NULL DEFAULT 'ACTIVE', "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_be64e52ebae8b2472fca4adda8e" UNIQUE ("token_hash"), CONSTRAINT "PK_4025eff5b3734eb18e62edaa761" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE INDEX "idx_invitation_token_hash" ON "condominium_invitations" ("token_hash") `);
-        await queryRunner.query(`CREATE TABLE "financial_responsible_history" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "unit_id" uuid NOT NULL, "resident_id" uuid NOT NULL, "started_at" TIMESTAMP WITH TIME ZONE NOT NULL, "ended_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_16289d9013f39325ba77a8b24ce" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."notifications_type_enum" AS ENUM('CHARGE_CREATED', 'CHARGE_OVERDUE', 'CHARGE_PAID', 'POLL_CREATED', 'POLL_CLOSED', 'OCCURRENCE_STATUS', 'BULLETIN_NEW', 'DOCUMENT_NEW', 'BALANCE_NEGATIVE', 'MEMBER_PENDING_APPROVAL')`);
-        await queryRunner.query(`CREATE TABLE "notifications" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" uuid NOT NULL, "condominium_id" uuid, "type" "public"."notifications_type_enum" NOT NULL, "title" character varying NOT NULL, "body" text NOT NULL, "payload" jsonb, "deeplink" character varying(255), "read_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_6a72c3c0f683f6462415e653c3a" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE INDEX "IDX_5323ccd23482802bd9759e88ee" ON "notifications" ("user_id", "read_at") `);
-        await queryRunner.query(`CREATE TABLE "message_server_events" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "event_id" character varying NOT NULL, "event_type" character varying NOT NULL, "tenant_id" character varying, "payload" jsonb NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_8d5a9b47bb096f83d37864d9634" UNIQUE ("event_id"), CONSTRAINT "PK_365c1915413266f4d0f6300b0aa" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "password_reset_tokens" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" uuid NOT NULL, "token_hash" character varying(64) NOT NULL, "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL, "used_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_d16bebd73e844c48bca50ff8d3d" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`ALTER TABLE "residents" ADD CONSTRAINT "FK_901dc4e652c738af6d17ddc6319" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "residents" ADD CONSTRAINT "FK_e7e6da6e7bccd71a8c7d65469cc" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "charges" ADD CONSTRAINT "FK_d49a46344360da4ab7cfd4a8f38" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "poll_options" ADD CONSTRAINT "FK_c00cc693afceae746fa82c0a558" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "polls" ADD CONSTRAINT "FK_ccad9f6a0a7528600bbd439a786" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "polls" ADD CONSTRAINT "FK_0e34e2cd6d3044033f09a9961d0" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_ba03ab00c027c6499e7ddc73404" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_78360c4b73a8178669416c52e09" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_433367a9fe86d90e66637310b65" FOREIGN KEY ("option_id") REFERENCES "poll_options"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_1bd1de25b859924031164e2429a" FOREIGN KEY ("voted_by_resident_id") REFERENCES "residents"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "occurrences" ADD CONSTRAINT "FK_3740bc2011bd0517b29f2258c8f" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "occurrences" ADD CONSTRAINT "FK_0723ef1fb11d9cc62761ee4b490" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "occurrences" ADD CONSTRAINT "FK_10d454b50c834b9d69b6d19369c" FOREIGN KEY ("author_resident_id") REFERENCES "residents"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "units" ADD CONSTRAINT "FK_013abbe468eb3883c42332f5231" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "expenses" ADD CONSTRAINT "FK_505e86f1d047f6a9f5cf5b71188" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "expenses" ADD CONSTRAINT "FK_45bf07fc1290c059e3884753e89" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "bulletin_posts" ADD CONSTRAINT "FK_f2f2fea82cf3fe5a49098311493" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "bulletin_posts" ADD CONSTRAINT "FK_fe0d1bff1ea838d7ac90ca5b120" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "documents" ADD CONSTRAINT "FK_24a0c83ea206672a58ad0511a78" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "documents" ADD CONSTRAINT "FK_ce5470c6932bc4f0402d6f9e0cf" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "user_condominiums" ADD CONSTRAINT "FK_fd92886bed4ea67396072474d9d" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "user_condominiums" ADD CONSTRAINT "FK_76e7a1acf65aa1508be2c903bf0" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "user_condominiums" ADD CONSTRAINT "FK_82b709efc9a927c445d9bfc51c3" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_a7210c7f1d4548704babcaa5e51" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_48cd3cb0243427977e252b7dcc6" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_6c07a11aaf14b73a439ec29b1bb" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_9199ebb384b8b7728787434d664" FOREIGN KEY ("resident_id") REFERENCES "residents"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "financial_responsible_history" ADD CONSTRAINT "FK_bf48363c841215974cfe46f8053" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "financial_responsible_history" ADD CONSTRAINT "FK_182170c954f30ed700acc6713f4" FOREIGN KEY ("resident_id") REFERENCES "residents"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "notifications" ADD CONSTRAINT "FK_9a8a82462cab47c73d25f49261f" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-    }
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `CREATE TABLE "residents" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "unit_id" uuid NOT NULL, "user_id" uuid, "full_name" character varying NOT NULL, "cpf" character varying(14) NOT NULL, "phone_whatsapp" character varying NOT NULL, "email" character varying, "is_financial_responsible" boolean NOT NULL DEFAULT false, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_residents_unit_cpf" UNIQUE ("unit_id", "cpf"), CONSTRAINT "PK_4c8d0413ee0e9a4ebbf500f7365" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."charges_status_enum" AS ENUM('PENDING', 'PAID', 'OVERDUE', 'EXEMPT', 'CANCELED')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "charges" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "unit_id" uuid NOT NULL, "billing_month" character varying(7) NOT NULL, "amount" numeric(12,2) NOT NULL, "due_date" date NOT NULL, "description" text, "status" "public"."charges_status_enum" NOT NULL DEFAULT 'PENDING', "paid_at" TIMESTAMP WITH TIME ZONE, "exempt_reason" text, "canceled_at" TIMESTAMP WITH TIME ZONE, "cancel_reason" text, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_0c6feb10df0fa460714f8464dce" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "poll_options" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "poll_id" uuid NOT NULL, "label" character varying NOT NULL, "sort_order" integer NOT NULL DEFAULT '0', CONSTRAINT "PK_f52aac4865d291e3658dedf9083" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."polls_status_enum" AS ENUM('OPEN', 'CLOSED')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "polls" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "title" character varying NOT NULL, "description" text, "quorum_percent" numeric(5,2) NOT NULL DEFAULT '0', "closes_at" TIMESTAMP WITH TIME ZONE NOT NULL, "closed_at" TIMESTAMP WITH TIME ZONE, "is_anonymous" boolean NOT NULL DEFAULT true, "status" "public"."polls_status_enum" NOT NULL DEFAULT 'OPEN', "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_b9bbb8fc7b142553c518ddffbb6" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "poll_votes" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "poll_id" uuid NOT NULL, "unit_id" uuid NOT NULL, "option_id" uuid NOT NULL, "voted_by_resident_id" uuid NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_4fe54f4695e289486735bed7efd" UNIQUE ("poll_id", "unit_id"), CONSTRAINT "PK_b94b2749fdb5f5dd3836b8f907a" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."occurrences_status_enum" AS ENUM('OPEN', 'UNDER_REVIEW', 'RESOLVED', 'ARCHIVED')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "occurrences" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "unit_id" uuid NOT NULL, "author_resident_id" uuid NOT NULL, "title" character varying NOT NULL, "category" character varying NOT NULL, "description" text NOT NULL, "status" "public"."occurrences_status_enum" NOT NULL DEFAULT 'OPEN', "is_anonymous" boolean NOT NULL DEFAULT false, "attachment_storage_key" character varying, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_04fa3cf0bb8ea79b707dbfabe0a" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."units_type_enum" AS ENUM('APARTMENT', 'HOUSE', 'COMMERCIAL')`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."units_status_enum" AS ENUM('OCCUPIED', 'VACANT')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "units" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "block" character varying NOT NULL, "number" character varying NOT NULL, "type" "public"."units_type_enum" NOT NULL DEFAULT 'APARTMENT', "status" "public"."units_status_enum" NOT NULL DEFAULT 'VACANT', "is_exempt" boolean NOT NULL DEFAULT false, "exemption_reason" text, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_1e6919e64406bf02c525ac91b22" UNIQUE ("condominium_id", "block", "number"), CONSTRAINT "PK_5a8f2f064919b587d93936cb223" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."expenses_category_enum" AS ENUM('MAINTENANCE', 'CLEANING', 'CONCIERGE', 'LEGAL', 'OTHER')`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."expenses_approval_status_enum" AS ENUM('PENDING', 'APPROVED')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "expenses" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "description" character varying NOT NULL, "amount" numeric(12,2) NOT NULL, "expense_date" date NOT NULL, "category" "public"."expenses_category_enum" NOT NULL, "vendor" character varying, "storage_key" character varying, "approval_status" "public"."expenses_approval_status_enum" NOT NULL DEFAULT 'APPROVED', "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_94c3ceb17e3140abc9282c20610" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."bulletin_posts_priority_enum" AS ENUM('INFO', 'ATTENTION', 'URGENT', 'EVENT', 'MAINTENANCE')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "bulletin_posts" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "title" character varying NOT NULL, "body" text NOT NULL, "priority" "public"."bulletin_posts_priority_enum" NOT NULL DEFAULT 'INFO', "expires_at" TIMESTAMP WITH TIME ZONE, "pinned" boolean NOT NULL DEFAULT false, "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_d642c997ccf0e10c2c48467135d" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."documents_visibility_enum" AS ENUM('ALL', 'ADMIN_ONLY')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "documents" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "title" character varying NOT NULL, "description" text, "category" character varying NOT NULL, "document_date" date NOT NULL, "visibility" "public"."documents_visibility_enum" NOT NULL DEFAULT 'ALL', "storage_key" character varying NOT NULL, "size_bytes" bigint, "mime_type" character varying(120), "created_by_user_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_ac51aa5181ee2036f5ca482857c" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."condominiums_pix_key_type_enum" AS ENUM('CPF', 'CNPJ', 'EMAIL', 'PHONE', 'EVP')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "condominiums" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "cnpj" character varying NOT NULL, "address" jsonb, "photo_url" character varying, "monthly_fee_amount" numeric(12,2) NOT NULL DEFAULT '0', "billing_generation_day" integer NOT NULL DEFAULT '1', "billing_due_day" integer NOT NULL DEFAULT '10', "pix_key_type" "public"."condominiums_pix_key_type_enum", "pix_key_value" character varying(255), "admin_contact_phone" character varying(20), "archived_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_72b384c406b4575f20c517d20f5" UNIQUE ("cnpj"), CONSTRAINT "PK_bb7509828f6270f35097b88e752" PRIMARY KEY ("id")); COMMENT ON COLUMN "condominiums"."billing_generation_day" IS 'Day of month to generate charges (1-28)'; COMMENT ON COLUMN "condominiums"."billing_due_day" IS 'Due day of month (1-28)'`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."user_condominiums_role_enum" AS ENUM('ADMIN', 'SUB_ADMIN', 'RESPONSIBLE', 'RESIDENT')`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."user_condominiums_status_enum" AS ENUM('PENDING', 'APPROVED')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "user_condominiums" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" uuid NOT NULL, "condominium_id" uuid NOT NULL, "role" "public"."user_condominiums_role_enum" NOT NULL DEFAULT 'RESIDENT', "status" "public"."user_condominiums_status_enum" NOT NULL DEFAULT 'APPROVED', "unit_id" uuid, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e9bed84a4f6b77c43dee8ede4ca" UNIQUE ("user_id", "condominium_id"), CONSTRAINT "PK_85cbdccbc193275ee511cfe372b" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "users" ("id" uuid NOT NULL, "email" character varying NOT NULL, "full_name" character varying, "phone_whatsapp" character varying(32), "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."condominium_invitations_type_enum" AS ENUM('EMAIL_DIRECT', 'GENERIC_LINK')`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."condominium_invitations_role_enum" AS ENUM('ADMIN', 'SUB_ADMIN', 'RESPONSIBLE', 'RESIDENT')`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."condominium_invitations_status_enum" AS ENUM('ACTIVE', 'REVOKED', 'EXHAUSTED')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "condominium_invitations" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "condominium_id" uuid NOT NULL, "created_by_user_id" uuid NOT NULL, "type" "public"."condominium_invitations_type_enum" NOT NULL, "token_hash" character varying(64) NOT NULL, "email" character varying(320), "role" "public"."condominium_invitations_role_enum" NOT NULL, "unit_id" uuid, "resident_id" uuid, "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL, "max_uses" integer NOT NULL DEFAULT '1', "used_count" integer NOT NULL DEFAULT '0', "status" "public"."condominium_invitations_status_enum" NOT NULL DEFAULT 'ACTIVE', "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_be64e52ebae8b2472fca4adda8e" UNIQUE ("token_hash"), CONSTRAINT "PK_4025eff5b3734eb18e62edaa761" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_invitation_token_hash" ON "condominium_invitations" ("token_hash") `,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "financial_responsible_history" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "unit_id" uuid NOT NULL, "resident_id" uuid NOT NULL, "started_at" TIMESTAMP WITH TIME ZONE NOT NULL, "ended_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_16289d9013f39325ba77a8b24ce" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "public"."notifications_type_enum" AS ENUM('CHARGE_CREATED', 'CHARGE_OVERDUE', 'CHARGE_PAID', 'POLL_CREATED', 'POLL_CLOSED', 'OCCURRENCE_STATUS', 'BULLETIN_NEW', 'DOCUMENT_NEW', 'BALANCE_NEGATIVE', 'MEMBER_PENDING_APPROVAL')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "notifications" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" uuid NOT NULL, "condominium_id" uuid, "type" "public"."notifications_type_enum" NOT NULL, "title" character varying NOT NULL, "body" text NOT NULL, "payload" jsonb, "deeplink" character varying(255), "read_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_6a72c3c0f683f6462415e653c3a" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_5323ccd23482802bd9759e88ee" ON "notifications" ("user_id", "read_at") `,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "message_server_events" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "event_id" character varying NOT NULL, "event_type" character varying NOT NULL, "tenant_id" character varying, "payload" jsonb NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_8d5a9b47bb096f83d37864d9634" UNIQUE ("event_id"), CONSTRAINT "PK_365c1915413266f4d0f6300b0aa" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "password_reset_tokens" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" uuid NOT NULL, "token_hash" character varying(64) NOT NULL, "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL, "used_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_d16bebd73e844c48bca50ff8d3d" PRIMARY KEY ("id"))`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "residents" ADD CONSTRAINT "FK_901dc4e652c738af6d17ddc6319" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "residents" ADD CONSTRAINT "FK_e7e6da6e7bccd71a8c7d65469cc" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "charges" ADD CONSTRAINT "FK_d49a46344360da4ab7cfd4a8f38" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_options" ADD CONSTRAINT "FK_c00cc693afceae746fa82c0a558" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "polls" ADD CONSTRAINT "FK_ccad9f6a0a7528600bbd439a786" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "polls" ADD CONSTRAINT "FK_0e34e2cd6d3044033f09a9961d0" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_ba03ab00c027c6499e7ddc73404" FOREIGN KEY ("poll_id") REFERENCES "polls"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_78360c4b73a8178669416c52e09" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_433367a9fe86d90e66637310b65" FOREIGN KEY ("option_id") REFERENCES "poll_options"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" ADD CONSTRAINT "FK_1bd1de25b859924031164e2429a" FOREIGN KEY ("voted_by_resident_id") REFERENCES "residents"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "occurrences" ADD CONSTRAINT "FK_3740bc2011bd0517b29f2258c8f" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "occurrences" ADD CONSTRAINT "FK_0723ef1fb11d9cc62761ee4b490" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "occurrences" ADD CONSTRAINT "FK_10d454b50c834b9d69b6d19369c" FOREIGN KEY ("author_resident_id") REFERENCES "residents"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "units" ADD CONSTRAINT "FK_013abbe468eb3883c42332f5231" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "expenses" ADD CONSTRAINT "FK_505e86f1d047f6a9f5cf5b71188" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "expenses" ADD CONSTRAINT "FK_45bf07fc1290c059e3884753e89" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "bulletin_posts" ADD CONSTRAINT "FK_f2f2fea82cf3fe5a49098311493" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "bulletin_posts" ADD CONSTRAINT "FK_fe0d1bff1ea838d7ac90ca5b120" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "documents" ADD CONSTRAINT "FK_24a0c83ea206672a58ad0511a78" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "documents" ADD CONSTRAINT "FK_ce5470c6932bc4f0402d6f9e0cf" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "user_condominiums" ADD CONSTRAINT "FK_fd92886bed4ea67396072474d9d" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "user_condominiums" ADD CONSTRAINT "FK_76e7a1acf65aa1508be2c903bf0" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "user_condominiums" ADD CONSTRAINT "FK_82b709efc9a927c445d9bfc51c3" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_a7210c7f1d4548704babcaa5e51" FOREIGN KEY ("condominium_id") REFERENCES "condominiums"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_48cd3cb0243427977e252b7dcc6" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_6c07a11aaf14b73a439ec29b1bb" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" ADD CONSTRAINT "FK_9199ebb384b8b7728787434d664" FOREIGN KEY ("resident_id") REFERENCES "residents"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "financial_responsible_history" ADD CONSTRAINT "FK_bf48363c841215974cfe46f8053" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "financial_responsible_history" ADD CONSTRAINT "FK_182170c954f30ed700acc6713f4" FOREIGN KEY ("resident_id") REFERENCES "residents"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "notifications" ADD CONSTRAINT "FK_9a8a82462cab47c73d25f49261f" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "notifications" DROP CONSTRAINT "FK_9a8a82462cab47c73d25f49261f"`);
-        await queryRunner.query(`ALTER TABLE "financial_responsible_history" DROP CONSTRAINT "FK_182170c954f30ed700acc6713f4"`);
-        await queryRunner.query(`ALTER TABLE "financial_responsible_history" DROP CONSTRAINT "FK_bf48363c841215974cfe46f8053"`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_9199ebb384b8b7728787434d664"`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_6c07a11aaf14b73a439ec29b1bb"`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_48cd3cb0243427977e252b7dcc6"`);
-        await queryRunner.query(`ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_a7210c7f1d4548704babcaa5e51"`);
-        await queryRunner.query(`ALTER TABLE "user_condominiums" DROP CONSTRAINT "FK_82b709efc9a927c445d9bfc51c3"`);
-        await queryRunner.query(`ALTER TABLE "user_condominiums" DROP CONSTRAINT "FK_76e7a1acf65aa1508be2c903bf0"`);
-        await queryRunner.query(`ALTER TABLE "user_condominiums" DROP CONSTRAINT "FK_fd92886bed4ea67396072474d9d"`);
-        await queryRunner.query(`ALTER TABLE "documents" DROP CONSTRAINT "FK_ce5470c6932bc4f0402d6f9e0cf"`);
-        await queryRunner.query(`ALTER TABLE "documents" DROP CONSTRAINT "FK_24a0c83ea206672a58ad0511a78"`);
-        await queryRunner.query(`ALTER TABLE "bulletin_posts" DROP CONSTRAINT "FK_fe0d1bff1ea838d7ac90ca5b120"`);
-        await queryRunner.query(`ALTER TABLE "bulletin_posts" DROP CONSTRAINT "FK_f2f2fea82cf3fe5a49098311493"`);
-        await queryRunner.query(`ALTER TABLE "expenses" DROP CONSTRAINT "FK_45bf07fc1290c059e3884753e89"`);
-        await queryRunner.query(`ALTER TABLE "expenses" DROP CONSTRAINT "FK_505e86f1d047f6a9f5cf5b71188"`);
-        await queryRunner.query(`ALTER TABLE "units" DROP CONSTRAINT "FK_013abbe468eb3883c42332f5231"`);
-        await queryRunner.query(`ALTER TABLE "occurrences" DROP CONSTRAINT "FK_10d454b50c834b9d69b6d19369c"`);
-        await queryRunner.query(`ALTER TABLE "occurrences" DROP CONSTRAINT "FK_0723ef1fb11d9cc62761ee4b490"`);
-        await queryRunner.query(`ALTER TABLE "occurrences" DROP CONSTRAINT "FK_3740bc2011bd0517b29f2258c8f"`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_1bd1de25b859924031164e2429a"`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_433367a9fe86d90e66637310b65"`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_78360c4b73a8178669416c52e09"`);
-        await queryRunner.query(`ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_ba03ab00c027c6499e7ddc73404"`);
-        await queryRunner.query(`ALTER TABLE "polls" DROP CONSTRAINT "FK_0e34e2cd6d3044033f09a9961d0"`);
-        await queryRunner.query(`ALTER TABLE "polls" DROP CONSTRAINT "FK_ccad9f6a0a7528600bbd439a786"`);
-        await queryRunner.query(`ALTER TABLE "poll_options" DROP CONSTRAINT "FK_c00cc693afceae746fa82c0a558"`);
-        await queryRunner.query(`ALTER TABLE "charges" DROP CONSTRAINT "FK_d49a46344360da4ab7cfd4a8f38"`);
-        await queryRunner.query(`ALTER TABLE "residents" DROP CONSTRAINT "FK_e7e6da6e7bccd71a8c7d65469cc"`);
-        await queryRunner.query(`ALTER TABLE "residents" DROP CONSTRAINT "FK_901dc4e652c738af6d17ddc6319"`);
-        await queryRunner.query(`DROP TABLE "password_reset_tokens"`);
-        await queryRunner.query(`DROP TABLE "message_server_events"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_5323ccd23482802bd9759e88ee"`);
-        await queryRunner.query(`DROP TABLE "notifications"`);
-        await queryRunner.query(`DROP TYPE "public"."notifications_type_enum"`);
-        await queryRunner.query(`DROP TABLE "financial_responsible_history"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_invitation_token_hash"`);
-        await queryRunner.query(`DROP TABLE "condominium_invitations"`);
-        await queryRunner.query(`DROP TYPE "public"."condominium_invitations_status_enum"`);
-        await queryRunner.query(`DROP TYPE "public"."condominium_invitations_role_enum"`);
-        await queryRunner.query(`DROP TYPE "public"."condominium_invitations_type_enum"`);
-        await queryRunner.query(`DROP TABLE "users"`);
-        await queryRunner.query(`DROP TABLE "user_condominiums"`);
-        await queryRunner.query(`DROP TYPE "public"."user_condominiums_status_enum"`);
-        await queryRunner.query(`DROP TYPE "public"."user_condominiums_role_enum"`);
-        await queryRunner.query(`DROP TABLE "condominiums"`);
-        await queryRunner.query(`DROP TYPE "public"."condominiums_pix_key_type_enum"`);
-        await queryRunner.query(`DROP TABLE "documents"`);
-        await queryRunner.query(`DROP TYPE "public"."documents_visibility_enum"`);
-        await queryRunner.query(`DROP TABLE "bulletin_posts"`);
-        await queryRunner.query(`DROP TYPE "public"."bulletin_posts_priority_enum"`);
-        await queryRunner.query(`DROP TABLE "expenses"`);
-        await queryRunner.query(`DROP TYPE "public"."expenses_approval_status_enum"`);
-        await queryRunner.query(`DROP TYPE "public"."expenses_category_enum"`);
-        await queryRunner.query(`DROP TABLE "units"`);
-        await queryRunner.query(`DROP TYPE "public"."units_status_enum"`);
-        await queryRunner.query(`DROP TYPE "public"."units_type_enum"`);
-        await queryRunner.query(`DROP TABLE "occurrences"`);
-        await queryRunner.query(`DROP TYPE "public"."occurrences_status_enum"`);
-        await queryRunner.query(`DROP TABLE "poll_votes"`);
-        await queryRunner.query(`DROP TABLE "polls"`);
-        await queryRunner.query(`DROP TYPE "public"."polls_status_enum"`);
-        await queryRunner.query(`DROP TABLE "poll_options"`);
-        await queryRunner.query(`DROP TABLE "charges"`);
-        await queryRunner.query(`DROP TYPE "public"."charges_status_enum"`);
-        await queryRunner.query(`DROP TABLE "residents"`);
-    }
-
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `ALTER TABLE "notifications" DROP CONSTRAINT "FK_9a8a82462cab47c73d25f49261f"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "financial_responsible_history" DROP CONSTRAINT "FK_182170c954f30ed700acc6713f4"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "financial_responsible_history" DROP CONSTRAINT "FK_bf48363c841215974cfe46f8053"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_9199ebb384b8b7728787434d664"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_6c07a11aaf14b73a439ec29b1bb"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_48cd3cb0243427977e252b7dcc6"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "condominium_invitations" DROP CONSTRAINT "FK_a7210c7f1d4548704babcaa5e51"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "user_condominiums" DROP CONSTRAINT "FK_82b709efc9a927c445d9bfc51c3"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "user_condominiums" DROP CONSTRAINT "FK_76e7a1acf65aa1508be2c903bf0"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "user_condominiums" DROP CONSTRAINT "FK_fd92886bed4ea67396072474d9d"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "documents" DROP CONSTRAINT "FK_ce5470c6932bc4f0402d6f9e0cf"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "documents" DROP CONSTRAINT "FK_24a0c83ea206672a58ad0511a78"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "bulletin_posts" DROP CONSTRAINT "FK_fe0d1bff1ea838d7ac90ca5b120"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "bulletin_posts" DROP CONSTRAINT "FK_f2f2fea82cf3fe5a49098311493"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "expenses" DROP CONSTRAINT "FK_45bf07fc1290c059e3884753e89"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "expenses" DROP CONSTRAINT "FK_505e86f1d047f6a9f5cf5b71188"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "units" DROP CONSTRAINT "FK_013abbe468eb3883c42332f5231"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "occurrences" DROP CONSTRAINT "FK_10d454b50c834b9d69b6d19369c"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "occurrences" DROP CONSTRAINT "FK_0723ef1fb11d9cc62761ee4b490"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "occurrences" DROP CONSTRAINT "FK_3740bc2011bd0517b29f2258c8f"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_1bd1de25b859924031164e2429a"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_433367a9fe86d90e66637310b65"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_78360c4b73a8178669416c52e09"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_votes" DROP CONSTRAINT "FK_ba03ab00c027c6499e7ddc73404"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "polls" DROP CONSTRAINT "FK_0e34e2cd6d3044033f09a9961d0"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "polls" DROP CONSTRAINT "FK_ccad9f6a0a7528600bbd439a786"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "poll_options" DROP CONSTRAINT "FK_c00cc693afceae746fa82c0a558"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "charges" DROP CONSTRAINT "FK_d49a46344360da4ab7cfd4a8f38"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "residents" DROP CONSTRAINT "FK_e7e6da6e7bccd71a8c7d65469cc"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "residents" DROP CONSTRAINT "FK_901dc4e652c738af6d17ddc6319"`,
+    );
+    await queryRunner.query(`DROP TABLE "password_reset_tokens"`);
+    await queryRunner.query(`DROP TABLE "message_server_events"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_5323ccd23482802bd9759e88ee"`,
+    );
+    await queryRunner.query(`DROP TABLE "notifications"`);
+    await queryRunner.query(`DROP TYPE "public"."notifications_type_enum"`);
+    await queryRunner.query(`DROP TABLE "financial_responsible_history"`);
+    await queryRunner.query(`DROP INDEX "public"."idx_invitation_token_hash"`);
+    await queryRunner.query(`DROP TABLE "condominium_invitations"`);
+    await queryRunner.query(
+      `DROP TYPE "public"."condominium_invitations_status_enum"`,
+    );
+    await queryRunner.query(
+      `DROP TYPE "public"."condominium_invitations_role_enum"`,
+    );
+    await queryRunner.query(
+      `DROP TYPE "public"."condominium_invitations_type_enum"`,
+    );
+    await queryRunner.query(`DROP TABLE "users"`);
+    await queryRunner.query(`DROP TABLE "user_condominiums"`);
+    await queryRunner.query(
+      `DROP TYPE "public"."user_condominiums_status_enum"`,
+    );
+    await queryRunner.query(`DROP TYPE "public"."user_condominiums_role_enum"`);
+    await queryRunner.query(`DROP TABLE "condominiums"`);
+    await queryRunner.query(
+      `DROP TYPE "public"."condominiums_pix_key_type_enum"`,
+    );
+    await queryRunner.query(`DROP TABLE "documents"`);
+    await queryRunner.query(`DROP TYPE "public"."documents_visibility_enum"`);
+    await queryRunner.query(`DROP TABLE "bulletin_posts"`);
+    await queryRunner.query(
+      `DROP TYPE "public"."bulletin_posts_priority_enum"`,
+    );
+    await queryRunner.query(`DROP TABLE "expenses"`);
+    await queryRunner.query(
+      `DROP TYPE "public"."expenses_approval_status_enum"`,
+    );
+    await queryRunner.query(`DROP TYPE "public"."expenses_category_enum"`);
+    await queryRunner.query(`DROP TABLE "units"`);
+    await queryRunner.query(`DROP TYPE "public"."units_status_enum"`);
+    await queryRunner.query(`DROP TYPE "public"."units_type_enum"`);
+    await queryRunner.query(`DROP TABLE "occurrences"`);
+    await queryRunner.query(`DROP TYPE "public"."occurrences_status_enum"`);
+    await queryRunner.query(`DROP TABLE "poll_votes"`);
+    await queryRunner.query(`DROP TABLE "polls"`);
+    await queryRunner.query(`DROP TYPE "public"."polls_status_enum"`);
+    await queryRunner.query(`DROP TABLE "poll_options"`);
+    await queryRunner.query(`DROP TABLE "charges"`);
+    await queryRunner.query(`DROP TYPE "public"."charges_status_enum"`);
+    await queryRunner.query(`DROP TABLE "residents"`);
+  }
 }

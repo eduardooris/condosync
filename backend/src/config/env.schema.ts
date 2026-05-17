@@ -112,6 +112,27 @@ export const envSchema = z
       .default('dev-intercom-guest-secret-change-me'),
     INTERCOM_GUEST_JWT_TTL_SEC: z.coerce.number().int().positive().default(900),
     INTERCOM_RING_TIMEOUT_SEC: z.coerce.number().int().positive().default(45),
+    /**
+     * Comportamento quando moradores rejeitam a chamada:
+     *   - `continue_ringing` (default): sessão fica em RINGING até timeout
+     *     mesmo que alguns moradores recusem — qualquer um ainda pode atender.
+     *   - `all_rejected`: se TODOS os moradores elegíveis rejeitarem,
+     *     a sessão transiciona imediatamente para REJECTED.
+     */
+    INTERCOM_REJECT_POLICY: z
+      .enum(['continue_ringing', 'all_rejected'])
+      .default('continue_ringing'),
+    /**
+     * Rate limit do endpoint público de criação de sessão de portaria.
+     * Aplicado por chave `(IP, accessToken)`. Default: 10 sessões / 5 min,
+     * conforme RN-10.10 do documento 05.
+     */
+    INTERCOM_PUBLIC_RATE_LIMIT: z.coerce.number().int().positive().default(10),
+    INTERCOM_PUBLIC_RATE_TTL_SEC: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(300),
     /** STUN servers separados por vírgula (ex.: stun:stun.l.google.com:19302). */
     WEBRTC_STUN_URLS: z.string().default('stun:stun.l.google.com:19302'),
     WEBRTC_TURN_URL: z.string().optional(),

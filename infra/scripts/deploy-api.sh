@@ -2,7 +2,11 @@
 # Deploy isolado da API — build local na VPS (sem GHCR).
 set -euo pipefail
 
-COMPOSE_DIR="${COMPOSE_DIR:-/opt/condosync/infra}"
+# Resolve a pasta `infra/` a partir da própria localização do script
+# (este arquivo vive em `infra/scripts/`). Pode ser sobrescrito via env
+# `COMPOSE_DIR` se a checkout estiver em outro lugar.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="${COMPOSE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 ENV_FILE="${ENV_FILE:-$COMPOSE_DIR/.env.prod}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-30}"
 EXTRA_COMPOSE_FILE="${EXTRA_COMPOSE_FILE:-}"
