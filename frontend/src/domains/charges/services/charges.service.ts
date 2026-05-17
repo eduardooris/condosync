@@ -55,6 +55,18 @@ export const chargesService = {
     api.patch<{ paidAt: string }, Charge>(`/charges/${id}/mark-paid`, {
       paidAt: new Date().toISOString(),
     }),
+
+  /**
+   * Auto-declaração de pagamento pelo morador. Vai pra rota escopada
+   * por condomínio porque o backend valida tenancy do `condominiumId`
+   * antes de aceitar — admin usa `markPaid(id)` na rota global.
+   */
+  markPaidMine: (condId: string, chargeId: string) =>
+    api.patch<{ paidAt: string }, Charge>(
+      `/condominiums/${condId}/charges/mine/${chargeId}/mark-paid`,
+      { paidAt: new Date().toISOString() },
+    ),
+
   exempt: (id: string, reason: string) =>
     api.patch<{ reason: string }, Charge>(`/charges/${id}/exempt`, { reason }),
 

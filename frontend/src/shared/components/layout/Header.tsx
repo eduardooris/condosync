@@ -27,8 +27,14 @@ export function Header({ onOpenCommandPalette }: HeaderProps) {
   const user = useAuthStore((s) => s.user);
   const condominium = useAuthStore((s) => s.activeCondominium);
   const { data: unreadData } = useQuery({
-    queryKey: queryKeys.notifications.unreadCount(),
-    queryFn: () => notificationsService.unreadCount(),
+    queryKey: [...queryKeys.notifications.unreadCount(), condominium?.id ?? null],
+    queryFn: () => notificationsService.unreadCount(condominium?.id ?? null),
+    // Polling defensivo de 60s caso o WebSocket caia ou esteja indisponível
+    // — quando o socket está vivo, o `invalidateQueries` do hook real-time
+    // refresca o badge imediatamente.
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: Boolean(condominium?.id),
   });
   const unread = unreadData?.unread ?? 0;
 

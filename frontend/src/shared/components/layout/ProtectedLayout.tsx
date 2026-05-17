@@ -10,6 +10,7 @@ import { Sidebar } from '@/shared/components/layout/Sidebar';
 import { CommandPalette } from '@/shared/components/layout/CommandPalette';
 import { PwaInstallBanner } from '@/shared/components/layout/PwaInstallBanner';
 import { useCommandPaletteShortcut } from '@/shared/hooks/useCommandPaletteShortcut';
+import { useNotificationsRealtime } from '@/domains/notifications/hooks/useNotificationsRealtime';
 import { Spinner } from '@/shared/components/ui/Spinner';
 import { queryKeys } from '@/shared/lib/queryKeys';
 
@@ -48,6 +49,9 @@ export function ProtectedLayout() {
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
   useCommandPaletteShortcut(togglePalette);
+  // Mantém o socket de notificações aberto enquanto o usuário está no shell
+  // autenticado — entrega real-time + atualiza badge sem polling agressivo.
+  useNotificationsRealtime();
 
   useEffect(() => {
     if (!pending) return;

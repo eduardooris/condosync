@@ -5,10 +5,17 @@ import { Receipt, Search, Filter, CheckCircle2, Ban, Zap, Pencil, Settings2, Sen
 import toast from 'react-hot-toast';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
+import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
+import {
+  DialogFooter,
+  FormDialog,
+} from '@/shared/components/ui/Dialog';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
+import { FormField } from '@/shared/components/ui/FormField';
 import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
+import { Textarea } from '@/shared/components/ui/Textarea';
 import { useChargesPage, type StatusFilter } from '@/domains/charges/hooks/useChargesPage';
 import { GenerateChargesDialog } from '@/domains/charges/components/GenerateChargesDialog';
 import { EditChargeDialog } from '@/domains/charges/components/EditChargeDialog';
@@ -84,7 +91,12 @@ export function ChargesPage() {
     generateOpen,
     setGenerateOpen,
   } = useChargesPage();
-  const { payMutation, exemptMutation, resendWhatsappMutation } = chargesQuery;
+  const {
+    payMutation,
+    payMineMutation,
+    exemptMutation,
+    resendWhatsappMutation,
+  } = chargesQuery;
   const condominiumWithPix = condominiumQuery.data as
     | ({ pixKeyType?: string | null; pixKeyValue?: string | null } & object)
     | undefined;
@@ -93,6 +105,12 @@ export function ChargesPage() {
   );
   const [editing, setEditing] = useState<Charge | null>(null);
   const [detailCharge, setDetailCharge] = useState<Charge | null>(null);
+  // Estado dos dois confirmadores: marcar paga (somente confirma) e isentar
+  // (confirma + pede o motivo em formulário) — evitam clique acidental.
+  const [chargeToPay, setChargeToPay] = useState<Charge | null>(null);
+  const [chargeToExempt, setChargeToExempt] = useState<Charge | null>(null);
+  const [exemptReason, setExemptReason] = useState('');
+
   if (chargesQuery.isLoading) return <ListSkeleton rows={8} />;
 
   return (
@@ -361,17 +379,22 @@ export function ChargesPage() {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => payMutation.mutate(charge.id)}
+                          onClick={() => setChargeToPay(charge)}
                           disabled={payMutation.isPending}
+                          title="Confirmar pagamento dessa cobrança"
                         >
                           <CheckCircle2 className="h-3 w-3" aria-hidden />
-                          Pago
+                          Marcar paga
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => exemptMutation.mutate({ id: charge.id, reason: 'Isenção aprovada' })}
+                          onClick={() => {
+                            setChargeToExempt(charge);
+                            setExemptReason('');
+                          }}
                           disabled={exemptMutation.isPending}
+                          title="Isentar (com justificativa) — registrado no histórico"
                         >
                           <Ban className="h-3 w-3" aria-hidden />
                           Isentar
@@ -412,7 +435,127 @@ export function ChargesPage() {
         unitLabel={detailCharge ? unitLabelForCharge(detailCharge, unitLabelById, myUnitId) : '—'}
         condominium={condominiumQuery.data as CondominiumPaymentSlice | undefined}
         condominiumLoading={condominiumQuery.isLoading}
+        markPaidPending={payMineMutation.isPending}
+        onMarkPaidByResident={
+          // Só morador (não-admin) vê o botão "Já paguei" — admin tem o
+          // botão "Marcar paga" direto na linha da lista.
+          !canManage
+            ? async (id: string) => {
+                try {
+                  await payMineMutation.mutateAsync(id);
+                  toast.success(
+                    'Pagamento registrado. A administração vai revisar.',
+                  );
+                } catch {
+                  toast.error(
+                    'Não foi possível registrar o pagamento. Tente novamente em alguns minutos.',
+                  );
+                }
+              }
+            : undefined
+        }
       />
+
+      {canManage ? (
+        <>
+          <ConfirmDialog
+            open={Boolean(chargeToPay)}
+            onOpenChange={(open) => {
+              if (!open) setChargeToPay(null);
+            }}
+            title="Confirmar pagamento?"
+            description={
+              chargeToPay
+                ? `Marcar como paga a cobrança de ${unitLabelForCharge(chargeToPay, unitLabelById, myUnitId)} — ${formatBrl(chargeToPay.amount)} (venc. ${chargeToPay.dueDate ? formatDate(String(chargeToPay.dueDate)) : '—'})? O status muda para "Pago" e o morador é notificado.`
+                : ''
+            }
+            confirmLabel="Marcar paga"
+            confirmDisabled={payMutation.isPending}
+            onConfirm={() => {
+              if (!chargeToPay) return;
+              payMutation.mutate(chargeToPay.id, {
+                onSuccess: () => {
+                  toast.success('Cobrança marcada como paga.');
+                  setChargeToPay(null);
+                },
+                onError: () =>
+                  toast.error('Não foi possível marcar como paga.'),
+              });
+            }}
+          />
+
+          <FormDialog
+            open={Boolean(chargeToExempt)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setChargeToExempt(null);
+                setExemptReason('');
+              }
+            }}
+            title="Isentar cobrança"
+            description={
+              chargeToExempt
+                ? `Unidade ${unitLabelForCharge(chargeToExempt, unitLabelById, myUnitId)} · ${formatBrl(chargeToExempt.amount)}. Registre o motivo da isenção — fica no histórico para auditoria.`
+                : ''
+            }
+          >
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const reason = exemptReason.trim();
+                if (!chargeToExempt || reason.length < 4) {
+                  toast.error('Informe um motivo (mín. 4 caracteres).');
+                  return;
+                }
+                exemptMutation.mutate(
+                  { id: chargeToExempt.id, reason },
+                  {
+                    onSuccess: () => {
+                      toast.success('Cobrança isenta.');
+                      setChargeToExempt(null);
+                      setExemptReason('');
+                    },
+                    onError: () =>
+                      toast.error('Não foi possível isentar a cobrança.'),
+                  },
+                );
+              }}
+            >
+              <FormField
+                label="Motivo da isenção"
+                htmlFor="exempt-reason"
+                required
+                hint="Ex.: morador em ajuda social, decisão da assembleia, ajuste interno."
+              >
+                <Textarea
+                  id="exempt-reason"
+                  rows={3}
+                  value={exemptReason}
+                  onChange={(e) => setExemptReason(e.target.value)}
+                  placeholder="Descreva por que essa cobrança será isenta…"
+                  maxLength={240}
+                />
+              </FormField>
+              <DialogFooter>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => {
+                    setChargeToExempt(null);
+                    setExemptReason('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={exemptMutation.isPending}>
+                  {exemptMutation.isPending ? 'Aplicando…' : 'Isentar cobrança'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormDialog>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { IsNull, Repository } from 'typeorm';
 import { endOfMonth } from 'date-fns';
 import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
-import { ChargeStatus, UnitStatus } from '../../common/enums';
+import { ChargeStatus } from '../../common/enums';
 import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { CreateChargeDto } from './dto/create-charge.dto';
 import { UpdateChargeDto } from './dto/update-charge.dto';
@@ -204,10 +204,13 @@ export class ChargesService {
     if (!condo) {
       throw new NotFoundException('Condomínio não encontrado.');
     }
+    // RN: a dívida é do imóvel, não do ocupante. Geramos cobrança para
+    // TODAS as unidades não isentas (incluindo VACANT) — o proprietário
+    // continua responsável pela taxa mesmo quando a unidade está vazia.
+    // Para isentar uma unidade permanentemente, use `isExempt = true`.
     const units = await this.unitRepo.find({
       where: {
         condominiumId,
-        status: UnitStatus.OCCUPIED,
         isExempt: false,
       },
     });

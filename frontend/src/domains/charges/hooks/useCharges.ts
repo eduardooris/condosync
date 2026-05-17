@@ -30,6 +30,13 @@ export function useCharges(
     onSuccess: invalidate,
   });
 
+  /** Morador declara que pagou — escopo /condominiums/:id/charges/mine. */
+  const payMineMutation = useMutation({
+    mutationFn: (chargeId: string) =>
+      chargesService.markPaidMine(condId!, chargeId),
+    onSuccess: invalidate,
+  });
+
   const exemptMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       chargesService.exempt(id, reason),
@@ -61,6 +68,7 @@ export function useCharges(
   return {
     ...query,
     payMutation,
+    payMineMutation,
     exemptMutation,
     generateMutation,
     createMutation,

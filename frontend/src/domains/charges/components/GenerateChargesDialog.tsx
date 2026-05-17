@@ -78,10 +78,10 @@ function GenerateChargesDialogBody({
     queryFn: () => unitsService.list(condominiumId),
   });
 
-  const occupiedUnits = useMemo(
-    () => (units ?? []).filter((u) => u.status === 'OCCUPIED'),
-    [units],
-  );
+  // RN: o proprietário deve pelo imóvel independente de ocupação. Mostramos
+  // TODAS as unidades elegíveis (não isentas), marcando vagas com um sufixo
+  // informativo. A filtragem de isenção fica no backend (`isExempt = false`).
+  const eligibleUnits = useMemo(() => units ?? [], [units]);
 
   const amountNumber = amountText
     ? Number(amountText.replace(/\./g, '').replace(',', '.'))
@@ -154,7 +154,7 @@ function GenerateChargesDialogBody({
           onClick={() => setMode('month')}
           icon={Layers}
           label="Mês inteiro"
-          hint="Todas as unidades ocupadas"
+          hint="Todas as unidades não isentas"
         />
         <ModeTab
           active={mode === 'unit'}
@@ -191,19 +191,15 @@ function GenerateChargesDialogBody({
                 onChange={(e) => setUnitId(e.target.value)}
                 disabled={unitsLoading}
               >
-                <option value="">{unitsLoading ? 'Carregando…' : 'Selecione uma unidade'}</option>
-                {occupiedUnits.map((u) => (
+                <option value="">
+                  {unitsLoading ? 'Carregando…' : 'Selecione uma unidade'}
+                </option>
+                {eligibleUnits.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.block}-{u.number}
+                    {u.status !== 'OCCUPIED' ? ' (sem ocupação)' : ''}
                   </option>
                 ))}
-                {(units ?? [])
-                  .filter((u) => u.status !== 'OCCUPIED')
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.block}-{u.number} (vaga)
-                    </option>
-                  ))}
               </NativeSelect>
             </FormField>
 
@@ -256,10 +252,15 @@ function GenerateChargesDialogBody({
             </FormField>
           </>
         ) : (
-          <p className="rounded-ds-md bg-[var(--ds-filter-track-bg)] px-3 py-2.5 text-ds-xs text-ds-dim">
+          <p className="rounded-ds-md bg-[var(--ds-filter-track-bg)] px-3 py-2.5 text-ds-sm text-ds-dim">
             Será criada uma cobrança para{' '}
-            <span className="font-semibold text-ds-body">cada unidade ocupada</span> que ainda não
-            tenha lançamento neste mês. Unidades isentas e vagas são ignoradas.
+            <span className="font-semibold text-ds-body">
+              cada unidade não isenta
+            </span>{' '}
+            que ainda não tenha lançamento neste mês — incluindo as unidades
+            sem morador (o proprietário continua devendo a taxa). Para
+            isentar uma unidade permanentemente, marque-a como isenta no
+            cadastro.
           </p>
         )}
       </div>

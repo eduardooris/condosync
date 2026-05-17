@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Copy, ExternalLink, Phone } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, Phone } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
+import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { cn } from '@/shared/utils/cn';
 import {
   Dialog,
@@ -39,6 +41,13 @@ interface ChargeDetailDialogProps {
   unitLabel: string;
   condominium?: CondominiumPaymentSlice | null;
   condominiumLoading?: boolean;
+  /**
+   * Quando informado, exibe o botão "Já paguei" (auto-declaração de
+   * pagamento) para PENDING/OVERDUE. Mantém o dialog dumb: o caller
+   * dispara a mutation e fecha o modal.
+   */
+  onMarkPaidByResident?: (chargeId: string) => Promise<void> | void;
+  markPaidPending?: boolean;
 }
 
 export function ChargeDetailDialog({
@@ -48,7 +57,10 @@ export function ChargeDetailDialog({
   unitLabel,
   condominium,
   condominiumLoading,
+  onMarkPaidByResident,
+  markPaidPending,
 }: ChargeDetailDialogProps) {
+  const [confirmPayOpen, setConfirmPayOpen] = useState(false);
   if (!charge) return null;
 
   const status = charge.status?.toLowerCase() as
@@ -57,6 +69,9 @@ export function ChargeDetailDialog({
     | 'overdue'
     | 'exempt'
     | 'canceled';
+  const canDeclarePaid =
+    Boolean(onMarkPaidByResident) &&
+    (status === 'pending' || status === 'overdue');
   const pixType = condominium?.pixKeyType ?? null;
   const pixValue = condominium?.pixKeyValue?.trim() ?? '';
   const hasPix = Boolean(pixType && pixValue);
@@ -179,11 +194,54 @@ export function ChargeDetailDialog({
             </div>
           )}
 
+          {canDeclarePaid ? (
+            <div className="rounded-ds-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
+                Já pagou pelo Pix?
+              </p>
+              <p className="mt-1 text-ds-sm text-ds-dim">
+                Avise a administração e a cobrança fica marcada como paga.
+                A administração revisa o histórico antes de qualquer ação
+                fiscal.
+              </p>
+              <Button
+                type="button"
+                variant="primary"
+                className="mt-3 w-full"
+                disabled={markPaidPending}
+                onClick={() => setConfirmPayOpen(true)}
+              >
+                <CheckCircle2 className="h-4 w-4" aria-hidden />
+                Já paguei essa cobrança
+              </Button>
+            </div>
+          ) : null}
+
           <Button type="button" variant="secondary" className="w-full" onClick={() => onOpenChange(false)}>
             Fechar
           </Button>
         </div>
       </DialogContent>
+
+      {canDeclarePaid ? (
+        <ConfirmDialog
+          open={confirmPayOpen}
+          onOpenChange={setConfirmPayOpen}
+          title="Confirmar pagamento?"
+          description={`Confirma que pagou ${formatBrl(charge.amount ?? 0)} da cobrança ${charge.billingMonth}? A administração receberá uma notificação para revisar.`}
+          confirmLabel="Sim, eu paguei"
+          confirmDisabled={markPaidPending}
+          onConfirm={async () => {
+            try {
+              await onMarkPaidByResident?.(charge.id);
+              setConfirmPayOpen(false);
+              onOpenChange(false);
+            } catch {
+              /* erro já tratado no caller */
+            }
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

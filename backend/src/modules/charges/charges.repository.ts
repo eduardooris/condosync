@@ -73,15 +73,23 @@ export class ChargesRepository {
     });
   }
 
-  countPendingOverdueByCondo(condominiumId: string) {
-    return this.repo
+  /**
+   * Conta UNIDADES distintas com pelo menos uma cobrança em aberto
+   * (PENDING ou OVERDUE) — métrica "inadimplência (unidades)" do dashboard.
+   * Antes contava cobranças (uma unidade com 3 atrasos virava 3); agora é
+   * count distinct sobre `unit_id`.
+   */
+  async countPendingOverdueByCondo(condominiumId: string) {
+    const raw = await this.repo
       .createQueryBuilder('c')
       .innerJoin('c.unit', 'u')
       .where('u.condominium_id = :condominiumId', { condominiumId })
       .andWhere('c.status IN (:...statuses)', {
         statuses: [ChargeStatus.PENDING, ChargeStatus.OVERDUE],
       })
-      .getCount();
+      .select('COUNT(DISTINCT c.unit_id)', 'count')
+      .getRawOne<{ count: string }>();
+    return Number(raw?.count ?? 0);
   }
 
   create(data: Partial<Charge>) {
