@@ -30,7 +30,7 @@ import { IntercomService } from './intercom.service';
 @ApiStandardResponses({ notFound: true })
 @Controller('portaria')
 @Throttle({
-  default: { limit: 30, ttl: 60_000 },
+  default: { limit: 90, ttl: 60_000 },
 })
 export class IntercomPublicController {
   constructor(private readonly intercom: IntercomService) {}
@@ -48,7 +48,7 @@ export class IntercomPublicController {
   @Public()
   @Post(':accessToken/sessions')
   @UseGuards(IntercomPublicThrottlerGuard)
-  @Throttle({ 'intercom-sessions': { limit: 10, ttl: 300_000 } })
+  @Throttle({ 'intercom-sessions': { limit: 30, ttl: 300_000 } })
   @ApiOperation({ summary: 'Inicia sessão de interfone' })
   @ApiCreatedResponse({ type: CreateIntercomSessionResponseDto })
   createSession(

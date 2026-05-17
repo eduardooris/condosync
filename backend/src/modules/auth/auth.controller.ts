@@ -37,7 +37,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Throttle({ auth: { limit: 8, ttl: 60_000 } })
+  @Throttle({ auth: { limit: 24, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: 'Autentica usuário e retorna tokens' })
   @ApiOkResponse({
@@ -62,7 +62,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 6, ttl: 60_000 } })
+  @Throttle({ auth: { limit: 18, ttl: 60_000 } })
   @Post('refresh')
   @ApiOperation({ summary: 'Renova sessão usando refresh token' })
   @ApiOkResponse({
@@ -75,7 +75,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
+  @Throttle({ auth: { limit: 15, ttl: 60_000 } })
   @Post(['forgot-password', 'forgot'])
   @ApiOperation({
     summary: 'Solicita link de redefinição de senha',
@@ -93,7 +93,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
+  @Throttle({ auth: { limit: 15, ttl: 60_000 } })
   @Post('reset-password')
   @ApiOperation({
     summary: 'Define nova senha usando o token recebido no WhatsApp',
@@ -105,7 +105,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
+  @Throttle({ auth: { limit: 30, ttl: 60_000 } })
   @Post('logout')
   @ApiOperation({ summary: 'Encerra sessão do token informado' })
   @ApiOkResponse({ description: 'Logout processado.', type: OkResponseDto })

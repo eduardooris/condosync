@@ -91,11 +91,11 @@ export const envSchema = z
 
     // ── Hardening / observabilidade ────────────────────────────────
     /** Limite global de requisições por IP no intervalo `THROTTLE_TTL`. */
-    THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
+    THROTTLE_LIMIT: z.coerce.number().int().positive().default(360),
     /** Janela do throttler em segundos. */
     THROTTLE_TTL: z.coerce.number().int().positive().default(60),
     /** Limite específico para rotas /auth/* (login, logout etc.). */
-    THROTTLE_AUTH_LIMIT: z.coerce.number().int().positive().default(10),
+    THROTTLE_AUTH_LIMIT: z.coerce.number().int().positive().default(30),
     /** Modo de log. Em prod usamos JSON estruturado. */
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
@@ -127,7 +127,7 @@ export const envSchema = z
      * Aplicado por chave `(IP, accessToken)`. Default: 10 sessões / 5 min,
      * conforme RN-10.10 do documento 05.
      */
-    INTERCOM_PUBLIC_RATE_LIMIT: z.coerce.number().int().positive().default(10),
+    INTERCOM_PUBLIC_RATE_LIMIT: z.coerce.number().int().positive().default(30),
     INTERCOM_PUBLIC_RATE_TTL_SEC: z.coerce
       .number()
       .int()
