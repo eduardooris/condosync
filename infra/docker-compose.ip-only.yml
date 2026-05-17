@@ -11,8 +11,10 @@
 #   cd infra
 #   docker compose \
 #     -f docker-compose.prod.yml \
+#     -f docker-compose.api.yml \
+#     -f docker-compose.build.yml \
 #     -f docker-compose.ip-only.yml \
-#     --env-file .env.prod up -d
+#     --env-file .env.prod up -d --build
 #
 # Quando comprar o DNS:
 #   • troque APP_DOMAIN/AUTH_DOMAIN no .env.prod

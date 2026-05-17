@@ -1,26 +1,18 @@
-# CondoSync — Override exclusivo do serviço `api`
+# CondoSync — API (build local na VPS; sem pull do GHCR)
 #
-# Use SEMPRE em conjunto com `docker-compose.prod.yml`:
-#
-#   IMAGE_TAG=<sha> docker compose \
-#     -f docker-compose.prod.yml -f docker-compose.api.yml \
-#     --env-file .env.prod pull api
-#
-#   IMAGE_TAG=<sha> docker compose \
-#     -f docker-compose.prod.yml -f docker-compose.api.yml \
-#     --env-file .env.prod up -d --no-deps api
-#
-# O serviço NÃO tem `build:` aqui — a imagem deve ser publicada no GHCR
-# (ou em outro registry compatível) pelo pipeline de CI antes do deploy.
+#   cd infra
+#   docker compose -f docker-compose.prod.yml -f docker-compose.api.yml \
+#     -f docker-compose.build.yml --env-file .env.prod up -d --build
 
 services:
   api:
-    # Imagem versionada. Em produção sempre usar SHA do commit; `latest`
-    # serve apenas como fallback para o primeiro boot.
-    image: ${API_IMAGE:-ghcr.io/condosync/condosync-api}:${IMAGE_TAG:-latest}
+    image: condosync-api:local
+    pull_policy: never
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
     container_name: condosync-api
     restart: always
-    pull_policy: always
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -69,9 +61,6 @@ services:
       keycloak:
         condition: service_started
       message-server:
-        # imagem distroless não permite healthcheck via wget/curl; usamos
-        # service_started. Se a API precisar do message-server pronto, retry
-        # interno do client cuida da janela inicial.
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/v1/health/ready"]

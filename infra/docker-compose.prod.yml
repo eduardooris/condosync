@@ -111,21 +111,16 @@ services:
     networks:
       - core
 
-  # ── Frontend React (SPA) ───────────────────────────────────────────────────
+  # ── Frontend / message-server: imagem definida em docker-compose.build.yml
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/condosync/condosync-frontend}:${FRONTEND_TAG:-${IMAGE_TAG:-latest}}
     container_name: condosync-frontend
     restart: always
-    pull_policy: always
     networks:
       - edge
 
-  # ── Message Server (WhatsApp) ──────────────────────────────────────────────
   message-server:
-    image: ${MESSAGE_SERVER_IMAGE:-ghcr.io/condosync/condosync-message-server}:${MESSAGE_SERVER_TAG:-${IMAGE_TAG:-latest}}
     container_name: condosync-message-server
     restart: always
-    pull_policy: always
     environment:
       APP_ENV: production
       APP_NAME: message-server

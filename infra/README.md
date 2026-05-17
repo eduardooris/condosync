@@ -28,8 +28,9 @@ A infraestrutura é separada em:
 
 | Arquivo | Papel |
 | --- | --- |
-| `docker-compose.prod.yml` | Base estável (edge + core + messaging sem API override) |
-| `docker-compose.api.yml` | Override da API para deploy isolado |
+| `docker-compose.prod.yml` | Base estável (edge + core + messaging) |
+| `docker-compose.api.yml` | Serviço `api` + variáveis de ambiente |
+| `docker-compose.build.yml` | Build local de api/frontend/message-server (sem registry) |
 | `docker-compose.ip-only.yml` | Override para testes na EC2 sem DNS (HTTP puro) |
 
 ## Layout
@@ -50,8 +51,8 @@ infra/
 
 ## Modo IP-only (teste sem DNS na EC2)
 
-> **Para o passo a passo completo do zero ao deploy via GitHub Actions, leia
-> [`DEPLOY_IP.md`](./DEPLOY_IP.md).** A seção abaixo é só um resumo rápido.
+> Deploy na VPS é **build local** (`git pull` + `scripts/vps-up.sh`). Não usa GHCR
+> nem GitHub Actions. Resumo IP-only em [`DEPLOY_IP.md`](./DEPLOY_IP.md).
 
 Use enquanto não há domínio comprado. O acesso é HTTP puro pelo IP da máquina
 (`http://<IP-EC2>` para o app e `http://<IP-EC2>/auth` para o Keycloak).
@@ -70,8 +71,9 @@ cd infra
 docker compose \
   -f docker-compose.prod.yml \
   -f docker-compose.api.yml \
+  -f docker-compose.build.yml \
   -f docker-compose.ip-only.yml \
-  --env-file .env.prod up -d
+  --env-file .env.prod up -d --build
 ```
 
 > ⚠️ Na **primeira subida em IP-only** os 3 arquivos compose precisam estar juntos
@@ -92,7 +94,7 @@ Migração para DNS (depois de comprar):
 4. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d` (sem o override IP).
 5. `bash infra/scripts/init-ssl.sh` para emitir certificados.
 6. Descomentar blocos HTTPS em `nginx/nginx.conf`.
-7. Rebuild do frontend (workflow `frontend-release` com novos build-args).
+7. Rebuild do frontend: `./scripts/vps-rebuild.sh frontend` (ou `vps-up.sh`).
 
 ## Variáveis de ambiente
 
@@ -105,38 +107,23 @@ Passe sempre `--env-file .env.prod`. Não precisa de `.env` na raiz nem `backend
 cp infra/.env.prod.example infra/.env.prod
 nano infra/.env.prod
 
-cd infra
-docker compose -f docker-compose.prod.yml -f docker-compose.api.yml --env-file .env.prod up -d
+cd ~/condosync
+git pull
+./scripts/vps-up.sh
 
 # Opcional TLS inicial
-./scripts/init-ssl.sh
+cd infra && ./scripts/init-ssl.sh
 ```
 
-## Deploy isolado por serviço
-
-### API
+## Atualizar um serviço (após `git pull`)
 
 ```bash
-IMAGE_TAG=<sha> GHCR_USER=<user> GHCR_TOKEN=<pat> \
-  /opt/condosync/infra/scripts/deploy-api.sh
+./scripts/vps-rebuild.sh api
+./scripts/vps-rebuild.sh frontend
+./scripts/vps-rebuild.sh message-server
 ```
 
-### Frontend
-
-```bash
-FRONTEND_TAG=<sha> GHCR_USER=<user> GHCR_TOKEN=<pat> \
-  /opt/condosync/infra/scripts/deploy-frontend.sh
-```
-
-### Message-server
-
-```bash
-MESSAGE_SERVER_TAG=<sha> GHCR_USER=<user> GHCR_TOKEN=<pat> \
-  /opt/condosync/infra/scripts/deploy-message-server.sh
-```
-
-Todos os scripts fazem: `pull` da imagem, `up -d --no-deps`, validação de saúde
-e rollback automático para a tag anterior em caso de falha.
+Ou os scripts em `infra/scripts/deploy-*.sh` (mesmo efeito, com healthcheck na API).
 
 ## Backups rápidos
 

@@ -135,14 +135,9 @@ $ npm run test:cov
 
 ## Deployment (CondoSync — EC2)
 
-A imagem é publicada no **GHCR** pela CI (`.github/workflows/backend-release.yml`)
-e atualizada na EC2 com `infra/scripts/deploy-api.sh`, que faz:
-
-1. `docker login` no GHCR.
-2. `pull` da nova tag.
-3. `docker compose up -d --no-deps api` (não toca em postgres/redis/keycloak/nginx).
-4. Aguarda o `HEALTHCHECK` do container.
-5. Em caso de falha, **rollback automático** para a tag anterior.
+Na VPS a API é buildada na própria máquina (`infra/docker-compose.build.yml`)
+e atualizada com `infra/scripts/deploy-api.sh` ou `scripts/vps-rebuild.sh api`
+(`docker compose up -d --build --no-deps api` + healthcheck).
 
 Detalhes operacionais completos em [`../infra/README.md`](../infra/README.md).
 
