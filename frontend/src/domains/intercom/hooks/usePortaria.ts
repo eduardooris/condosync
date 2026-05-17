@@ -150,6 +150,13 @@ export function usePortaria(accessToken: string) {
                 cleanupCall();
               }
             },
+            onParticipantJoined: (event) => {
+              if (event.role !== 'resident') return;
+              if (import.meta.env.DEV) {
+                console.info('[intercom/webrtc] participant_joined resident — reenviando offer');
+              }
+              void webrtcRef.current?.resendOffer();
+            },
           },
         );
         socketRef.current = socket;

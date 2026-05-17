@@ -71,6 +71,14 @@ export class VisitorWebRtcSession {
     this.onSignalOut({ type: 'offer', sdp: offer.sdp ?? undefined });
   }
 
+  /** Reenvia offer quando o morador entra na sala (offer inicial pode ter sido perdido). */
+  async resendOffer(): Promise<void> {
+    if (!this.pc || !this.localStream) return;
+    const offer = await this.pc.createOffer();
+    await this.pc.setLocalDescription(offer);
+    this.onSignalOut({ type: 'offer', sdp: offer.sdp ?? undefined });
+  }
+
   async handleSignal(msg: IntercomSignalMessage): Promise<void> {
     if (!this.pc) return;
     if (msg.type === 'offer' && msg.sdp && msg.fromRole === 'resident') {

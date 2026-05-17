@@ -81,3 +81,8 @@ export interface IntercomSignalMessage {
   candidate?: RTCIceCandidateInit;
   fromRole?: 'guest' | 'resident';
 }
+
+export interface IntercomParticipantJoinedEvent {
+  sessionId: string;
+  role: 'guest' | 'resident';
+}

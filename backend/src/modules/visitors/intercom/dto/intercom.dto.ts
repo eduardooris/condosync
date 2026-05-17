@@ -50,6 +50,11 @@ export class IceServerDto {
   credential?: string;
 }
 
+export class IntercomWebRtcConfigDto {
+  @ApiProperty({ type: IceServerDto, isArray: true })
+  iceServers: IceServerDto[];
+}
+
 export class CreateIntercomSessionResponseDto {
   @ApiProperty({ format: 'uuid' })
   sessionId: string;

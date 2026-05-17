@@ -1,9 +1,14 @@
 import { io, type Socket } from 'socket.io-client';
-import type { IntercomSignalMessage, IntercomSessionStatusResponse } from '@/shared/types/intercom';
+import type {
+  IntercomParticipantJoinedEvent,
+  IntercomSignalMessage,
+  IntercomSessionStatusResponse,
+} from '@/shared/types/intercom';
 
 export interface IntercomSocketHandlers {
   onSignal?: (msg: IntercomSignalMessage) => void;
   onSessionUpdate?: (msg: IntercomSessionStatusResponse & { reason?: string }) => void;
+  onParticipantJoined?: (msg: IntercomParticipantJoinedEvent) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -34,6 +39,9 @@ export function connectIntercomSocket(
   socket.on('signal', (payload: IntercomSignalMessage) => handlers.onSignal?.(payload));
   socket.on('session_update', (payload: IntercomSessionStatusResponse) =>
     handlers.onSessionUpdate?.(payload),
+  );
+  socket.on('participant_joined', (payload: IntercomParticipantJoinedEvent) =>
+    handlers.onParticipantJoined?.(payload),
   );
 
   return socket;

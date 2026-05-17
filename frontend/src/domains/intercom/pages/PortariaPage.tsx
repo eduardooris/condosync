@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { VideoPreview } from '@/domains/intercom/components/VideoPreview';
 import { usePortaria } from '@/domains/intercom/hooks/usePortaria';
+import { streamHasVideoTrack } from '@/domains/intercom/lib/media-stream-utils';
 import {
   portariaVisitorSchema,
   type PortariaVisitorForm,
@@ -91,11 +92,16 @@ export function PortariaPage() {
             mirror
             label="Você"
           />
-          {portaria.remoteStream ? (
+          {streamHasVideoTrack(portaria.remoteStream) ? (
             <VideoPreview
               stream={portaria.remoteStream}
               label="Morador"
             />
+          ) : portaria.remoteStream &&
+            portaria.remoteStream.getAudioTracks().length > 0 ? (
+            <p className="text-center text-ds-sm text-ds-dim">
+              Morador na linha (somente áudio)
+            </p>
           ) : null}
 
           <div className="flex flex-col gap-3">

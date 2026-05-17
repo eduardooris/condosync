@@ -7,6 +7,7 @@ import { IntercomSession } from '../../../database/entities/intercom-session.ent
 import { Resident } from '../../../database/entities/resident.entity';
 import { Unit } from '../../../database/entities/unit.entity';
 import { VisitorEntry } from '../../../database/entities/visitor-entry.entity';
+import { IntercomConfigController } from './intercom-config.controller';
 import { IntercomDevicesController } from './intercom-devices.controller';
 import { IntercomGuestJwtService } from './intercom-guest-jwt.service';
 import { IntercomPublicController } from './intercom-public.controller';
@@ -34,6 +35,7 @@ import { IntercomService } from './intercom.service';
     IntercomSessionsController,
     IntercomTokensController,
     IntercomDevicesController,
+    IntercomConfigController,
   ],
   providers: [
     IntercomService,
