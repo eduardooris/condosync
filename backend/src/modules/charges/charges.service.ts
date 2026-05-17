@@ -24,6 +24,28 @@ import {
 } from './charge-status.machine';
 import { toChargeResponse } from './charge.mapper';
 import { ChargeResponseDto } from './dto/charge-response.dto';
+import {
+  NotificationsService,
+  type CreateNotificationInput,
+} from '../notifications/notifications.service';
+import { NotificationType } from '../../database/entities/notification.entity';
+
+function formatBrl(amount: number | string): string {
+  const n = typeof amount === 'number' ? amount : Number(amount);
+  if (!Number.isFinite(n)) return 'R$ —';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(n);
+}
+
+function formatBrazilianDate(isoDate: string): string {
+  // dueDate vem no formato `YYYY-MM-DD` — formatar manualmente para evitar
+  // surpresas de fuso (new Date('2026-04-10') é UTC, vira `09/04` em SP).
+  const [y, m, d] = isoDate.split('-');
+  if (!y || !m || !d) return isoDate;
+  return `${d}/${m}/${y}`;
+}
 
 @Injectable()
 export class ChargesService {
@@ -34,6 +56,7 @@ export class ChargesService {
     @InjectRepository(Condominium)
     private readonly condoRepo: Repository<Condominium>,
     private readonly tenantMembership: TenantMembershipService,
+    private readonly notifications: NotificationsService,
     @InjectQueue(QUEUE_WHATSAPP_SEND)
     private readonly whatsappQueue: Queue,
   ) {}
@@ -134,6 +157,7 @@ export class ChargesService {
     });
     const saved = await this.chargesRepo.save(charge);
     await this.enqueueChargeNotification(saved.id);
+    await this.notifyChargeCreated(saved, condominiumId, unit.id);
     return saved;
   }
 
@@ -189,6 +213,7 @@ export class ChargesService {
     });
     let created = 0;
     const newIds: string[] = [];
+    const notifItems: CreateNotificationInput[] = [];
     for (const unit of units) {
       const exists = await this.chargesRepo.findActiveByUnitAndMonth(
         unit.id,
@@ -208,9 +233,28 @@ export class ChargesService {
       );
       newIds.push(row.id);
       created += 1;
+      // Resolve destinatários por unidade aqui mesmo — uma query por unidade,
+      // mas o broadcast `createMany` final fica em transação única.
+      const userIds = await this.tenantMembership.listUnitUserIds(
+        condominiumId,
+        unit.id,
+      );
+      for (const userId of userIds) {
+        notifItems.push(this.buildChargeCreatedNotif(userId, row, condominiumId));
+      }
     }
     for (const id of newIds) {
       await this.enqueueChargeNotification(id);
+    }
+    if (notifItems.length > 0) {
+      try {
+        await this.notifications.createMany(notifItems);
+      } catch (err) {
+        // Não derruba a geração — apenas loga via re-throw controlado.
+        // (logger formal não está injetado neste service; manter silencioso evita
+        // mascarar o sucesso da geração.)
+        void err;
+      }
     }
     return { created };
   }
@@ -233,7 +277,14 @@ export class ChargesService {
     assertChargeTransition(charge.status, ChargeStatus.PAID);
     charge.status = ChargeStatus.PAID;
     charge.paidAt = paidAt ?? new Date();
-    return this.chargesRepo.save(charge);
+    const saved = await this.chargesRepo.save(charge);
+    // Admin baixou pagamento → avisa moradores da unidade que a quitação foi
+    // registrada (confirmação visível). Falha silenciosa: pagamento não é
+    // bloqueado pela disponibilidade do gateway de notif.
+    await this.notifyChargePaid(saved, charge.unit.condominiumId, charge.unitId, {
+      notifyAdmins: false,
+    });
+    return saved;
   }
 
   /**
@@ -264,6 +315,11 @@ export class ChargesService {
     const saved = await this.chargesRepo.save(charge);
     const condo = await this.condoRepo.findOne({
       where: { id: condominiumId },
+    });
+    // Morador auto-declarou pagamento → notifica admins/sub-admins para
+    // confirmação manual e também os co-moradores da unidade (transparência).
+    await this.notifyChargePaid(saved, condominiumId, charge.unitId, {
+      notifyAdmins: true,
     });
     return toChargeResponse(saved, condo);
   }
@@ -359,8 +415,20 @@ export class ChargesService {
         try {
           assertChargeTransition(charge.status, ChargeStatus.OVERDUE);
           charge.status = ChargeStatus.OVERDUE;
-          await this.chargesRepo.save(charge);
+          const saved = await this.chargesRepo.save(charge);
           await this.enqueueOverdueReminder(charge.id);
+          // In-app: avisar moradores da unidade que a cobrança virou OVERDUE
+          // — paralelo ao reminder WhatsApp. Falha silenciosa para não
+          // travar o loop de processamento das demais cobranças.
+          try {
+            await this.notifyChargeOverdue(
+              saved,
+              saved.unit.condominiumId,
+              saved.unitId,
+            );
+          } catch {
+            /* noop */
+          }
         } catch {
           // Status já mudou desde o snapshot — ignora silenciosamente.
         }
@@ -412,6 +480,138 @@ export class ChargesService {
     const [{ value: y }, , { value: m }, , { value: d }] =
       formatter.formatToParts(new Date());
     return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+
+  // ── Notificações in-app ───────────────────────────────────────────
+
+  /** Monta o payload de notif "cobrança criada" para um usuário. */
+  private buildChargeCreatedNotif(
+    userId: string,
+    charge: Charge,
+    condominiumId: string,
+  ): CreateNotificationInput {
+    return {
+      userId,
+      condominiumId,
+      type: NotificationType.CHARGE_CREATED,
+      title: 'Nova cobrança disponível',
+      body: `Cobrança de ${charge.billingMonth} no valor de ${formatBrl(
+        charge.amount,
+      )}. Vence em ${formatBrazilianDate(charge.dueDate)}.`,
+      payload: {
+        chargeId: charge.id,
+        billingMonth: charge.billingMonth,
+        amount: charge.amount,
+        dueDate: charge.dueDate,
+      },
+    };
+  }
+
+  /**
+   * Notifica moradores da unidade que uma nova cobrança foi gerada.
+   * Falha silenciosa — se ninguém estiver vinculado, nada acontece.
+   */
+  private async notifyChargeCreated(
+    charge: Charge,
+    condominiumId: string,
+    unitId: string,
+  ): Promise<void> {
+    try {
+      const userIds = await this.tenantMembership.listUnitUserIds(
+        condominiumId,
+        unitId,
+      );
+      if (userIds.length === 0) return;
+      await this.notifications.createMany(
+        userIds.map((userId) =>
+          this.buildChargeCreatedNotif(userId, charge, condominiumId),
+        ),
+      );
+    } catch (err) {
+      void err;
+    }
+  }
+
+  /**
+   * Notifica que a cobrança foi confirmada como paga.
+   *   - notifyAdmins=false: só moradores recebem (admin acabou de baixar manualmente).
+   *   - notifyAdmins=true:  moradores + ADMIN/SUB_ADMIN (morador auto-declarou).
+   */
+  private async notifyChargePaid(
+    charge: Charge,
+    condominiumId: string,
+    unitId: string,
+    options: { notifyAdmins: boolean },
+  ): Promise<void> {
+    try {
+      const recipientIds = new Set<string>(
+        await this.tenantMembership.listUnitUserIds(condominiumId, unitId),
+      );
+      if (options.notifyAdmins) {
+        const admins =
+          await this.tenantMembership.listAdminUserIds(condominiumId);
+        for (const a of admins) recipientIds.add(a);
+      }
+      if (recipientIds.size === 0) return;
+
+      const baseBody = `Cobrança de ${charge.billingMonth} (${formatBrl(
+        charge.amount,
+      )}) foi confirmada como paga.`;
+      await this.notifications.createMany(
+        [...recipientIds].map((userId) => ({
+          userId,
+          condominiumId,
+          type: NotificationType.CHARGE_PAID,
+          title: 'Cobrança paga',
+          body: baseBody,
+          payload: {
+            chargeId: charge.id,
+            billingMonth: charge.billingMonth,
+            amount: charge.amount,
+            unitId,
+            selfDeclared: options.notifyAdmins,
+          },
+        })),
+      );
+    } catch (err) {
+      void err;
+    }
+  }
+
+  /**
+   * Notifica moradores que a cobrança virou OVERDUE — usado dentro do
+   * cron `runOverdueAndReminders` na transição PENDING→OVERDUE.
+   */
+  private async notifyChargeOverdue(
+    charge: Charge,
+    condominiumId: string,
+    unitId: string,
+  ): Promise<void> {
+    const userIds = await this.tenantMembership.listUnitUserIds(
+      condominiumId,
+      unitId,
+    );
+    if (userIds.length === 0) return;
+    const body = `Sua cobrança de ${charge.billingMonth} (${formatBrl(
+      charge.amount,
+    )}) venceu em ${formatBrazilianDate(
+      charge.dueDate,
+    )}. Regularize para evitar bloqueios.`;
+    await this.notifications.createMany(
+      userIds.map((userId) => ({
+        userId,
+        condominiumId,
+        type: NotificationType.CHARGE_OVERDUE,
+        title: 'Cobrança em atraso',
+        body,
+        payload: {
+          chargeId: charge.id,
+          billingMonth: charge.billingMonth,
+          amount: charge.amount,
+          dueDate: charge.dueDate,
+        },
+      })),
+    );
   }
 
   private async enqueueChargeNotification(chargeId: string): Promise<void> {

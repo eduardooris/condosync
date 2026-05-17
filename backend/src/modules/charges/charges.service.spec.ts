@@ -9,6 +9,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { ChargeStatus } from '../../common/enums';
 import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { QUEUE_WHATSAPP_SEND } from '../../queues/queue-names';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('ChargesService', () => {
   let service: ChargesService;
@@ -30,8 +31,14 @@ describe('ChargesService', () => {
     assertAdminOrSub: jest.fn(),
     resolveMineUnitIds: jest.fn(),
     assertUserOwnsUnit: jest.fn(),
+    listUnitUserIds: jest.fn().mockResolvedValue([]),
+    listAdminUserIds: jest.fn().mockResolvedValue([]),
   };
   const whatsappQueue = { add: jest.fn() };
+  const notifications = {
+    create: jest.fn(),
+    createMany: jest.fn().mockResolvedValue([]),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -48,6 +55,10 @@ describe('ChargesService', () => {
         {
           provide: getQueueToken(QUEUE_WHATSAPP_SEND),
           useValue: whatsappQueue,
+        },
+        {
+          provide: NotificationsService,
+          useValue: notifications,
         },
       ],
     }).compile();

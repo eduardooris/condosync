@@ -63,3 +63,16 @@ export class UpdatedCountResponseDto {
   @ApiProperty({ example: 3 })
   updated: number;
 }
+
+export class NotificationsPageResponseDto {
+  @ApiProperty({ type: NotificationResponseDto, isArray: true })
+  items: NotificationResponseDto[];
+
+  @ApiPropertyOptional({
+    example: '2026-04-22T10:55:00.000Z',
+    nullable: true,
+    description:
+      'Cursor opaco (ISO `createdAt` do último item) para a próxima página. `null` indica fim.',
+  })
+  nextCursor: string | null;
+}

@@ -147,4 +147,64 @@ export class TenantMembershipService {
     }
     return this.findResidentOnOwnedUnit(userId, condominiumId, unitId);
   }
+
+  /**
+   * Devolve os `userId`s vinculados como moradores da unidade — usado para
+   * notificações em escopo de unidade (cobrança gerada/paga/atrasada).
+   * Inclui também o membership cujo `unitId` casa, mesmo que o `Resident`
+   * ainda não tenha `userId` (caso ainda esteja sem cadastro completo).
+   * Filtra duplicatas.
+   */
+  async listUnitUserIds(
+    condominiumId: string,
+    unitId: string,
+  ): Promise<string[]> {
+    const [residents, memberships] = await Promise.all([
+      this.residentRepo
+        .createQueryBuilder('r')
+        .innerJoin('r.unit', 'u')
+        .select(['r.userId'])
+        .where('r.unit_id = :unitId', { unitId })
+        .andWhere('u.condominium_id = :condominiumId', { condominiumId })
+        .andWhere('r.user_id IS NOT NULL')
+        .getMany(),
+      this.membershipRepo.find({
+        where: {
+          condominiumId,
+          unitId,
+          status: MembershipStatus.APPROVED,
+        },
+        select: { userId: true },
+      }),
+    ]);
+
+    const ids = new Set<string>();
+    for (const r of residents) if (r.userId) ids.add(r.userId);
+    for (const m of memberships) if (m.userId) ids.add(m.userId);
+    return [...ids];
+  }
+
+  /**
+   * Devolve os `userId`s de ADMIN e SUB_ADMIN aprovados no condomínio —
+   * usado para notificar a gestão de eventos relevantes (ex.: morador
+   * declarou pagamento, saldo negativo, novo membro pendente).
+   */
+  async listAdminUserIds(condominiumId: string): Promise<string[]> {
+    const rows = await this.membershipRepo.find({
+      where: [
+        {
+          condominiumId,
+          role: UserRole.ADMIN,
+          status: MembershipStatus.APPROVED,
+        },
+        {
+          condominiumId,
+          role: UserRole.SUB_ADMIN,
+          status: MembershipStatus.APPROVED,
+        },
+      ],
+      select: { userId: true },
+    });
+    return [...new Set(rows.map((r) => r.userId))];
+  }
 }
