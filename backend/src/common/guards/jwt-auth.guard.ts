@@ -35,7 +35,11 @@ export class JwtAuthGuard implements CanActivate {
     const token = authHeader.slice(7);
     try {
       const claims = await this.authAdapter.verifyAccessToken(token);
-      request.user = { id: claims.sub, email: claims.email } as RequestUser;
+      request.user = {
+        id: claims.sub,
+        email: claims.email,
+        realmRoles: claims.realmRoles,
+      } as RequestUser;
       return true;
     } catch {
       throw new UnauthorizedException('Token inválido ou expirado.');

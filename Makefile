@@ -10,7 +10,8 @@
         api-shell api-logs frontend-logs msg-logs \
         migrate migrate-revert smoke-asaas \
         deploy deploy-api deploy-frontend deploy-msg deploy-pull \
-        tsc test
+        tsc test \
+        admin-install admin-dev admin-build admin-typecheck
 
 # ── DEV ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,21 @@ tsc: ## Type-check em todos os pacotes
 	cd backend && npx tsc --noEmit
 	cd frontend && npx tsc --noEmit
 	cd condosync-app && npx tsc --noEmit
+	cd admin && npx tsc --noEmit
+
+# ── ADMIN (back-office) ────────────────────────────────────────────────────
+
+admin-install: ## Instala deps do back-office (rodar 1 vez antes do dev)
+	cd admin && npm install
+
+admin-dev: ## Sobe back-office em http://localhost:5174
+	cd admin && npm run dev
+
+admin-build: ## Build de produção do back-office
+	cd admin && npm run build
+
+admin-typecheck: ## Type-check só do back-office
+	cd admin && npx tsc --noEmit
 
 test: ## Testes do backend
 	cd backend && npm test

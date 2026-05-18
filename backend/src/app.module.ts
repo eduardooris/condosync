@@ -27,6 +27,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { VisitorsModule } from './modules/visitors/visitors.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { MasterModule } from './modules/master/master.module';
 import { QueuesModule } from './queues/queues.module';
 import {
   REQUEST_ID_HEADER,
@@ -162,6 +163,7 @@ import {
     ReservationsModule,
     VisitorsModule,
     PaymentsModule,
+    MasterModule,
     OccurrencesModule,
     BulletinModule,
     DashboardModule,

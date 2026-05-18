@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-family: theme('fontFamily.sans');
+    font-size: 14px;
+    color-scheme: dark;
+  }
+
+  /* Foco visível mas discreto — sem ring colorido berrante */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-accent/60 ring-offset-2 ring-offset-bg;
+  }
+
+  /* Scrollbar do back-office: fina e cinza */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: theme('colors.bg.subtle');
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.border.strong');
+  }
+}
+
+@layer components {
+  /* Tabela densa — padrão das listagens. Aplique em `<table>` raiz. */
+  .ds-table {
+    @apply w-full text-sm;
+  }
+  .ds-table thead {
+    @apply sticky top-0 z-10 bg-bg-elevated text-xs uppercase tracking-wider text-fg-subtle;
+  }
+  .ds-table th {
+    @apply px-3 py-2 text-left font-medium border-b border-border;
+  }
+  .ds-table td {
+    @apply px-3 py-2 border-b border-border/60;
+  }
+  .ds-table tbody tr {
+    @apply transition-colors;
+  }
+  .ds-table tbody tr:hover {
+    @apply bg-bg-surface;
+  }
+}

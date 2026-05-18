@@ -49,9 +49,19 @@ export class KeycloakAuthAdapter implements IAuthAdapter {
     if (!sub) {
       throw new Error('Token inválido: claim "sub" ausente.');
     }
+    // Extrai realm roles do `realm_access.roles`. Estrutura típica:
+    //   { realm_access: { roles: ['default-roles-main', 'master-admin'] } }
+    const realmAccess = (payload as { realm_access?: { roles?: unknown } })
+      .realm_access;
+    const realmRoles = Array.isArray(realmAccess?.roles)
+      ? (realmAccess!.roles as unknown[]).filter(
+          (r): r is string => typeof r === 'string',
+        )
+      : undefined;
     return {
       sub,
       email: typeof payload.email === 'string' ? payload.email : undefined,
+      realmRoles,
     };
   }
 

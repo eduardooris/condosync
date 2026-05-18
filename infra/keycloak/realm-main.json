@@ -48,6 +48,30 @@
       "webOrigins": ["*"]
     },
     {
+      "clientId": "admin-frontend",
+      "name": "CondoSync Back-office (admin/)",
+      "description": "Painel interno — Authorization Code + PKCE. Acesso restrito por realm role master-admin (checagem no backend).",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:5174/*",
+        "https://admin.condosync.duckdns.org/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5174",
+        "https://admin.condosync.duckdns.org"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
       "clientId": "condo-backend-admin",
       "name": "CondoSync Backend (Admin API)",
       "enabled": true,

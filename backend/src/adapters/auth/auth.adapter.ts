@@ -3,6 +3,12 @@ export const AUTH_ADAPTER = 'AUTH_ADAPTER';
 export interface JwtClaims {
   sub: string;
   email?: string;
+  /**
+   * Realm roles do Keycloak (`realm_access.roles`). Inclui as roles diretas
+   * do usuário — não as compostas (`condo-admin` aparece se atribuída direto).
+   * Usado pelo `MasterRoleGuard` para gating do back-office.
+   */
+  realmRoles?: string[];
 }
 
 export interface IAuthAdapter {
