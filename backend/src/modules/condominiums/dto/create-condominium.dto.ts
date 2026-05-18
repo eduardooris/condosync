@@ -18,10 +18,18 @@ export class CreateCondominiumDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty()
+  /**
+   * Documento fiscal da administração. Aceita CPF (11 dígitos) ou
+   * CNPJ (14). Opcional — condomínios informais podem deixar em branco
+   * e o síndico recebe via CPF dele na subconta Asaas.
+   */
+  @ApiPropertyOptional({
+    description:
+      'CPF (11 dígitos) ou CNPJ (14) da administração. Opcional para condomínios informais.',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  cnpj: string;
+  cnpj?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

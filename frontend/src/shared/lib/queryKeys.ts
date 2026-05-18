@@ -38,6 +38,10 @@ export const queryKeys = {
     list: (condominiumId: string | undefined, scope: 'admin' | 'mine' = 'admin') =>
       ['charges', condominiumId, scope] as const,
   },
+  paymentAccount: {
+    byCondo: (condominiumId: string | undefined) =>
+      ['payment-account', condominiumId] as const,
+  },
   bulletin: {
     list: (condominiumId: string | undefined) => ['bulletin', condominiumId] as const,
   },

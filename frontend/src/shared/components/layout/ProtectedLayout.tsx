@@ -1,6 +1,11 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Outlet, useNavigate } from 'react-router-dom';
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { condominiumsService } from '@/domains/condominiums/services/condominiums.service';
 import { useAuthStore } from '@/shared/stores/auth.store';
@@ -30,6 +35,11 @@ function pendingListsEqual(
 export function ProtectedLayout() {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  const location = useLocation();
+  // POP = botão voltar do browser/gesto; PUSH = navegação pra frente.
+  // REPLACE não tem direção — tratamos como PUSH (mais comum).
+  const navType = useNavigationType();
+  const direction = navType === 'POP' ? -1 : 1;
   const canCreateCondominium = useAuthStore((state) => state.canCreateCondominium);
   const activeCondominium = useAuthStore((state) => state.activeCondominium);
   const setActiveCondominium = useAuthStore((state) => state.setActiveCondominium);
@@ -129,14 +139,38 @@ export function ProtectedLayout() {
             <Outlet />
           </section>
         ) : (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.26, ease: 'easeOut' }}
-            className={mainClassName}
-          >
-            <Outlet />
-          </motion.section>
+          // AnimatePresence + key=pathname → cada rota é um nó animado.
+          // Em mobile: slide horizontal direcionado (forward = entra da
+          // direita; back = entra da esquerda) imitando stack nativo.
+          // Em ds-md+ (tablet+): fade vertical sutil (sem slide horizontal).
+          <section className={mainClassName + ' relative'}>
+            <AnimatePresence mode="wait" initial={false} custom={direction}>
+              <motion.div
+                key={location.pathname}
+                custom={direction}
+                initial={(d: number) => ({
+                  opacity: 0,
+                  x:
+                    window.matchMedia('(min-width: 768px)').matches
+                      ? 0
+                      : 24 * d,
+                  y: window.matchMedia('(min-width: 768px)').matches ? 8 : 0,
+                })}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                exit={(d: number) => ({
+                  opacity: 0,
+                  x:
+                    window.matchMedia('(min-width: 768px)').matches
+                      ? 0
+                      : -24 * d,
+                  y: 0,
+                })}
+                transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          </section>
         )}
       </main>
       <CommandPalette open={paletteOpen} onClose={closePalette} />

@@ -6,3 +6,4 @@ export const QUEUE_BULLETIN_NOTIFY = 'bulletin-notify';
 export const QUEUE_BALANCE_CHECK = 'balance-check';
 export const QUEUE_POLLS_AUTOCLOSE = 'polls-autoclose';
 export const QUEUE_INAPP_NOTIFY = 'inapp-notify';
+export const QUEUE_ASAAS_WEBHOOK = 'asaas-webhook';

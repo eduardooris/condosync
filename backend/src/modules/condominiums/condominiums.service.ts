@@ -48,9 +48,16 @@ export class CondominiumsService {
     return this.dataSource.transaction(async (manager) => {
       const condoRepo = manager.getRepository(Condominium);
       const ucRepo = manager.getRepository(UserCondominium);
+      const cnpjDigits = dto.cnpj?.replace(/\D/g, '') ?? '';
+      if (cnpjDigits && ![11, 14].includes(cnpjDigits.length)) {
+        // Cobre o caso de cliente legacy enviando "12345" — aceitar lixo é pior.
+        throw new BadRequestException(
+          'CPF/CNPJ inválido — informe 11 dígitos (CPF) ou 14 (CNPJ).',
+        );
+      }
       const condo = condoRepo.create({
         name: dto.name,
-        cnpj: dto.cnpj.replace(/\D/g, ''),
+        cnpj: cnpjDigits || null,
         address: dto.address ?? null,
         photoUrl: dto.photoUrl ?? null,
         monthlyFeeAmount: String(dto.monthlyFeeAmount ?? 0),
@@ -116,6 +123,24 @@ export class CondominiumsService {
   ): Promise<Condominium> {
     const condo = await this.findOne(condominiumId);
     if (dto.name !== undefined) condo.name = dto.name;
+    // `cnpj` mudança: só `null → algo` ou `algo → null`. Trocar de um valor
+    // existente por outro é regra fiscal e requer operação dedicada — aqui
+    // bloqueamos pra evitar PATCH acidental quebrar conciliação.
+    if (dto.cnpj !== undefined) {
+      const cnpjDigits = dto.cnpj?.replace(/\D/g, '') ?? '';
+      if (cnpjDigits && ![11, 14].includes(cnpjDigits.length)) {
+        throw new BadRequestException(
+          'CPF/CNPJ inválido — informe 11 dígitos (CPF) ou 14 (CNPJ).',
+        );
+      }
+      const next = cnpjDigits || null;
+      if (condo.cnpj && next && condo.cnpj !== next) {
+        throw new BadRequestException(
+          'CPF/CNPJ do condomínio só pode ser alterado quando estiver em branco. Contate o suporte para trocar um documento já cadastrado.',
+        );
+      }
+      condo.cnpj = next;
+    }
     if (dto.address !== undefined) condo.address = dto.address ?? null;
     if (dto.photoUrl !== undefined) condo.photoUrl = dto.photoUrl ?? null;
     if (dto.monthlyFeeAmount !== undefined) {

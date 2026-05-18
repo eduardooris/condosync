@@ -29,6 +29,11 @@ import {
   type CreateNotificationInput,
 } from '../notifications/notifications.service';
 import { NotificationType } from '../../database/entities/notification.entity';
+import { PaymentAccountsService } from '../payments/accounts/payment-accounts.service';
+import { ChargesAsaasService } from '../payments/charges/charges-asaas.service';
+import { Resident } from '../../database/entities/resident.entity';
+import { ConfigService } from '@nestjs/config';
+import { Env } from '../../config/env.schema';
 
 function formatBrl(amount: number | string): string {
   const n = typeof amount === 'number' ? amount : Number(amount);
@@ -59,7 +64,62 @@ export class ChargesService {
     private readonly notifications: NotificationsService,
     @InjectQueue(QUEUE_WHATSAPP_SEND)
     private readonly whatsappQueue: Queue,
+    private readonly paymentAccounts: PaymentAccountsService,
+    private readonly chargesAsaas: ChargesAsaasService,
+    @InjectRepository(Resident)
+    private readonly residentRepo: Repository<Resident>,
+    private readonly config: ConfigService<Env, true>,
   ) {}
+
+  /**
+   * Pré-flight da geração de cobranças. Bloqueia quando:
+   *   - Feature flag `ASAAS_ACCOUNTS_ENABLED=false` → segue fluxo legado (Pix manual)
+   *   - Subconta != ACTIVE → 403 com `code: PAYMENT_ACCOUNT_NOT_ACTIVE`
+   *   - Alguma unidade não-isenta não tem responsável financeiro → 422
+   *     com `code: MISSING_FINANCIAL_RESPONSIBLES` + `pendingUnitIds`
+   *
+   * Retorna `false` quando Asaas está desligado — caller usa pra decidir
+   * se faz ou não a emissão na Asaas.
+   */
+  private async runChargeGenerationPreflight(
+    condominiumId: string,
+  ): Promise<{ asaasEnabled: boolean }> {
+    const enabled = this.config.get('ASAAS_ACCOUNTS_ENABLED', { infer: true });
+    if (!enabled) {
+      // Modo legado — geração continua, Asaas não é chamado.
+      return { asaasEnabled: false };
+    }
+    // RN-PG-03.1 — subconta ACTIVE.
+    await this.paymentAccounts.requireActive(condominiumId);
+
+    // RN-PG-03.2 — toda unidade não-isenta precisa de responsável financeiro.
+    const pendingUnits = await this.unitRepo
+      .createQueryBuilder('u')
+      .leftJoin(
+        Resident,
+        'r',
+        'r.unit_id = u.id AND r.is_financial_responsible = true',
+      )
+      .where('u.condominium_id = :condoId', { condoId: condominiumId })
+      .andWhere('u.is_exempt = false')
+      .andWhere('r.id IS NULL')
+      .select(['u.id', 'u.block', 'u.number'])
+      .getMany();
+    if (pendingUnits.length > 0) {
+      throw new BadRequestException({
+        message:
+          'Algumas unidades ainda não têm responsável financeiro. ' +
+          'Cadastre antes de gerar cobranças.',
+        code: 'MISSING_FINANCIAL_RESPONSIBLES',
+        pendingUnitIds: pendingUnits.map((u) => u.id),
+        pendingUnits: pendingUnits.map((u) => ({
+          id: u.id,
+          label: `${u.block}-${u.number}`,
+        })),
+      });
+    }
+    return { asaasEnabled: true };
+  }
 
   // ── Listagens ──────────────────────────────────────────────────────
 
@@ -144,6 +204,26 @@ export class ChargesService {
     if (!condo) {
       throw new NotFoundException('Condomínio não encontrado.');
     }
+
+    // Asaas habilitado: exige subconta ACTIVE + responsável na unidade.
+    // Cobrança avulsa não exige 100% das unidades, só a unidade-alvo.
+    const asaasEnabled = this.config.get('ASAAS_ACCOUNTS_ENABLED', {
+      infer: true,
+    });
+    if (asaasEnabled) {
+      await this.paymentAccounts.requireActive(condominiumId);
+      const hasResp = await this.residentRepo.count({
+        where: { unitId: unit.id, isFinancialResponsible: true },
+      });
+      if (hasResp === 0) {
+        throw new BadRequestException({
+          message: `Unidade ${unit.block}-${unit.number} sem responsável financeiro — defina antes de criar cobrança.`,
+          code: 'MISSING_FINANCIAL_RESPONSIBLE',
+          unitId: unit.id,
+        });
+      }
+    }
+
     const amount = dto.amount ?? condo.monthlyFeeAmount;
     const dueDate =
       dto.dueDate ?? this.buildDueDate(dto.billingMonth, condo.billingDueDay);
@@ -155,7 +235,15 @@ export class ChargesService {
       description: dto.description?.trim() || null,
       status: ChargeStatus.PENDING,
     });
-    const saved = await this.chargesRepo.save(charge);
+    let saved = await this.chargesRepo.save(charge);
+
+    // Emite na Asaas DEPOIS do save local — assim se Asaas falhar, a
+    // cobrança ainda existe localmente e o admin pode acompanhar.
+    if (asaasEnabled) {
+      saved.unit = unit;
+      saved = await this.chargesAsaas.emitPayment(saved);
+    }
+
     await this.enqueueChargeNotification(saved.id);
     await this.notifyChargeCreated(saved, condominiumId, unit.id);
     return saved;
@@ -204,6 +292,11 @@ export class ChargesService {
     if (!condo) {
       throw new NotFoundException('Condomínio não encontrado.');
     }
+    // Pre-flight RN-PG-03: subconta ACTIVE + 100% das unidades têm responsável.
+    // Quando ASAAS_ACCOUNTS_ENABLED=false, pula tudo (modo legado Pix manual).
+    const { asaasEnabled } = await this.runChargeGenerationPreflight(
+      condominiumId,
+    );
     // RN: a dívida é do imóvel, não do ocupante. Geramos cobrança para
     // TODAS as unidades não isentas (incluindo VACANT) — o proprietário
     // continua responsável pela taxa mesmo quando a unidade está vazia.
@@ -224,7 +317,7 @@ export class ChargesService {
       );
       if (exists) continue;
       const dueDate = this.buildDueDate(month, condo.billingDueDay);
-      const row = await this.chargesRepo.save(
+      let row = await this.chargesRepo.save(
         this.chargesRepo.create({
           unitId: unit.id,
           billingMonth: month,
@@ -234,6 +327,20 @@ export class ChargesService {
           status: ChargeStatus.PENDING,
         }),
       );
+      // Emissão na Asaas — falha numa charge marca como "emitida pela metade"
+      // mas não bloqueia as demais. Compensação completa (rollback de tudo)
+      // seria caro e raro de bater o cenário; reconciliação cron pega.
+      if (asaasEnabled) {
+        try {
+          row.unit = unit;
+          row = await this.chargesAsaas.emitPayment(row);
+        } catch (err) {
+          // Não derruba o lote — apenas loga e segue. Charge fica sem
+          // `asaas_payment_id`; reconciliação detectará e re-tentará.
+          // (Logger formal não está injetado neste service.)
+          void err;
+        }
+      }
       newIds.push(row.id);
       created += 1;
       // Resolve destinatários por unidade aqui mesmo — uma query por unidade,
@@ -268,6 +375,7 @@ export class ChargesService {
     userId: string,
     chargeId: string,
     paidAt?: Date,
+    extra?: { method?: string; note?: string },
   ): Promise<Charge> {
     const charge = await this.chargesRepo.findByIdWithUnit(chargeId);
     if (!charge) {
@@ -280,6 +388,12 @@ export class ChargesService {
     assertChargeTransition(charge.status, ChargeStatus.PAID);
     charge.status = ChargeStatus.PAID;
     charge.paidAt = paidAt ?? new Date();
+    if (extra?.method) {
+      charge.paidMethod = extra.method;
+    }
+    if (extra?.note) {
+      charge.paidNote = extra.note;
+    }
     const saved = await this.chargesRepo.save(charge);
     // Admin baixou pagamento → avisa moradores da unidade que a quitação foi
     // registrada (confirmação visível). Falha silenciosa: pagamento não é
@@ -347,6 +461,9 @@ export class ChargesService {
       charge.unit.condominiumId,
     );
     assertChargeTransition(charge.status, ChargeStatus.EXEMPT);
+    // Tira da fila Asaas antes de mudar status local — não faz sentido
+    // manter cobrança ativa lá pra unidade que foi isenta.
+    await this.chargesAsaas.cancelPayment(charge);
     charge.status = ChargeStatus.EXEMPT;
     charge.exemptReason = trimmed;
     return this.chargesRepo.save(charge);
@@ -366,6 +483,8 @@ export class ChargesService {
       charge.unit.condominiumId,
     );
     assertChargeTransition(charge.status, ChargeStatus.CANCELED);
+    // Cancela no Asaas antes do save local. Falha silenciosa via service.
+    await this.chargesAsaas.cancelPayment(charge);
     charge.status = ChargeStatus.CANCELED;
     charge.canceledAt = new Date();
     charge.cancelReason = reason?.trim() || null;

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { DashboardRevenueChart } from '@/domains/dashboard/components/DashboardRevenueChart';
 import { AdminHero } from '@/domains/dashboard/components/AdminHero';
+import { PaymentAccountAlertBanner } from '@/domains/payments/components/PaymentAccountAlertBanner';
 import { ResidentHero } from '@/domains/dashboard/components/ResidentHero';
 import { KpiCard } from '@/shared/components/ui/KpiCard';
 import { Spinner } from '@/shared/components/ui/Spinner';
@@ -116,6 +117,11 @@ export function DashboardPage() {
           </div>
         ) : null}
       </motion.header>
+
+      {/* Payment account alert (admin only) */}
+      {isAdmin && condominium?.id ? (
+        <PaymentAccountAlertBanner condominiumId={condominium.id} />
+      ) : null}
 
       {/* Pending member approvals banner (admin only) */}
       {isAdmin && pendingMembers.length > 0 && condominium?.id ? (

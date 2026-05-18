@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import {
+  QUEUE_ASAAS_WEBHOOK,
   QUEUE_BALANCE_CHECK,
   QUEUE_BULLETIN_NOTIFY,
   QUEUE_CHARGES_GENERATION,
@@ -32,6 +33,7 @@ import { WHATSAPP_ADAPTER } from '../adapters/whatsapp/whatsapp.adapter';
       { name: QUEUE_BALANCE_CHECK },
       { name: QUEUE_POLLS_AUTOCLOSE },
       { name: QUEUE_INAPP_NOTIFY },
+      { name: QUEUE_ASAAS_WEBHOOK },
     ),
     TypeOrmModule.forFeature([Charge, Resident, Poll]),
   ],

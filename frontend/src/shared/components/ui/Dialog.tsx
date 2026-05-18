@@ -25,6 +25,17 @@ export const DialogOverlay = forwardRef<
 ));
 DialogOverlay.displayName = 'DialogOverlay';
 
+/**
+ * DialogContent — responsivo:
+ *
+ *   • Mobile (<768px): bottom sheet ancorado embaixo, slide-up no abrir,
+ *     puxador no topo, rounded só no topo, max-h 90dvh, respeita safe-area.
+ *   • Tablet+: dialog centralizado tradicional com zoom-in.
+ *
+ * Mantém a mesma API (`hideClose`, `className`) — nenhum caller precisa
+ * mudar. O Radix entrega acessibilidade (focus trap, ESC, click outside)
+ * em ambos os layouts.
+ */
 export const DialogContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideClose?: boolean }
@@ -34,16 +45,29 @@ export const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
-        'rounded-ds-xl bg-[var(--ds-popover-bg)] p-4 shadow-ds-elev ds-sm:p-6',
-        'max-h-[min(85dvh,48rem)] overflow-y-auto overscroll-contain',
-        'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
-        'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+        // ── Mobile: bottom sheet ──
+        'fixed inset-x-0 bottom-0 z-50 w-full',
+        'rounded-t-[1.5rem] bg-[var(--ds-popover-bg)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-ds-elev',
+        'max-h-[90dvh] overflow-y-auto overscroll-contain',
+        'data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=open]:duration-300',
+        'data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=closed]:duration-200',
+        // ── Tablet+: dialog centralizado tradicional ──
+        'ds-md:inset-x-auto ds-md:bottom-auto ds-md:left-1/2 ds-md:top-1/2',
+        'ds-md:w-[calc(100%-1.5rem)] ds-md:max-w-lg ds-md:-translate-x-1/2 ds-md:-translate-y-1/2',
+        'ds-md:rounded-ds-xl ds-md:p-6 ds-md:pb-6',
+        'ds-md:max-h-[min(85dvh,48rem)]',
+        'ds-md:data-[state=open]:zoom-in-95 ds-md:data-[state=open]:slide-in-from-left-1/2 ds-md:data-[state=open]:slide-in-from-top-[48%] ds-md:data-[state=open]:fade-in-0',
+        'ds-md:data-[state=closed]:zoom-out-95 ds-md:data-[state=closed]:fade-out-0 ds-md:data-[state=closed]:slide-out-to-bottom-0',
         'focus:outline-none',
         className,
       )}
       {...props}
     >
+      {/* Grab handle — visível só em mobile (sheet feel) */}
+      <div
+        aria-hidden
+        className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-ds-stroke ds-md:hidden"
+      />
       {children}
       {!hideClose ? (
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-ds-md p-1.5 text-ds-dim transition hover:bg-ds-surface hover:text-ds-body focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus">

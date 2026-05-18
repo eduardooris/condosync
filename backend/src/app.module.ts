@@ -26,6 +26,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { VisitorsModule } from './modules/visitors/visitors.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { QueuesModule } from './queues/queues.module';
 import {
   REQUEST_ID_HEADER,
@@ -160,6 +161,7 @@ import {
     PollsModule,
     ReservationsModule,
     VisitorsModule,
+    PaymentsModule,
     OccurrencesModule,
     BulletinModule,
     DashboardModule,

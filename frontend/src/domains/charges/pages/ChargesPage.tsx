@@ -15,6 +15,7 @@ import { FormField } from '@/shared/components/ui/FormField';
 import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
+import { PullToRefresh } from '@/shared/components/ui/PullToRefresh';
 import { Textarea } from '@/shared/components/ui/Textarea';
 import { useChargesPage, type StatusFilter } from '@/domains/charges/hooks/useChargesPage';
 import { GenerateChargesDialog } from '@/domains/charges/components/GenerateChargesDialog';
@@ -114,7 +115,8 @@ export function ChargesPage() {
   if (chargesQuery.isLoading) return <ListSkeleton rows={8} />;
 
   return (
-    <div className="ds-page mx-auto max-w-5xl min-w-0 space-y-4 ds-md:space-y-5">
+    <PullToRefresh onRefresh={() => chargesQuery.refetch()} className="ds-page mx-auto max-w-5xl min-w-0">
+    <div className="space-y-4 ds-md:space-y-5">
       {/* Page header — mobile: coluna; desktop: linha */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -557,5 +559,6 @@ export function ChargesPage() {
         </>
       ) : null}
     </div>
+    </PullToRefresh>
   );
 }

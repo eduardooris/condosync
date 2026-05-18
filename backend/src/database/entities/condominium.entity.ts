@@ -22,8 +22,19 @@ export class Condominium {
   @Column()
   name: string;
 
-  @Column({ unique: true })
-  cnpj: string;
+  /**
+   * Documento fiscal da administração. Pode ser:
+   *   - CNPJ do condomínio (14 dígitos) — caso PJ formal
+   *   - CPF do síndico (11 dígitos) — caso condomínio informal sem PJ
+   *   - `null` — quando o síndico não quer informar ou ainda decidirá
+   *
+   * Antes era NOT NULL UNIQUE; passamos para nullable + unique parcial via
+   * migration `1719500000000-CondominiumCnpjOptional` (mantém o UNIQUE
+   * apenas para valores não-nulos, permitindo múltiplos condomínios sem
+   * documento).
+   */
+  @Column({ type: 'varchar', nullable: true })
+  cnpj: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   address: Record<string, unknown> | null;

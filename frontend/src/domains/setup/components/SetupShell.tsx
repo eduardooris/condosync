@@ -27,6 +27,7 @@ const STEP_LABELS: Record<SetupStep, string> = {
   welcome: 'Boas-vindas',
   identity: 'Identidade',
   financial: 'Financeiro',
+  payments: 'Pagamentos',
   units: 'Unidades',
   done: 'Pronto',
 };

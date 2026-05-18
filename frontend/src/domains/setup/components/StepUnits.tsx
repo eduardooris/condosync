@@ -38,7 +38,7 @@ export function StepUnits({ onBack, onContinue }: StepUnitsProps) {
   return (
     <SetupShell
       step="units"
-      eyebrow="Passo 3 de 4"
+      eyebrow="Passo 4 de 5"
       title="Vamos cadastrar as unidades"
       description="Escolha o jeito mais rápido para você. As unidades podem ser editadas depois individualmente."
       onBack={onBack}

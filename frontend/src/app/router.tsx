@@ -56,6 +56,10 @@ const UnitDetailPage = lazyPage(
   'UnitDetailPage',
 );
 const SettingsPage = lazyPage(() => import('@/domains/auth/pages/SettingsPage'), 'SettingsPage');
+const PaymentsSettingsPage = lazyPage(
+  () => import('@/domains/payments/pages/PaymentsSettingsPage'),
+  'PaymentsSettingsPage',
+);
 const SetupPage = lazyPage(() => import('@/domains/setup/pages/SetupPage'), 'SetupPage');
 const AcceptInvitePage = lazyPage(
   () => import('@/domains/invitations/pages/AcceptInvitePage'),
@@ -119,6 +123,14 @@ export const router = createBrowserRouter([
           { path: 'correspondences', element: withSuspense(<CorrespondencesPage />) },
           { path: 'notifications', element: withSuspense(<NotificationsPage />) },
           { path: 'settings', element: withSuspense(<SettingsPage />) },
+          {
+            path: 'settings/payments',
+            element: withSuspense(
+              <ProtectedRoute minRole="SUB_ADMIN">
+                <PaymentsSettingsPage />
+              </ProtectedRoute>,
+            ),
+          },
           { path: 'condominiums', element: withSuspense(<ProtectedRoute minRole="SUB_ADMIN"><CondominiumsPage /></ProtectedRoute>) },
           { path: 'condominiums/:id', element: withSuspense(<ProtectedRoute minRole="SUB_ADMIN"><CondominiumDetailPage /></ProtectedRoute>) },
           {

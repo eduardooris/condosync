@@ -193,6 +193,24 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS Safari faz auto-zoom em qualquer input com font-size < 16px ao focar.
+   Forçamos 16px em mobile pra todos os controles de formulário — em telas
+   >= 768px (ds-md) o tamanho menor volta via classe Tailwind. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select,
+  [contenteditable='true'] {
+    font-size: 16px;
+  }
+}
+
+/* Pull-to-refresh do Safari sobre o body atrapalha quando a app implementa
+   o próprio gesto — desabilita o nativo no documento, libera quem precisar. */
+html {
+  overscroll-behavior-y: none;
+}
+
 html[data-theme='light'] body {
   background-image:
     radial-gradient(900px circle at 12% 10%, rgba(79, 125, 240, 0.14), transparent 55%),

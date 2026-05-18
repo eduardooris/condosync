@@ -52,7 +52,10 @@ export class ChargeActionsController {
     @Body() dto: MarkPaidDto,
   ) {
     const paidAt = dto.paidAt ? new Date(dto.paidAt) : undefined;
-    return this.service.markPaid(user.id, id, paidAt);
+    return this.service.markPaid(user.id, id, paidAt, {
+      method: dto.method,
+      note: dto.note,
+    });
   }
 
   @Patch(':id/exempt')

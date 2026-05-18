@@ -20,6 +20,7 @@ import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Input } from '@/shared/components/ui/Input';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
+import { PullToRefresh } from '@/shared/components/ui/PullToRefresh';
 import { FormDialog, DialogFooter, DialogClose } from '@/shared/components/ui/Dialog';
 import { FormField } from '@/shared/components/ui/FormField';
 import {
@@ -130,7 +131,8 @@ export function ExpensesPage() {
   }
 
   return (
-    <div className="ds-page mx-auto max-w-6xl min-w-0 space-y-5 ds-md:space-y-6">
+    <PullToRefresh onRefresh={() => refetch()} className="ds-page mx-auto max-w-6xl min-w-0">
+    <div className="space-y-5 ds-md:space-y-6">
       <PageHeader
         title="Despesas"
         description={
@@ -394,5 +396,6 @@ export function ExpensesPage() {
         </>
       )}
     </div>
+    </PullToRefresh>
   );
 }

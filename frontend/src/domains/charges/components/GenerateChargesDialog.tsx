@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Building2, CalendarDays, Layers, Zap } from 'lucide-react';
+import { AlertTriangle, Building2, CalendarDays, CheckCircle2, Layers, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { usePaymentAccount } from '@/domains/payments/hooks/usePaymentAccount';
+import { paymentAccountStatusLabel } from '@/domains/payments/components/PaymentAccountStatusBadge';
 import { Button } from '@/shared/components/ui/Button';
 import {
   Dialog,
@@ -91,6 +94,13 @@ function GenerateChargesDialogBody({
 
   const submitting = generateMutation.isPending || createMutation.isPending;
 
+  const { account: paymentAccount } = usePaymentAccount(condominiumId);
+  const accountActive = paymentAccount?.status === 'ACTIVE';
+  // Mostra o aviso de pré-condições somente quando a feature Asaas está em
+  // uso (subconta presente). Antes da criação, comportamento legado (Pix
+  // manual) — nenhum checklist é necessário.
+  const showPreflightChecklist = Boolean(paymentAccount);
+
   async function handleSubmit() {
     if (mode === 'month') {
       try {
@@ -102,7 +112,10 @@ function GenerateChargesDialogBody({
         );
         onOpenChange(false);
       } catch (err) {
-        toast.error(extractError(err) ?? 'Não foi possível gerar as cobranças.');
+        const friendly = extractPreflightError(err);
+        toast.error(friendly ?? extractError(err) ?? 'Não foi possível gerar as cobranças.', {
+          duration: 8000,
+        });
       }
       return;
     }
@@ -127,7 +140,10 @@ function GenerateChargesDialogBody({
       toast.success('Cobrança avulsa criada.');
       onOpenChange(false);
     } catch (err) {
-      toast.error(extractError(err) ?? 'Não foi possível criar a cobrança.');
+      const friendly = extractPreflightError(err);
+      toast.error(friendly ?? extractError(err) ?? 'Não foi possível criar a cobrança.', {
+        duration: 8000,
+      });
     }
   }
 
@@ -143,6 +159,33 @@ function GenerateChargesDialogBody({
           específica.
         </DialogDescription>
       </DialogHeader>
+
+      {showPreflightChecklist && !accountActive ? (
+        <div className="mb-2 rounded-ds-xl border border-amber-500/30 bg-amber-500/[0.08] p-3 text-ds-sm">
+          <p className="flex items-start gap-2 text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>Recebimentos ainda não ativos</strong> —{' '}
+              {paymentAccountStatusLabel(paymentAccount!.status)}. Finalize o
+              cadastro de pagamentos para emitir cobranças online.{' '}
+              <Link
+                to="/settings/payments"
+                className="font-semibold underline-offset-2 hover:underline"
+              >
+                Resolver
+              </Link>
+              .
+            </span>
+          </p>
+        </div>
+      ) : null}
+
+      {showPreflightChecklist && accountActive ? (
+        <div className="mb-2 flex items-center gap-2 rounded-ds-xl border border-emerald-500/30 bg-emerald-500/[0.08] p-3 text-ds-xs text-emerald-700 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Cobranças vão sair com Pix, boleto e cartão automáticos.
+        </div>
+      ) : null}
 
       {/* Mode toggle */}
       <div
@@ -330,4 +373,56 @@ function extractError(err: unknown): string | null {
   const msg = anyErr.response?.data?.message ?? anyErr.message;
   if (Array.isArray(msg)) return msg.join(' • ');
   return msg ?? null;
+}
+
+/**
+ * Detecta erros estruturados do pre-flight do backend
+ * (`MISSING_FINANCIAL_RESPONSIBLES`, `PAYMENT_ACCOUNT_NOT_ACTIVE`...) e
+ * devolve uma mensagem amigável com instrução de próximo passo.
+ *
+ * Quando o erro não bate, retorna `null` — caller usa `extractError`.
+ */
+function extractPreflightError(err: unknown): string | null {
+  if (typeof err !== 'object' || !err) return null;
+  const anyErr = err as {
+    response?: {
+      data?: {
+        code?: string;
+        message?: string;
+        pendingUnits?: { id: string; label: string }[];
+      };
+    };
+  };
+  const data = anyErr.response?.data;
+  if (!data?.code) return null;
+
+  if (data.code === 'PAYMENT_ACCOUNT_NOT_ACTIVE') {
+    return (
+      'Os recebimentos do condomínio ainda não foram ativados. ' +
+      'Abra Configurações → Pagamentos para concluir o cadastro.'
+    );
+  }
+  if (data.code === 'MISSING_FINANCIAL_RESPONSIBLES') {
+    const labels = (data.pendingUnits ?? [])
+      .slice(0, 5)
+      .map((u) => u.label)
+      .join(', ');
+    const extra =
+      (data.pendingUnits?.length ?? 0) > 5
+        ? ` (e mais ${(data.pendingUnits?.length ?? 0) - 5})`
+        : '';
+    return (
+      'Antes de gerar as cobranças, indique quem paga em cada unidade: ' +
+      (labels || 'pendentes') +
+      extra +
+      '.'
+    );
+  }
+  if (data.code === 'MISSING_FINANCIAL_RESPONSIBLE') {
+    return (
+      'Esta unidade ainda não tem ninguém marcado como pagador. ' +
+      'Cadastre o responsável antes de criar a cobrança.'
+    );
+  }
+  return data.message ?? null;
 }

@@ -16,6 +16,10 @@ import { Document } from './document.entity';
 import { Notification } from './notification.entity';
 import { MessageServerEvent } from './message-server-event.entity';
 import { PasswordResetToken } from './password-reset-token.entity';
+import { PaymentAccount } from './payment-account.entity';
+import { PaymentCustomer } from './payment-customer.entity';
+import { ResidentPaymentCustomer } from './resident-payment-customer.entity';
+import { PaymentWebhookEvent } from './payment-webhook-event.entity';
 
 export const entities = [
   User,
@@ -36,6 +40,10 @@ export const entities = [
   Notification,
   MessageServerEvent,
   PasswordResetToken,
+  PaymentAccount,
+  PaymentCustomer,
+  ResidentPaymentCustomer,
+  PaymentWebhookEvent,
 ];
 
 export {
@@ -57,4 +65,8 @@ export {
   Notification,
   MessageServerEvent,
   PasswordResetToken,
+  PaymentAccount,
+  PaymentCustomer,
+  ResidentPaymentCustomer,
+  PaymentWebhookEvent,
 };

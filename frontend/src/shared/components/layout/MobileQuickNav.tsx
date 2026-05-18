@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
   Receipt,
@@ -42,12 +42,43 @@ const PHONE_PRIMARY_RESIDENT: QuickNavItem[] = [
   { to: '/bulletin', label: 'Mural', icon: ClipboardList },
 ];
 
+/**
+ * Auto-hide do tab bar: esconde ao rolar pra baixo (libera tela pro conteúdo)
+ * e re-aparece ao rolar pra cima ou parar. Threshold pequeno (8px) pra não
+ * disparar com micro-scrolls do iOS. Sempre visível no topo da página.
+ */
+function useTabBarVisibility(): boolean {
+  const [visible, setVisible] = useState(true);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastY.current;
+      // No topo absoluto, sempre mostra (mesmo se delta == 0).
+      if (y < 16) {
+        setVisible(true);
+      } else if (delta > 8) {
+        setVisible(false); // scroll pra baixo
+      } else if (delta < -8) {
+        setVisible(true); // scroll pra cima
+      }
+      lastY.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return visible;
+}
+
 export function MobileQuickNav() {
   const role = useAuthStore((state) => state.role);
   const location = useLocation();
   const isAdmin = canAccessCondominiumAdminRoutes(role);
   const phonePrimary = isAdmin ? PHONE_PRIMARY_ADMIN : PHONE_PRIMARY_RESIDENT;
   const [moreOpen, setMoreOpen] = useState(false);
+  const visible = useTabBarVisibility();
 
   const isRouteActive = (to: string, end?: boolean) => {
     if (end) return location.pathname === to;
@@ -61,8 +92,13 @@ export function MobileQuickNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-ds-stroke-subtle/80 bg-[var(--ds-tabbar-bg)] px-2 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-1.5 backdrop-blur-xl ds-md:hidden"
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-40 border-t border-ds-stroke-subtle/80 bg-[var(--ds-tabbar-bg)] px-2 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-1.5 backdrop-blur-xl ds-md:hidden',
+          'transition-transform duration-200 ease-out will-change-transform',
+          visible ? 'translate-y-0' : 'translate-y-full',
+        )}
         aria-label="Navegação principal mobile"
+        aria-hidden={!visible}
       >
         <ul className="grid grid-cols-5 gap-1">
           {phonePrimary.map(({ to, label, icon: Icon, end }) => {

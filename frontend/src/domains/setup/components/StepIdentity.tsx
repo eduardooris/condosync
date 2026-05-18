@@ -100,7 +100,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
   return (
     <SetupShell
       step="identity"
-      eyebrow="Passo 1 de 4"
+      eyebrow="Passo 1 de 5"
       title="Como podemos chamar seu condomínio?"
       description="Esses dados aparecem no topo do app e nos comunicados enviados aos moradores."
       onBack={onBack}
@@ -132,21 +132,24 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
         </FormField>
 
         <FormField
-          label="CNPJ"
+          label="CPF ou CNPJ da administração"
           htmlFor="setup-cnpj"
-          required
-          hint="14 dígitos. Pode colar com pontuação."
+          hint="Opcional. Use o CNPJ se o condomínio for registrado como PJ, ou seu CPF (síndico) se for informal — você poderá usar o mesmo documento no recebimento das cobranças."
           error={form.formState.errors.cnpj?.message}
         >
           <Input
             id="setup-cnpj"
-            placeholder="00.000.000/0000-00"
+            placeholder="00.000.000/0000-00  ou  000.000.000-00"
             inputMode="numeric"
             maxLength={18}
             invalid={Boolean(form.formState.errors.cnpj)}
             {...form.register('cnpj', {
-              required: 'Informe o CNPJ',
-              validate: (value) => digits(value).length === 14 || 'CNPJ deve ter 14 dígitos',
+              validate: (value) => {
+                const len = digits(value ?? '').length;
+                if (len === 0) return true; // opcional
+                if (len === 11 || len === 14) return true;
+                return 'Informe 11 dígitos (CPF) ou 14 (CNPJ), ou deixe em branco.';
+              },
             })}
           />
         </FormField>

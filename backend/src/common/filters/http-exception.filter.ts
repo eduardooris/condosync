@@ -14,6 +14,12 @@ interface NormalizedError {
   status: number;
   message: string | string[];
   error: string;
+  /**
+   * Campos extras propagados quando a exception traz contexto adicional
+   * (ex.: `code` semântico, `upstream` da Asaas, `pendingUnitIds`). O filter
+   * NÃO inventa esses campos — só passa adiante quando a exception coloca.
+   */
+  extras?: Record<string, unknown>;
 }
 
 /**
@@ -56,6 +62,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: normalized.status,
       error: normalized.error,
       message: normalized.message,
+      // Spread DEPOIS dos campos padrão pra `extras` (`code`, `upstream`,
+      // `pendingUnitIds`…) nunca sobrescrever statusCode/error/message.
+      ...(normalized.extras ?? {}),
       path: request.url,
       timestamp: new Date().toISOString(),
       requestId,
@@ -116,11 +125,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (raw && typeof raw === 'object') {
-      const body = raw as { message?: string | string[]; error?: string };
+      const body = raw as Record<string, unknown> & {
+        message?: string | string[];
+        error?: string;
+      };
+      // Preserva campos extras (code, upstream, details, pendingUnitIds…)
+      // separando-os do envelope padronizado.
+      const { message, error, statusCode: _ignored, ...extras } = body;
+      void _ignored;
       return {
         status,
-        error: body.error ?? errorName,
-        message: body.message ?? exception.message,
+        error: (error as string | undefined) ?? errorName,
+        message: message ?? exception.message,
+        extras: Object.keys(extras).length > 0 ? extras : undefined,
       };
     }
 

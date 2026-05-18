@@ -1,15 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { getQueueToken } from '@nestjs/bull';
+import { ConfigService } from '@nestjs/config';
 import { ChargesService } from './charges.service';
 import { ChargesRepository } from './charges.repository';
 import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
+import { Resident } from '../../database/entities/resident.entity';
 import { ForbiddenException } from '@nestjs/common';
 import { ChargeStatus } from '../../common/enums';
 import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { QUEUE_WHATSAPP_SEND } from '../../queues/queue-names';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentAccountsService } from '../payments/accounts/payment-accounts.service';
+import { ChargesAsaasService } from '../payments/charges/charges-asaas.service';
 
 describe('ChargesService', () => {
   let service: ChargesService;
@@ -39,6 +43,24 @@ describe('ChargesService', () => {
     create: jest.fn(),
     createMany: jest.fn().mockResolvedValue([]),
   };
+  const residentRepo = { findOne: jest.fn(), count: jest.fn().mockResolvedValue(1) };
+  const paymentAccounts = {
+    requireActive: jest.fn().mockResolvedValue({ id: 'pa1' }),
+    resolveApiKey: jest.fn().mockResolvedValue('fakekey'),
+  };
+  const chargesAsaas = {
+    emitPayment: jest.fn().mockImplementation(async (c) => c),
+    cancelPayment: jest.fn().mockResolvedValue(undefined),
+    fetchPixQrCode: jest.fn().mockResolvedValue(null),
+  };
+  // Quando `ASAAS_ACCOUNTS_ENABLED=false`, ChargesService pula a integração.
+  // Mantemos `false` no spec para os testes existentes não dependerem de Asaas.
+  const config = {
+    get: jest.fn((key: string) => {
+      if (key === 'ASAAS_ACCOUNTS_ENABLED') return false;
+      return undefined;
+    }),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -60,6 +82,10 @@ describe('ChargesService', () => {
           provide: NotificationsService,
           useValue: notifications,
         },
+        { provide: getRepositoryToken(Resident), useValue: residentRepo },
+        { provide: PaymentAccountsService, useValue: paymentAccounts },
+        { provide: ChargesAsaasService, useValue: chargesAsaas },
+        { provide: ConfigService, useValue: config },
       ],
     }).compile();
     service = module.get(ChargesService);

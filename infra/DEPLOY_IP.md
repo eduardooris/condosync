@@ -108,10 +108,13 @@ Atenção:
 
 ### 3.5. Subir a stack (build local)
 
+O modo IP-only é definido pelo próprio `.env.prod` (copiado do
+`.env.prod.ip-only.example`) — não precisa de override `-f` adicional.
+
 ```bash
 cd /opt/condosync
-git pull   # se já clonou antes
-./scripts/vps-up.sh -f docker-compose.ip-only.yml
+git pull
+./scripts/vps-up.sh
 ```
 
 Ou manualmente:
@@ -122,7 +125,6 @@ docker compose \
   -f docker-compose.prod.yml \
   -f docker-compose.api.yml \
   -f docker-compose.build.yml \
-  -f docker-compose.ip-only.yml \
   --env-file .env.prod up -d --build
 ```
 
@@ -152,7 +154,6 @@ Do seu navegador:
 4. Restart só da API:
    ```bash
    cd /opt/condosync && ./scripts/vps-rebuild.sh api
-   # (com ip-only: export EXTRA_COMPOSE_FILE=docker-compose.ip-only.yml nos scripts deploy-*)
    ```
 
 ### 3.7.1. Desativar exigência de SSL no realm (IP-only HTTP)
@@ -182,7 +183,7 @@ Na EC2:
 ```bash
 cd /opt/condosync
 git pull
-./scripts/vps-up.sh -f docker-compose.ip-only.yml   # IP-only
+./scripts/vps-up.sh                # mesmo comando p/ DNS+TLS e IP-only
 # ou só um serviço:
 ./scripts/vps-rebuild.sh api
 ```

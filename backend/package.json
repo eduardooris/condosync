@@ -25,7 +25,13 @@
     "typeorm:run": "npm run typeorm migration:run",
     "typeorm:revert": "npm run typeorm migration:revert",
     "openapi:types": "openapi-typescript ./openapi.json -o ./src/types/openapi.generated.ts",
-    "openapi:sync": "npm run openapi:pull && npm run openapi:types"
+    "openapi:sync": "npm run openapi:pull && npm run openapi:types",
+    "dev:deps": "cd .. && docker compose up -d postgres redis",
+    "dev:deps:full": "cd .. && docker compose up -d",
+    "dev:deps:auth": "cd .. && docker compose up -d postgres redis keycloak-db keycloak",
+    "dev:deps:storage": "cd .. && docker compose up -d postgres redis minio minio-init",
+    "dev:deps:down": "cd .. && docker compose down",
+    "dev:deps:logs": "cd .. && docker compose logs -f"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1037.0",

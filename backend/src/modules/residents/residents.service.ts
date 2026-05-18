@@ -34,6 +34,7 @@ import {
 import { MembershipStatus } from '../../database/entities/user-condominium.entity';
 import { UsersService } from '../users/users.service';
 import { TenantMembershipService } from '../../common/services/tenant-membership.service';
+import { PaymentCustomersService } from '../payments/customers/payment-customers.service';
 
 @Injectable()
 export class ResidentsService {
@@ -56,7 +57,37 @@ export class ResidentsService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly tenantMembership: TenantMembershipService,
+    private readonly paymentCustomers: PaymentCustomersService,
   ) {}
+
+  /**
+   * Garante que existe `Customer` Asaas para o residente responsável.
+   *
+   * **Best-effort por design**:
+   *   - Subconta `DRAFT` / `PENDING_*` → swallow silencioso (síndico ainda
+   *     não onboardou; ensureForResponsible será chamado de novo no próximo
+   *     mexer-no-residente, OU pelo refresh da subconta quando virar ACTIVE).
+   *   - Asaas timeout / 5xx → log warn, segue. Reconciliação periódica
+   *     vai sincronizar.
+   *
+   * Bloquear o save do residente por causa de Asaas seria UX ruim — o
+   * cadastro local é o que importa pra unidade ficar "onboarding ready".
+   */
+  private async ensureAsaasCustomerBestEffort(
+    condominiumId: string,
+    resident: Pick<
+      Resident,
+      'id' | 'cpf' | 'fullName' | 'email' | 'phoneWhatsapp'
+    >,
+  ): Promise<void> {
+    try {
+      await this.paymentCustomers.ensureForResponsible(condominiumId, resident);
+    } catch (err) {
+      this.logger.warn(
+        `Asaas customer ensure falhou para resident ${resident.id}: ${(err as Error).message}`,
+      );
+    }
+  }
 
   private async loadUnit(condominiumId: string, unitId: string): Promise<Unit> {
     const unit = await this.unitRepo.findOne({
@@ -116,7 +147,7 @@ export class ResidentsService {
       // Toda promoção a responsável precisa rodar dentro de uma
       // transação SERIALIZABLE — caso contrário dois requests
       // concorrentes podem deixar a unidade com 2 responsáveis.
-      return this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+      const saved = await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
         const provisioned = await this.provisionResidentAccess({
           condominiumId,
           unitId,
@@ -158,6 +189,10 @@ export class ResidentsService {
         );
         return saved;
       });
+      // Hook fora da transação SERIALIZABLE (chamada externa Asaas não pode
+      // segurar lock). Falha aqui não desfaz o cadastro local.
+      await this.ensureAsaasCustomerBestEffort(condominiumId, saved);
+      return saved;
     }
 
     const provisioned = await this.provisionResidentAccess({
@@ -285,7 +320,9 @@ export class ResidentsService {
     if (dto.email !== undefined) r.email = dto.email;
 
     if (dto.isFinancialResponsible === true && !r.isFinancialResponsible) {
-      return this.promoteToResponsible(unitId, r);
+      const promoted = await this.promoteToResponsible(unitId, r);
+      await this.ensureAsaasCustomerBestEffort(condominiumId, promoted);
+      return promoted;
     }
     if (dto.isFinancialResponsible === false && r.isFinancialResponsible) {
       r.isFinancialResponsible = false;
@@ -293,6 +330,10 @@ export class ResidentsService {
     }
     const saved = await this.residentsRepo.save(r);
     await this.syncUnitOccupation(unitId);
+    // Se continua responsável e teve alteração de dados, ressincroniza Asaas.
+    if (saved.isFinancialResponsible) {
+      await this.ensureAsaasCustomerBestEffort(condominiumId, saved);
+    }
     return saved;
   }
 
@@ -313,6 +354,7 @@ export class ResidentsService {
     });
     const saved = await this.promoteToResponsible(unitId, r);
     await this.syncUnitOccupation(unitId);
+    await this.ensureAsaasCustomerBestEffort(condominiumId, saved);
     return saved;
   }
 

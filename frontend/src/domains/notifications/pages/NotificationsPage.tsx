@@ -20,6 +20,7 @@ import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { Spinner } from '@/shared/components/ui/Spinner';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { Button } from '@/shared/components/ui/Button';
+import { PullToRefresh } from '@/shared/components/ui/PullToRefresh';
 import { useNotificationsPage } from '@/domains/notifications/hooks/useNotificationsPage';
 import {
   type AppNotification,
@@ -170,7 +171,8 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="ds-page mx-auto max-w-3xl space-y-5">
+    <PullToRefresh onRefresh={() => notificationsQuery.refetch()} className="ds-page mx-auto max-w-3xl">
+    <div className="space-y-5">
       <PageHeader
         title="Notificações"
         description="Cobranças, mural, enquetes e demais eventos do condomínio em ordem cronológica."
@@ -261,6 +263,7 @@ export function NotificationsPage() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }
 

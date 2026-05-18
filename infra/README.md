@@ -31,7 +31,10 @@ A infraestrutura é separada em:
 | `docker-compose.prod.yml` | Base estável (edge + core + messaging) |
 | `docker-compose.api.yml` | Serviço `api` + variáveis de ambiente |
 | `docker-compose.build.yml` | Build local de api/frontend/message-server (sem registry) |
-| `docker-compose.ip-only.yml` | Override para testes na EC2 sem DNS (HTTP puro) |
+
+> Os mesmos 3 compose files atendem **DNS+TLS** e **IP-only**. O que muda
+> entre os dois modos são apenas variáveis no `.env.prod` (ver
+> `.env.prod.ip-only.example`).
 
 ## Layout
 
@@ -67,34 +70,23 @@ Limitações:
 cp infra/.env.prod.ip-only.example infra/.env.prod
 nano infra/.env.prod   # ajuste senhas; o IP já está pré-preenchido (18.228.119.6)
 
-cd infra
-docker compose \
-  -f docker-compose.prod.yml \
-  -f docker-compose.api.yml \
-  -f docker-compose.build.yml \
-  -f docker-compose.ip-only.yml \
-  --env-file .env.prod up -d --build
+./scripts/vps-up.sh
 ```
 
-> ⚠️ Na **primeira subida em IP-only** os 3 arquivos compose precisam estar juntos
-> (`prod.yml` + `api.yml` + `ip-only.yml`). O serviço `api` é definido só em
-> `api.yml` e o `ip-only.yml` aplica overrides nele.
-
-Para deploy isolado da API/frontend/message-server em IP-only, exporte
-`EXTRA_COMPOSE_FILE=docker-compose.ip-only.yml` antes dos scripts.
-Os scripts de deploy já incluem `docker-compose.api.yml` automaticamente para
-evitar compose inválido quando o override IP-only declarar apenas ajustes do
-serviço `api`.
+O `.env.prod.ip-only.example` define `NGINX_CONF_FILE=nginx.ip-only.conf`,
+`KC_PROXY=none`, `KEYCLOAK_BASE_URL` com `/auth` e as URLs públicas baseadas
+em IP. O compose lê esses valores no boot — nenhum override `-f` é necessário.
 
 Migração para DNS (depois de comprar):
 
 1. Apontar `A record` do `APP_DOMAIN` e `AUTH_DOMAIN` para o IP da EC2.
-2. Editar `.env.prod` trocando IP por domínios reais e `APP_PUBLIC_URL=https://...`.
+2. Substituir `.env.prod` por uma cópia do `.env.prod.example` (DNS+TLS) com
+   senhas e domínios reais.
 3. Reabrir `443` no Security Group.
-4. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d` (sem o override IP).
+4. `./scripts/vps-up.sh` (mesmo comando — só o `.env.prod` mudou).
 5. `bash infra/scripts/init-ssl.sh` para emitir certificados.
 6. Descomentar blocos HTTPS em `nginx/nginx.conf`.
-7. Rebuild do frontend: `./scripts/vps-rebuild.sh frontend` (ou `vps-up.sh`).
+7. Rebuild do frontend: `./scripts/vps-rebuild.sh frontend`.
 
 ## Variáveis de ambiente
 

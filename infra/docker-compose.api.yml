@@ -17,16 +17,18 @@ services:
       NODE_ENV: production
       PORT: 3000
       AUTH_PROVIDER: keycloak
-      KEYCLOAK_BASE_URL: http://keycloak:8080
+      # Defaults atendem DNS+TLS. Modo IP-only sobrescreve via .env.prod
+      # (KEYCLOAK_BASE_URL com /auth, KEYCLOAK_ISSUER baseado em APP_PUBLIC_URL).
+      KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: main
-      KEYCLOAK_ISSUER: https://${AUTH_DOMAIN}/realms/main
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://${AUTH_DOMAIN}/realms/main}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-condo-backend-admin}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://${APP_DOMAIN}}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      CORS_ORIGINS: https://${APP_DOMAIN}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://${APP_DOMAIN}}
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
       STORAGE_BUCKET: ${STORAGE_BUCKET}
       S3_REGION: ${S3_REGION:-us-east-1}

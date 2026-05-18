@@ -84,7 +84,7 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
   return (
     <SetupShell
       step="financial"
-      eyebrow="Passo 2 de 4"
+      eyebrow="Passo 2 de 5"
       title="Como funcionará a cobrança mensal?"
       description="Você pode mudar isso depois em Configurações. Esses valores são aplicados a todas as unidades ocupadas."
       onBack={onBack}

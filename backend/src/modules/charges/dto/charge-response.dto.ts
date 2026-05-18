@@ -29,6 +29,15 @@ export class ChargeResponseDto {
   @ApiPropertyOptional({ example: null, nullable: true })
   paidAt: Date | null;
 
+  @ApiPropertyOptional({
+    description: 'Método de pagamento. Asaas: PIX/BOLETO/CREDIT_CARD/etc. Manual: MANUAL_*.',
+    nullable: true,
+  })
+  paidMethod: string | null;
+
+  @ApiPropertyOptional({ description: 'Observação livre do admin.', nullable: true })
+  paidNote: string | null;
+
   @ApiPropertyOptional({ example: null, nullable: true })
   exemptReason: string | null;
 
@@ -54,6 +63,49 @@ export class ChargeResponseDto {
     nullable: true,
   })
   pixCode: string | null;
+
+  // ── Asaas (gateway) ────────────────────────────────────────────────
+  // Preenchidos quando a cobrança foi emitida via subconta Asaas.
+  // Frontend usa para renderizar QR Pix + boleto + Asaas Checkout.
+
+  @ApiPropertyOptional({ example: 'pay_876bc7cz3dr19bz8', nullable: true })
+  asaasPaymentId: string | null;
+
+  @ApiPropertyOptional({
+    example: 'https://sandbox.asaas.com/i/876bc7cz3dr19bz8',
+    nullable: true,
+  })
+  asaasInvoiceUrl: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  asaasPixPayload: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  asaasPixQrBase64: string | null;
+
+  @ApiPropertyOptional({
+    example: 'https://sandbox.asaas.com/b/pdf/876bc7cz3dr19bz8',
+    nullable: true,
+  })
+  asaasBankSlipUrl: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Recibo oficial da Asaas (link público).',
+    nullable: true,
+  })
+  asaasTransactionReceiptUrl: string | null;
+
+  @ApiPropertyOptional({
+    enum: ['PIX', 'BOLETO', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH', 'TRANSFER'],
+    nullable: true,
+  })
+  asaasPaidVia: string | null;
+
+  @ApiPropertyOptional({ example: 'PAYMENT_CREATED', nullable: true })
+  asaasLastEvent: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  asaasSyncedAt: Date | null;
 }
 
 export class GenerateMonthResponseDto {

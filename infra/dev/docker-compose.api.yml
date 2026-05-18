@@ -21,46 +21,26 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    # Fonte única de configuração: backend/.env (copiado de .env.example
+    # na 1ª subida). Tudo que NÃO precisa de override docker-specific deve
+    # viver lá — não duplicar aqui.
     env_file:
       - path: ../../backend/.env
         required: false
     environment:
+      # ── overrides obrigatórios para rodar dentro da rede docker ───────
+      # Estes substituem os equivalentes em backend/.env (que usam
+      # localhost — bom pra `npm run start:dev` no host).
       NODE_ENV: development
-      # Em dev o schema base é criado via TypeORM synchronize; as migrations
-      # atuais são "delta" e assumem tabelas já existentes.
       SKIP_MIGRATIONS: "1"
-      PORT: 3000
-      AUTH_PROVIDER: keycloak
-      KEYCLOAK_BASE_URL: http://keycloak:8080
-      KEYCLOAK_REALM: main
-      # Issuer público (mesmo URL que o frontend usa). Vai dentro do JWT.
-      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/main}
-      # URL interna (rede docker) usada pelo backend p/ falar com o Keycloak.
-      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/main
-      KEYCLOAK_CLIENT_ID: main-frontend
-      KEYCLOAK_ADMIN_CLIENT_ID: condo-backend-admin
-      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-condo-backend-admin-dev-secret}
-      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:5173}
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/condosync
       REDIS_URL: redis://redis:6379
-      # Backend usa endpoint interno; URLs assinadas usam endpoint público para
-      # que o browser fora do docker consiga baixar.
-      STORAGE_PROVIDER: s3
-      STORAGE_BUCKET: condosync-files
-      S3_REGION: us-east-1
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/main
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/main}
       S3_ENDPOINT: http://minio:9000
       S3_PUBLIC_ENDPOINT: http://localhost:9000
-      S3_ACCESS_KEY_ID: minioadmin
-      S3_SECRET_ACCESS_KEY: minioadmin
-      S3_FORCE_PATH_STYLE: "true"
       MESSAGE_SERVER_BASE_URL: http://message-server:8080
-      MESSAGE_SERVER_API_KEY: ${MESSAGE_SERVER_API_KEY:-}
-      MESSAGE_SERVER_TIMEOUT_MS: ${MESSAGE_SERVER_TIMEOUT_MS:-10000}
-      MESSAGE_SERVER_COMPANY_ID: ${MESSAGE_SERVER_COMPANY_ID:-condosync}
-      MESSAGE_SERVER_INSTANCE_NAME: ${MESSAGE_SERVER_INSTANCE_NAME:-CondoSync}
-      MESSAGE_SERVER_INSTANCE_ID: ${MESSAGE_SERVER_INSTANCE_ID:-}
-      MESSAGE_SERVER_WEBHOOK_SECRET: ${MESSAGE_SERVER_WEBHOOK_SECRET:-}
     networks:
       - condosync_dev
 

@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type SetupStep = 'welcome' | 'identity' | 'financial' | 'units' | 'done';
+export type SetupStep =
+  | 'welcome'
+  | 'identity'
+  | 'financial'
+  | 'payments'
+  | 'units'
+  | 'done';
 
 export interface SetupAddressDraft {
   street?: string;
@@ -90,7 +96,14 @@ export const useSetupStore = create<SetupStore>()(
   ),
 );
 
-export const STEP_ORDER: SetupStep[] = ['welcome', 'identity', 'financial', 'units', 'done'];
+export const STEP_ORDER: SetupStep[] = [
+  'welcome',
+  'identity',
+  'financial',
+  'payments',
+  'units',
+  'done',
+];
 
 export function stepIndex(step: SetupStep): number {
   return STEP_ORDER.indexOf(step);

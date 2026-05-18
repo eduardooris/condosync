@@ -138,6 +138,36 @@ export const envSchema = z
     WEBRTC_TURN_URL: z.string().optional(),
     WEBRTC_TURN_USERNAME: z.string().optional(),
     WEBRTC_TURN_CREDENTIAL: z.string().optional(),
+
+    // ── Asaas (gateway de pagamentos) ───────────────────────────────────
+    // Ver `docs/06_pagamentos_asaas.md §10` para detalhes.
+    /** `sandbox` para testes, `production` para uso real. */
+    ASAAS_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+    /** Base URL do Asaas. Default casa com `ASAAS_ENV`. */
+    ASAAS_API_BASE_URL: z
+      .string()
+      .url()
+      .default('https://api-sandbox.asaas.com/api/v3'),
+    /** ApiKey da conta master (cabeçalho `access_token`). Obrigatório quando feature ativa. */
+    ASAAS_MASTER_API_KEY: z.string().optional(),
+    /** walletId master — para split de SaaS-fee (fase 2). */
+    ASAAS_SAAS_WALLET_ID: z.string().optional(),
+    /** URL pública (HTTPS) do backend, usada para registrar webhook na Asaas. */
+    ASAAS_WEBHOOK_PUBLIC_BASE_URL: z.string().url().optional(),
+    /** Kill-switch geral. Quando `false`, os endpoints de pagamento devolvem 503. */
+    ASAAS_ACCOUNTS_ENABLED: z.coerce.boolean().default(false),
+    /** % de SaaS-fee aplicado via split em cada cobrança. `0` = sem split. */
+    ASAAS_DEFAULT_SPLIT_PERCENT: z.coerce.number().min(0).max(100).default(0),
+    /** Timeout dos requests HTTP para Asaas (ms). */
+    ASAAS_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+    /** Tentativas em 5xx/timeout (backoff exponencial). */
+    ASAAS_RETRY_MAX: z.coerce.number().int().min(0).max(5).default(3),
+    /**
+     * Chave AES-256-GCM para criptografar `payment_accounts.asaas_api_key` em
+     * repouso. Gere com: `openssl rand -base64 32` (32 bytes = 256 bits).
+     * Obrigatória quando `ASAAS_ACCOUNTS_ENABLED=true`.
+     */
+    PAYMENTS_ENCRYPTION_KEY: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (!env.KEYCLOAK_ISSUER) {
@@ -187,6 +217,66 @@ export const envSchema = z
           message: 'MESSAGE_SERVER_API_KEY é obrigatório em produção',
           path: ['MESSAGE_SERVER_API_KEY'],
         });
+      }
+    }
+
+    // Asaas: quando habilitado, exigir credenciais e key de criptografia.
+    if (env.ASAAS_ACCOUNTS_ENABLED) {
+      if (!env.ASAAS_MASTER_API_KEY?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'ASAAS_MASTER_API_KEY é obrigatório quando ASAAS_ACCOUNTS_ENABLED=true',
+          path: ['ASAAS_MASTER_API_KEY'],
+        });
+      }
+      if (!env.PAYMENTS_ENCRYPTION_KEY?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'PAYMENTS_ENCRYPTION_KEY é obrigatório quando ASAAS_ACCOUNTS_ENABLED=true (gere com `openssl rand -base64 32`)',
+          path: ['PAYMENTS_ENCRYPTION_KEY'],
+        });
+      } else {
+        // Sanity-check do tamanho: base64 de 32 bytes ≈ 44 chars com `=` padding.
+        try {
+          const decoded = Buffer.from(env.PAYMENTS_ENCRYPTION_KEY, 'base64');
+          if (decoded.length !== 32) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `PAYMENTS_ENCRYPTION_KEY deve decodificar a exatamente 32 bytes (AES-256). Recebeu ${decoded.length}.`,
+              path: ['PAYMENTS_ENCRYPTION_KEY'],
+            });
+          }
+        } catch {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'PAYMENTS_ENCRYPTION_KEY não é base64 válido',
+            path: ['PAYMENTS_ENCRYPTION_KEY'],
+          });
+        }
+      }
+      // Em produção, exigir HTTPS na URL de webhook + ambiente correspondente.
+      if (env.NODE_ENV === 'production') {
+        if (env.ASAAS_ENV !== 'production') {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              'Em produção (NODE_ENV=production) o ASAAS_ENV também deve ser "production". Bloqueando mistura sandbox×prod.',
+            path: ['ASAAS_ENV'],
+          });
+        }
+        if (
+          !env.ASAAS_WEBHOOK_PUBLIC_BASE_URL ||
+          !env.ASAAS_WEBHOOK_PUBLIC_BASE_URL.startsWith('https://')
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              'ASAAS_WEBHOOK_PUBLIC_BASE_URL deve ser HTTPS em produção',
+            path: ['ASAAS_WEBHOOK_PUBLIC_BASE_URL'],
+          });
+        }
       }
     }
 
