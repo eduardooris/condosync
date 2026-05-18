@@ -1,8 +1,12 @@
 import { http } from '@/lib/http';
 import type {
   ChargeRow,
+  CondominiumDetail,
+  CondominiumSummary,
   PaymentAccountDetail,
   PaymentAccountSummary,
+  UserDetail,
+  UserSummary,
   WebhookEventDetail,
   WebhookEventRow,
 } from '@/lib/types';
@@ -53,6 +57,29 @@ export const masterService = {
     const { data } = await http.post<{ ok: boolean }>(
       `/master/webhook-events/${id}/reprocess`,
     );
+    return data;
+  },
+
+  // ── Condomínios (cross-tenant) ──
+  listCondominiums: async (params: {
+    search?: string;
+    archived?: 'only' | 'include';
+  }): Promise<CondominiumSummary[]> => {
+    const { data } = await http.get<CondominiumSummary[]>('/master/condominiums', { params });
+    return data;
+  },
+  getCondominium: async (id: string): Promise<CondominiumDetail> => {
+    const { data } = await http.get<CondominiumDetail>(`/master/condominiums/${id}`);
+    return data;
+  },
+
+  // ── Usuários (cross-tenant) ──
+  listUsers: async (params: { search?: string; limit?: number }): Promise<UserSummary[]> => {
+    const { data } = await http.get<UserSummary[]>('/master/users', { params });
+    return data;
+  },
+  getUser: async (id: string): Promise<UserDetail> => {
+    const { data } = await http.get<UserDetail>(`/master/users/${id}`);
     return data;
   },
 

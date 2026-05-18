@@ -4,7 +4,12 @@ import { PaymentAccount } from '../../database/entities/payment-account.entity';
 import { PaymentWebhookEvent } from '../../database/entities/payment-webhook-event.entity';
 import { Charge } from '../../database/entities/charge.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
+import { Unit } from '../../database/entities/unit.entity';
+import { User } from '../../database/entities/user.entity';
+import { UserCondominium } from '../../database/entities/user-condominium.entity';
 import { MasterPaymentsController } from './master-payments.controller';
+import { MasterCondominiumsController } from './master-condominiums.controller';
+import { MasterUsersController } from './master-users.controller';
 
 /**
  * Módulo do **back-office (`admin/`)** — endpoints cross-tenant para operação
@@ -22,8 +27,15 @@ import { MasterPaymentsController } from './master-payments.controller';
       PaymentWebhookEvent,
       Charge,
       Condominium,
+      Unit,
+      User,
+      UserCondominium,
     ]),
   ],
-  controllers: [MasterPaymentsController],
+  controllers: [
+    MasterPaymentsController,
+    MasterCondominiumsController,
+    MasterUsersController,
+  ],
 })
 export class MasterModule {}
