@@ -25,7 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { ApiStandardResponses } from '../../../common/decorators/api-standard-responses.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
-import { CondominiumMemberGuard } from '../../../common/guards/condominium-member.guard';
+import { CondominiumMemberOrMasterGuard } from '../../../common/guards/condominium-member-or-master.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { UserRole } from '../../../common/enums';
 import { ErrorResponseDto } from '../../../common/dto/error-response.dto';
@@ -60,7 +60,7 @@ import { PaymentAccountsRepository } from './payment-accounts.repository';
   type: ErrorResponseDto,
 })
 @Controller('condominiums/:condominiumId/payment-account/dev')
-@UseGuards(CondominiumMemberGuard, RolesGuard)
+@UseGuards(CondominiumMemberOrMasterGuard, RolesGuard)
 export class PaymentAccountsDevController {
   private readonly logger = new Logger(PaymentAccountsDevController.name);
 
@@ -429,11 +429,19 @@ export class PaymentAccountsDevController {
   }
 
   private assertSandbox(): void {
-    const env = this.config.get('ASAAS_ENV', { infer: true });
-    const node = this.config.get('NODE_ENV', { infer: true });
-    if (env === 'production' || node === 'production') {
+    const asaasEnv = this.config.get('ASAAS_ENV', { infer: true });
+    const nodeEnv = this.config.get('NODE_ENV', { infer: true });
+    const allowSandboxInProd = this.config.get('ASAAS_ALLOW_SANDBOX_IN_PROD', {
+      infer: true,
+    });
+    if (asaasEnv === 'production') {
       throw new ForbiddenException(
-        'Endpoint dev indisponível em produção.',
+        'Endpoint dev indisponível com ASAAS_ENV=production.',
+      );
+    }
+    if (nodeEnv === 'production' && !allowSandboxInProd) {
+      throw new ForbiddenException(
+        'Endpoint dev indisponível em produção. Defina ASAAS_ALLOW_SANDBOX_IN_PROD=true para sandbox na VPS.',
       );
     }
   }

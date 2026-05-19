@@ -34,6 +34,11 @@ trazer a role.
 A role é validada pelo backend (`MasterRoleGuard`) e pelo front (no AuthContext) —
 backend é fonte de verdade.
 
+Rotas `/payment-account/dev/*` (force-active, secrets, simular Pix, etc.) aceitam
+token de **síndico ADMIN** do condomínio **ou** `master-admin` do back-office.
+Na VPS com sandbox: `ASAAS_ALLOW_SANDBOX_IN_PROD=true` (senão os endpoints dev
+retornam 403 mesmo com Asaas sandbox).
+
 ## Telas atuais
 
 | Rota | O que faz |
