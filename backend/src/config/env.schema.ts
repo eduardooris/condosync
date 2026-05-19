@@ -156,6 +156,11 @@ export const envSchema = z
     ASAAS_WEBHOOK_PUBLIC_BASE_URL: z.string().url().optional(),
     /** Kill-switch geral. Quando `false`, os endpoints de pagamento devolvem 503. */
     ASAAS_ACCOUNTS_ENABLED: z.coerce.boolean().default(false),
+    /**
+     * Permite `ASAAS_ENV=sandbox` com `NODE_ENV=production` (VPS pública em teste).
+     * Remova ou defina `false` antes do go-live com Asaas produção.
+     */
+    ASAAS_ALLOW_SANDBOX_IN_PROD: z.coerce.boolean().default(false),
     /** % de SaaS-fee aplicado via split em cada cobrança. `0` = sem split. */
     ASAAS_DEFAULT_SPLIT_PERCENT: z.coerce.number().min(0).max(100).default(0),
     /** Timeout dos requests HTTP para Asaas (ms). */
@@ -256,13 +261,16 @@ export const envSchema = z
           });
         }
       }
-      // Em produção, exigir HTTPS na URL de webhook + ambiente correspondente.
+      // Em produção, exigir HTTPS na URL de webhook + ambiente Asaas correspondente.
       if (env.NODE_ENV === 'production') {
-        if (env.ASAAS_ENV !== 'production') {
+        if (
+          env.ASAAS_ENV !== 'production' &&
+          !env.ASAAS_ALLOW_SANDBOX_IN_PROD
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message:
-              'Em produção (NODE_ENV=production) o ASAAS_ENV também deve ser "production". Bloqueando mistura sandbox×prod.',
+              'Em produção (NODE_ENV=production) o ASAAS_ENV deve ser "production", ou defina ASAAS_ALLOW_SANDBOX_IN_PROD=true para testar sandbox na VPS.',
             path: ['ASAAS_ENV'],
           });
         }
