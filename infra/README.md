@@ -3,6 +3,8 @@
 Este diretório contém os artefatos para operar o CondoSync em produção com deploy
 independente por serviço.
 
+**Guia passo a passo (arquivos, ordem de subida, IP-only e DNS+TLS):** [`DEPLOY_VPS.md`](./DEPLOY_VPS.md).
+
 ## Arquitetura
 
 ```mermaid
@@ -42,6 +44,7 @@ A infraestrutura é separada em:
 infra/
 ├── docker-compose.prod.yml
 ├── docker-compose.api.yml
+├── DEPLOY_VPS.md
 ├── nginx/
 ├── keycloak/
 └── scripts/
@@ -130,7 +133,11 @@ docker exec condosync-keycloak-db pg_dump -U keycloak keycloak \
 ## Observabilidade rápida
 
 ```bash
-docker compose -f infra/docker-compose.prod.yml -f infra/docker-compose.api.yml ps
+docker compose \
+  -f infra/docker-compose.prod.yml \
+  -f infra/docker-compose.api.yml \
+  -f infra/docker-compose.build.yml \
+  --env-file infra/.env.prod ps
 docker logs -n 100 -f condosync-api
 docker logs -n 100 -f condosync-message-server
 docker inspect --format '{{.State.Health.Status}}' condosync-api

@@ -37,7 +37,7 @@ Storage: S3-compatible (MinIO em dev)
 Infra local: compose modular em `infra/dev/` (incluído pelo `docker-compose.yml` na raiz); atalhos em `scripts/dev.sh`
 ```
 
-O diretório **`infra/`** concentra manifests Docker de produção/IP-only, Keycloak (`infra/keycloak/realm-main.json`), Nginx e scripts de deploy/SSL — use-o ao evoluir ambiente ou SSO, não duplique config solta na raiz sem motivo.
+O diretório **`infra/`** concentra manifests Docker de produção/IP-only, Keycloak (`infra/keycloak/realm-main.json`), Nginx e scripts de deploy/SSL — use-o ao evoluir ambiente ou SSO, não duplique config solta na raiz sem motivo. Passo a passo de VPS por serviço: [`infra/DEPLOY_VPS.md`](./infra/DEPLOY_VPS.md).
 
 ## 2. Princípios inegociáveis (todos os projetos)
 

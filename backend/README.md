@@ -139,7 +139,8 @@ Na VPS a API é buildada na própria máquina (`infra/docker-compose.build.yml`)
 e atualizada com `infra/scripts/deploy-api.sh` ou `scripts/vps-rebuild.sh api`
 (`docker compose up -d --build --no-deps api` + healthcheck).
 
-Detalhes operacionais completos em [`../infra/README.md`](../infra/README.md).
+Guia de deploy por serviço na VPS: [`../infra/DEPLOY_VPS.md`](../infra/DEPLOY_VPS.md).  
+Resumo e checklist: [`../infra/README.md`](../infra/README.md).
 
 ### Migrações TypeORM
 

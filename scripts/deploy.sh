@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# scripts/deploy.sh — Atualiza a VPS a partir do código já buildado no host.
+# scripts/deploy.sh — Fluxo legado / helpers para EC2 com rede condosync_dev
+#
+# ⚠️  Para produção na VPS use os três composes em infra/ — veja infra/DEPLOY_VPS.md
+#     e `bash infra/scripts/deploy.sh` ou `./scripts/vps-up.sh` / `./scripts/vps-rebuild.sh`.
+#
+# Este script atualiza a partir do código e usa `docker compose` da RAIZ (dev).
 #
 # Uso (na raiz do repo, na EC2):
 #   ./scripts/deploy.sh              # git pull + rebuilda API + frontend

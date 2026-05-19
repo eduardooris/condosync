@@ -97,7 +97,7 @@ test: ## Testes do backend
 
 # ── DEPLOY (na VPS) ────────────────────────────────────────────────────────
 
-deploy: ## Deploy completo em prod (git pull + rebuild api+frontend+msg)
+deploy: ## Deploy completo em prod (git pull + stack rebuild; SKIP_GIT_PULL=1 sem pull)
 	bash infra/scripts/deploy.sh
 
 deploy-api: ## Atualiza só a API em prod

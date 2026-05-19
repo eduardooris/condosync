@@ -2,6 +2,8 @@
 
 > Guia único do zero. Siga na ordem. IP de teste: `18.228.119.6`.
 
+Para mapa de **todos** os arquivos de deploy e ordem de subida **serviço por serviço** (inclui também modo DNS+TLS), veja [DEPLOY_VPS.md](./DEPLOY_VPS.md).
+
 ## 0. O que esse modo faz
 
 - HTTP puro na porta `80`. Sem TLS (Let's Encrypt não emite cert pra IP).
