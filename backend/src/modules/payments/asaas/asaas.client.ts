@@ -78,6 +78,17 @@ export class AsaasClient implements OnModuleInit {
     });
     this.retryMax = this.config.get('ASAAS_RETRY_MAX', { infer: true });
     this.enabled = this.config.get('ASAAS_ACCOUNTS_ENABLED', { infer: true });
+
+    if (this.enabled) {
+      const asaasEnv = this.config.get('ASAAS_ENV', { infer: true });
+      const keyHint = this.masterApiKey?.includes('_hmlg_')
+        ? 'sandbox'
+        : 'production';
+      this.logger.info(
+        { asaasEnv, baseUrl: this.baseUrl, keyHint },
+        'asaas.client inicializado',
+      );
+    }
   }
 
   // ── Subcontas ───────────────────────────────────────────────────────────

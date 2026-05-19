@@ -261,6 +261,39 @@ export const envSchema = z
           });
         }
       }
+
+      const masterKey = env.ASAAS_MASTER_API_KEY?.trim() ?? '';
+      const baseUrl = env.ASAAS_API_BASE_URL;
+      const isSandboxKey = masterKey.includes('_hmlg_');
+      const isSandboxBaseUrl =
+        baseUrl.includes('api-sandbox.asaas.com') ||
+        baseUrl.includes('sandbox.asaas.com');
+
+      if (env.ASAAS_ENV === 'sandbox' && !isSandboxBaseUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'ASAAS_ENV=sandbox exige ASAAS_API_BASE_URL=https://api-sandbox.asaas.com/v3 (o compose da VPS usa produção como default se esta variável faltar).',
+          path: ['ASAAS_API_BASE_URL'],
+        });
+      }
+      if (env.ASAAS_ENV === 'production' && isSandboxBaseUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'ASAAS_ENV=production não pode usar host de sandbox em ASAAS_API_BASE_URL.',
+          path: ['ASAAS_API_BASE_URL'],
+        });
+      }
+      if (isSandboxKey && !isSandboxBaseUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'A apiKey master parece ser de sandbox (_hmlg_), mas ASAAS_API_BASE_URL aponta para produção — isso gera 401 (ASAAS_AUTH_FAILED). Defina https://api-sandbox.asaas.com/v3 e ASAAS_ENV=sandbox.',
+          path: ['ASAAS_API_BASE_URL'],
+        });
+      }
+
       // Em produção, exigir HTTPS na URL de webhook + ambiente Asaas correspondente.
       if (env.NODE_ENV === 'production') {
         if (

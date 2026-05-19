@@ -71,7 +71,7 @@ export function asaasUpstreamError(
 export function asaasAuthFailed(): AsaasException {
   return new AsaasException(
     'ASAAS_AUTH_FAILED',
-    'Credenciais Asaas inválidas ou expiradas.',
+    'Credenciais Asaas inválidas ou expiradas. Se a apiKey é de sandbox (_hmlg_), confira ASAAS_API_BASE_URL=https://api-sandbox.asaas.com/v3 na VPS (o default do Docker é produção).',
     HttpStatus.UNAUTHORIZED,
   );
 }
