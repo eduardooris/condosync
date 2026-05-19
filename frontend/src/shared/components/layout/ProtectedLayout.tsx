@@ -144,27 +144,26 @@ export function ProtectedLayout() {
           // direita; back = entra da esquerda) imitando stack nativo.
           // Em ds-md+ (tablet+): fade vertical sutil (sem slide horizontal).
           <section className={mainClassName + ' relative'}>
-            <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={location.pathname}
-                custom={direction}
-                initial={(d: number) => ({
+                initial={{
                   opacity: 0,
                   x:
                     window.matchMedia('(min-width: 768px)').matches
                       ? 0
-                      : 24 * d,
+                      : 24 * direction,
                   y: window.matchMedia('(min-width: 768px)').matches ? 8 : 0,
-                })}
+                }}
                 animate={{ opacity: 1, x: 0, y: 0 }}
-                exit={(d: number) => ({
+                exit={{
                   opacity: 0,
                   x:
                     window.matchMedia('(min-width: 768px)').matches
                       ? 0
-                      : -24 * d,
+                      : -24 * direction,
                   y: 0,
-                })}
+                }}
                 transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
               >
                 <Outlet />
