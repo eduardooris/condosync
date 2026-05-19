@@ -305,6 +305,7 @@ Os scripts `vps-rebuild.sh` e `deploy-*.sh` usam **`--no-deps`** onde aplicável
 - **Keycloak:** `KEYCLOAK_ADMIN_*`, `KEYCLOAK_ADMIN_CLIENT_SECRET`
 - **Storage:** `S3_*` / R2 (produção não usa MinIO do compose dev)
 - **WhatsApp:** `MESSAGE_SERVER_API_KEY`, `MESSAGE_SERVER_WEBHOOK_SECRET` (coerentes entre API e message-server)
+- **Asaas:** `ASAAS_ACCOUNTS_ENABLED`, `ASAAS_MASTER_API_KEY`, `PAYMENTS_ENCRYPTION_KEY`, `ASAAS_WEBHOOK_PUBLIC_BASE_URL` (seção em `.env.prod.example`; injetadas no compose da API)
 
 ---
 
