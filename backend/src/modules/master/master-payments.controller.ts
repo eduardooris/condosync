@@ -155,7 +155,7 @@ export class MasterPaymentsController {
     const qb = this.chargesRepo
       .createQueryBuilder('c')
       .leftJoinAndSelect('c.unit', 'u')
-      .orderBy('c.created_at', 'DESC')
+      .orderBy('c.createdAt', 'DESC')
       .take(Math.min(Number(limit) || 50, 200));
 
     if (status) qb.andWhere('c.status = :status', { status });

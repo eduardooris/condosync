@@ -16,7 +16,8 @@ import { QUEUE_ASAAS_WEBHOOK } from '../../../queues/queue-names';
  * para o que cada evento faz, espelhando RN-PG-05.4–5.7:
  *
  *   PAYMENT_RECEIVED          → charges.status = PAID + notif CHARGE_PAID
- *   PAYMENT_CONFIRMED         → marca asaas_last_event (sem mudar status — saldo ainda em D+1/D+2)
+ *   PAYMENT_CONFIRMED         → PAID quando `payment.status` já é RECEIVED/CONFIRMED
+ *                               (Pix/cartão; alinhado ao reconciliador RN-PG-06)
  *   PAYMENT_OVERDUE           → charges.status = OVERDUE (idempotente)
  *   PAYMENT_DELETED           → charges.status = CANCELED se ainda PENDING
  *   PAYMENT_REFUNDED          → log + notif síndico (sem retornar status — manual review)
@@ -107,10 +108,19 @@ export class AsaasWebhookProcessor {
       case 'PAYMENT_UPDATED':
         // Sem ação local — Asaas só está nos avisando que existe.
         break;
-      case 'PAYMENT_CONFIRMED':
-        // Pagamento confirmado mas saldo não disponível ainda (boleto D+1).
-        // Não mudamos status local — a UI mostra `confirmed` via `asaas_last_event`.
+      case 'PAYMENT_CONFIRMED': {
+        // Pix/cartão costumam vir só com CONFIRMED ou CONFIRMED antes de RECEIVED.
+        // O reconciliador diário já trata `payment.status=CONFIRMED` como pago —
+        // espelhamos aqui para não depender do segundo webhook.
+        const remoteStatus = payload.payment?.status;
+        if (
+          remoteStatus &&
+          ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(remoteStatus)
+        ) {
+          await this.markPaid(charge, payload.payment ?? null, event.event);
+        }
         break;
+      }
       case 'PAYMENT_RECEIVED':
       case 'PAYMENT_RECEIVED_IN_CASH':
         await this.markPaid(charge, payload.payment ?? null, event.event);
