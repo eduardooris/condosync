@@ -113,7 +113,7 @@ A Asaas oferece dois tipos de subconta:
 
 ## 2.3 Endpoints da Asaas usados
 
-Base prod: `https://www.asaas.com/api/v3` · Sandbox: `https://sandbox.asaas.com/api/v3`
+Base prod: `https://api.asaas.com/v3` · Sandbox: `https://api-sandbox.asaas.com/v3` (painel web: sandbox.asaas.com)
 
 | Operação | Endpoint | Quando chamamos |
 | --- | --- | --- |
@@ -664,7 +664,7 @@ Conteúdo do step:
 | Nome | Default | Notas |
 | --- | --- | --- |
 | `ASAAS_ENV` | `sandbox` | `sandbox` ou `production` |
-| `ASAAS_API_BASE_URL` | `https://sandbox.asaas.com/api/v3` | derivado do ASAAS_ENV |
+| `ASAAS_API_BASE_URL` | `https://api-sandbox.asaas.com/v3` | derivado do `ASAAS_ENV` |
 | `ASAAS_MASTER_API_KEY` | — | obrigatório, vault |
 | `ASAAS_SAAS_WALLET_ID` | — | opcional (split fase 2) |
 | `ASAAS_WEBHOOK_PUBLIC_BASE_URL` | — | URL pública para Asaas chamar o webhook (precisa estar acessível) |

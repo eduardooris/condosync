@@ -147,7 +147,7 @@ export const envSchema = z
     ASAAS_API_BASE_URL: z
       .string()
       .url()
-      .default('https://api-sandbox.asaas.com/api/v3'),
+      .default('https://api-sandbox.asaas.com/v3'),
     /** ApiKey da conta master (cabeçalho `access_token`). Obrigatório quando feature ativa. */
     ASAAS_MASTER_API_KEY: z.string().optional(),
     /** walletId master — para split de SaaS-fee (fase 2). */

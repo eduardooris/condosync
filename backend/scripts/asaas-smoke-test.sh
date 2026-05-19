@@ -27,7 +27,7 @@
 set -euo pipefail
 
 # ── Config (overrides: ASAAS_TEST_CPF, ASAAS_TEST_PHONE, ASAAS_TEST_EMAIL, ASAAS_TEST_BIRTH) ──
-ASAAS_BASE="${ASAAS_API_BASE_URL:-https://sandbox.asaas.com/api/v3}"
+ASAAS_BASE="${ASAAS_API_BASE_URL:-https://api-sandbox.asaas.com/v3}"
 TEST_CPF="${ASAAS_TEST_CPF:-24971563792}"
 TEST_NAME="Smoke Test $(date +%H%M%S)"
 # `.test` é TLD reservado e às vezes rejeitado por filtros — use `.dev` por padrão.
