@@ -22,6 +22,8 @@ services:
       KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: main
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://${AUTH_DOMAIN}/realms/main}
+      # Token + JWKS pela rede Docker; validação do `iss` continua usando KEYCLOAK_ISSUER (URL pública).
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/realms/main}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-condo-backend-admin}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
