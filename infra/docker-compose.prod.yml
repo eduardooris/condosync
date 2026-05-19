@@ -87,7 +87,8 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS:-true}
       KC_PROXY: ${KC_PROXY:-edge}                       # edge=nginx termina TLS / none=HTTP puro (IP-only)
-      KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-forwarded}  # forwarded (TLS) / xforwarded (IP-only)
+      # Nginx envia X-Forwarded-* — use xforwarded (não "forwarded", que é outro header RFC).
+      KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
       KC_HTTP_RELATIVE_PATH: ${KC_HTTP_RELATIVE_PATH:-/}
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
