@@ -219,7 +219,7 @@ export class PaymentAccountsService {
     if (!account) {
       throw new NotFoundException('Subconta de pagamento não encontrada.');
     }
-    return this.crypto.decrypt(this.toBuffer(account.asaasApiKey));
+    return this.crypto.decrypt(account.asaasApiKey);
   }
 
   /**
@@ -247,7 +247,7 @@ export class PaymentAccountsService {
       condominiumId: account.condominiumId,
       asaasAccountId: account.asaasAccountId,
       asaasWalletId: account.asaasWalletId,
-      asaasApiKey: this.crypto.decrypt(this.toBuffer(account.asaasApiKey)),
+      asaasApiKey: this.crypto.decrypt(account.asaasApiKey),
       asaasWebhookToken: account.asaasWebhookToken,
     };
   }
