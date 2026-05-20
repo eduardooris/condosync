@@ -76,6 +76,31 @@ export function asaasAuthFailed(): AsaasException {
   );
 }
 
+/**
+ * 403 da Asaas — autenticado, mas a conta não tem permissão pra esta
+ * operação. Casos típicos:
+ *   • Master cadastrada como PF tentando criar subconta (só PJ pode)
+ *   • Feature não habilitada no plano da master
+ *   • Subconta sem permissão pra ação X
+ *
+ * Diferente de `asaasAuthFailed`, este preserva a mensagem original — ela
+ * costuma ser informativa e útil pra mostrar pro operador.
+ */
+export function asaasForbidden(
+  upstream: AsaasErrorResponse | string | null,
+): AsaasException {
+  const msgFromUpstream =
+    upstream && typeof upstream === 'object' && 'message' in upstream
+      ? String((upstream as { message: unknown }).message)
+      : null;
+  return new AsaasException(
+    'ASAAS_FORBIDDEN',
+    msgFromUpstream ?? 'A conta Asaas não tem permissão para esta operação.',
+    HttpStatus.FORBIDDEN,
+    upstream ?? undefined,
+  );
+}
+
 export function asaasValidation(
   upstream: AsaasErrorResponse,
 ): AsaasException {

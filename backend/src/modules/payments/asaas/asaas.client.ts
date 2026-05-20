@@ -22,6 +22,7 @@ import {
   asaasAuthFailed,
   asaasCpfCnpjInUse,
   asaasDuplicate,
+  asaasForbidden,
   asaasNotConfigured,
   asaasUpstreamError,
   asaasUpstreamTimeout,
@@ -393,7 +394,8 @@ export class AsaasClient implements OnModuleInit {
       { method, path, status, asaas_body: body },
       'asaas.4xx',
     );
-    if (status === 401 || status === 403) return asaasAuthFailed();
+    if (status === 401) return asaasAuthFailed();
+    if (status === 403) return asaasForbidden(body);
     if (status === 409) return asaasDuplicate();
     if (
       status === 400 ||
