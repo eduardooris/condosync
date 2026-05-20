@@ -12,7 +12,7 @@ import { DayOfMonthGrid } from '@/shared/components/ui/DayOfMonthGrid';
 import { queryKeys } from '@/shared/lib/queryKeys';
 import {
   formatPixKeyValue,
-  normalizePixKeyValue,
+  toPixSettingsPayload,
   type PixKeyType,
 } from '@/shared/utils/documents';
 
@@ -58,24 +58,24 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
 
   const feeNumber = Number(feeText.replace(/\./g, '').replace(',', '.'));
   const feeValid = !Number.isNaN(feeNumber) && feeNumber >= 0;
-  const pixKeyValid = pixKeyValue?.trim().length > 0;
-
   const mutation = useMutation({
     mutationFn: async () => {
       if (!condominiumId) throw new Error('missing condominium');
+      const pix = toPixSettingsPayload(pixKeyType, pixKeyValue ?? '', {
+        clearWhenEmpty: true,
+      });
       patchFinancial({
         monthlyFeeAmount: feeNumber,
         billingGenerationDay: genDay,
         billingDueDay: dueDay,
-        pixKeyType,
-        pixKeyValue: normalizePixKeyValue(pixKeyType, pixKeyValue ?? ''),
+        pixKeyType: pix.pixKeyType ?? 'EVP',
+        pixKeyValue: pix.pixKeyValue ?? '',
       });
       return condominiumsService.update(condominiumId, {
         monthlyFeeAmount: feeNumber,
         billingGenerationDay: genDay,
         billingDueDay: dueDay,
-        pixKeyType,
-        pixKeyValue: normalizePixKeyValue(pixKeyType, pixKeyValue ?? ''),
+        ...pix,
       });
     },
     onSuccess: () => {
@@ -96,7 +96,7 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
       onBack={onBack}
       onPrimary={() => mutation.mutate()}
       primaryLoading={mutation.isPending}
-      primaryDisabled={!feeValid || !pixKeyValid}
+      primaryDisabled={!feeValid}
       secondaryLabel="Pular por enquanto"
       onSecondary={onContinue}
     >
@@ -157,11 +157,16 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
               <Send className="h-4 w-4 text-brand-700 dark:text-brand-300" strokeWidth={2} aria-hidden />
             </span>
             <h2 className="text-ds-sm font-semibold text-ds-body">
-              Chave Pix do condomínio
+              Chave Pix do condomínio (opcional)
             </h2>
           </div>
+          <p className="mb-3 text-ds-xs text-ds-dim">
+            Se você for usar a conta digital Asaas (próximo passo), pode deixar em
+            branco — cada cobrança terá Pix próprio no gateway. A chave manual só é
+            usada para cobranças sem Asaas ou avisos legados no WhatsApp.
+          </p>
           <div className="grid gap-3 ds-md:grid-cols-[12rem_1fr]">
-            <FormField label="Tipo da chave" htmlFor="setup-pix-type" required>
+            <FormField label="Tipo da chave" htmlFor="setup-pix-type">
               <NativeSelect
                 id="setup-pix-type"
                 value={pixKeyType}
@@ -178,7 +183,7 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
                 ))}
               </NativeSelect>
             </FormField>
-            <FormField label="Valor da chave" htmlFor="setup-pix-value" required>
+            <FormField label="Valor da chave" htmlFor="setup-pix-value">
               <Input
                 id="setup-pix-value"
                 value={pixKeyValue}

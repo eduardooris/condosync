@@ -153,10 +153,20 @@ export class CondominiumsService {
       condo.billingDueDay = dto.billingDueDay;
     }
     if (dto.pixKeyType !== undefined || dto.pixKeyValue !== undefined) {
-      const nextType = dto.pixKeyType ?? condo.pixKeyType ?? undefined;
-      const nextValue = dto.pixKeyValue ?? condo.pixKeyValue ?? undefined;
-      condo.pixKeyType = dto.pixKeyType ?? condo.pixKeyType;
-      condo.pixKeyValue = this.normalizePixKey(nextType, nextValue);
+      const raw = (dto.pixKeyValue ?? '').trim();
+      if (!raw) {
+        condo.pixKeyType = null;
+        condo.pixKeyValue = null;
+      } else {
+        const nextType = dto.pixKeyType ?? condo.pixKeyType;
+        if (!nextType) {
+          throw new BadRequestException(
+            'Informe o tipo da chave Pix junto com o valor.',
+          );
+        }
+        condo.pixKeyType = nextType;
+        condo.pixKeyValue = this.normalizePixKey(nextType, raw);
+      }
     }
     if (dto.adminContactPhone !== undefined) {
       condo.adminContactPhone = this.normalizeAdminContactPhone(

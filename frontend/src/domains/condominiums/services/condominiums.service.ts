@@ -29,13 +29,14 @@ export interface CondominiumAddress {
 export type PixKeyType = 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'EVP';
 
 export interface PixSettingsInput {
-  pixKeyType?: PixKeyType;
+  pixKeyType?: PixKeyType | null;
   pixKeyValue?: string;
 }
 
 export interface CreateCondominiumInput {
   name: string;
-  cnpj: string;
+  /** CPF (11) ou CNPJ (14), só dígitos. Opcional. */
+  cnpj?: string;
   address?: CondominiumAddress;
   photoUrl?: string;
   monthlyFeeAmount?: number;

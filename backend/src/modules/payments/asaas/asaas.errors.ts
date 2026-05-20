@@ -12,6 +12,7 @@ import { AsaasErrorResponse } from './asaas.types';
 export type AsaasErrorCode =
   | 'ASAAS_NOT_CONFIGURED'
   | 'ASAAS_AUTH_FAILED'
+  | 'ASAAS_FORBIDDEN'
   | 'ASAAS_VALIDATION_FAILED'
   | 'ASAAS_DUPLICATE_PAYMENT'
   | 'ASAAS_CPF_CNPJ_IN_USE'

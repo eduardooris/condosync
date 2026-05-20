@@ -794,12 +794,13 @@ export class ChargesService {
         'Só é possível reenviar o aviso de cobranças pendentes ou em atraso.',
       );
     }
-    if (
-      !charge.unit?.condominium?.pixKeyType ||
-      !charge.unit?.condominium?.pixKeyValue
-    ) {
+    const hasManualPix =
+      charge.unit?.condominium?.pixKeyType &&
+      charge.unit?.condominium?.pixKeyValue;
+    const hasAsaasPayment = Boolean(charge.asaasPaymentId);
+    if (!hasManualPix && !hasAsaasPayment) {
       throw new BadRequestException(
-        'Cadastre a chave Pix do condomínio antes de reenviar a cobrança.',
+        'Cadastre a chave Pix do condomínio ou emita a cobrança pela conta digital Asaas antes de reenviar o aviso.',
       );
     }
     await this.enqueueChargeResend(chargeId);

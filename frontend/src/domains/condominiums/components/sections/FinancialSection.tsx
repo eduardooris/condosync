@@ -15,7 +15,7 @@ import type { Condominium } from '@/shared/types/api';
 import { queryKeys } from '@/shared/lib/queryKeys';
 import {
   formatPixKeyValue,
-  normalizePixKeyValue,
+  toPixSettingsPayload,
 } from '@/shared/utils/documents';
 import { digitsOnly, formatWhatsappInput } from '@/shared/utils/phone';
 
@@ -62,7 +62,6 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
 
   const feeNumber = Number(feeText.replace(/\./g, '').replace(',', '.'));
   const feeValid = !Number.isNaN(feeNumber) && feeNumber >= 0;
-  const pixKeyValid = pixKeyValue.trim().length > 0;
   const adminPhoneDigits = digitsOnly(adminContactPhone);
   const adminPhoneValid =
     adminPhoneDigits.length === 0 ||
@@ -75,8 +74,7 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
         monthlyFeeAmount: feeNumber,
         billingGenerationDay: genDay,
         billingDueDay: dueDay,
-        pixKeyType,
-        pixKeyValue: normalizePixKeyValue(pixKeyType, pixKeyValue),
+        ...toPixSettingsPayload(pixKeyType, pixKeyValue, { clearWhenEmpty: true }),
         adminContactPhone: adminPhoneDigits || undefined,
       }),
     onSuccess: () => {
@@ -115,11 +113,11 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
       </SectionCard>
 
       <SectionCard
-        title="Chave Pix para cobranças"
-        description="Usada nas mensagens automáticas de cobrança enviadas no WhatsApp."
+        title="Chave Pix para cobranças (opcional)"
+        description="Só necessária sem conta digital Asaas ativa. Com Asaas, o Pix de cada cobrança vem do gateway."
       >
         <div className="grid gap-3 ds-md:grid-cols-[12rem_1fr]">
-          <FormField label="Tipo da chave" htmlFor="fin-pix-type" required>
+          <FormField label="Tipo da chave" htmlFor="fin-pix-type">
             <NativeSelect
               id="fin-pix-type"
               value={pixKeyType}
@@ -136,7 +134,7 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
               ))}
             </NativeSelect>
           </FormField>
-          <FormField label="Valor da chave" htmlFor="fin-pix-value" required>
+          <FormField label="Valor da chave" htmlFor="fin-pix-value">
             <Input
               id="fin-pix-value"
               value={pixKeyValue}
@@ -197,7 +195,7 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
       <div className="flex justify-end">
         <Button
           onClick={() => mutation.mutate()}
-          disabled={!feeValid || !pixKeyValid || !adminPhoneValid || mutation.isPending}
+          disabled={!feeValid || !adminPhoneValid || mutation.isPending}
         >
           {mutation.isPending ? 'Salvando…' : 'Salvar alterações'}
         </Button>

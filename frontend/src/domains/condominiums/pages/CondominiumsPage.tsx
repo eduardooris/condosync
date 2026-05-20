@@ -15,12 +15,12 @@ import { Spinner } from '@/shared/components/ui/Spinner';
 import { useCondominiumsPage } from '@/domains/condominiums/hooks/useCondominiumsPage';
 import {
   createCondominiumSchema,
-  type CreateCondominiumInput,
+  type CreateCondominiumFormValues,
 } from '@/domains/condominiums/schemas/condominiums.schema';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { cn } from '@/shared/utils/cn';
 import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
-import { formatCnpj } from '@/shared/utils/documents';
+import { formatCnpj, formatCpfOrCnpj } from '@/shared/utils/documents';
 import { digitsOnly } from '@/shared/utils/phone';
 
 export function CondominiumsPage() {
@@ -28,7 +28,7 @@ export function CondominiumsPage() {
   const activeCondominium = useAuthStore((s) => s.activeCondominium);
 
   const [open, setOpen] = useState(false);
-  const form = useForm<CreateCondominiumInput>({
+  const form = useForm<CreateCondominiumFormValues>({
     resolver: zodResolver(createCondominiumSchema),
   });
   const { condominiumsQuery, createMutation } = useCondominiumsPage();
@@ -79,22 +79,20 @@ export function CondominiumsPage() {
               </FormField>
 
               <FormField
-                label="CNPJ"
+                label="CPF ou CNPJ"
                 htmlFor="condo-cnpj"
-                required
-                hint="14 dígitos"
+                hint="Opcional. 11 dígitos (CPF) ou 14 (CNPJ)."
               >
                 <Controller
                   control={form.control}
                   name="cnpj"
-                  rules={{ required: true }}
                   render={({ field }) => (
                     <Input
                       id="condo-cnpj"
                       inputMode="numeric"
-                      placeholder="00.000.000/0000-00"
+                      placeholder="00.000.000/0000-00 ou 000.000.000-00"
                       maxLength={18}
-                      value={formatCnpj(field.value ?? '')}
+                      value={formatCpfOrCnpj(field.value ?? '')}
                       onChange={(e) =>
                         field.onChange(digitsOnly(e.target.value))
                       }

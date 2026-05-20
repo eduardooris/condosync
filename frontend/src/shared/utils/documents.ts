@@ -71,3 +71,20 @@ export function normalizePixKeyValue(type: PixKeyType, raw: string): string {
   }
   return raw.trim();
 }
+
+/**
+ * Monta payload de chave Pix para a API. Vazio → omite (legado) ou limpa (clear=true).
+ */
+export function toPixSettingsPayload(
+  type: PixKeyType,
+  displayValue: string,
+  options?: { clearWhenEmpty?: boolean },
+): { pixKeyType?: PixKeyType | null; pixKeyValue?: string } {
+  const value = normalizePixKeyValue(type, displayValue).trim();
+  if (!value) {
+    return options?.clearWhenEmpty
+      ? { pixKeyType: null, pixKeyValue: '' }
+      : {};
+  }
+  return { pixKeyType: type, pixKeyValue: value };
+}
