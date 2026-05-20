@@ -43,6 +43,7 @@ export interface AsaasCreateAccountResponse {
 export type AsaasAccountApprovalStatus =
   | 'PENDING'
   | 'AWAITING_DOCUMENTS'
+  | 'AWAITING_APPROVAL'
   | 'APPROVED'
   | 'REJECTED';
 

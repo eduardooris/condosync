@@ -173,7 +173,8 @@ export class PaymentAccountsService {
    */
   async refresh(condominiumId: string): Promise<PaymentAccountResponseDto> {
     const account = await this.getAccountOrFail(condominiumId);
-    const status = await this.asaas.getAccountStatus(account.asaasAccountId);
+    const apiKey = this.crypto.decrypt(account.asaasApiKey);
+    const status = await this.asaas.getAccountStatus(apiKey);
     this.applyAsaasStatus(account, status);
     account.lastStatusCheckAt = new Date();
     const saved = await this.repo.save(account);
@@ -391,7 +392,9 @@ export class PaymentAccountsService {
     } else if (all.some((x) => x === 'REJECTED')) {
       account.status = PaymentAccountStatus.REJECTED;
       account.rejectReason = s.rejectReason ?? account.rejectReason;
-    } else if (all.some((x) => x === 'AWAITING_DOCUMENTS')) {
+    } else if (
+      all.some((x) => x === 'AWAITING_DOCUMENTS' || x === 'AWAITING_APPROVAL')
+    ) {
       account.status = PaymentAccountStatus.PENDING_DOCS;
     } else {
       account.status = PaymentAccountStatus.PENDING_REVIEW;
@@ -407,6 +410,7 @@ export class PaymentAccountsService {
       case 'REJECTED':
         return PaymentAccountApprovalStatus.REJECTED;
       case 'AWAITING_DOCUMENTS':
+      case 'AWAITING_APPROVAL':
         return PaymentAccountApprovalStatus.AWAITING_DOCS;
       case 'PENDING':
       default:

@@ -103,12 +103,16 @@ export class AsaasClient implements OnModuleInit {
     });
   }
 
-  /** `GET /accounts/:id` — status de aprovação. Usa a master. */
-  getAccountStatus(id: string): Promise<AsaasAccountStatusResponse> {
+  /**
+   * `GET /myAccount/status/` — status de aprovação (KYC).
+   * Deve ser chamado com a **apiKey da subconta**, não a master.
+   * `GET /accounts/:id` só devolve dados cadastrais, sem `commercialInfo` etc.
+   */
+  getAccountStatus(subaccountApiKey: string): Promise<AsaasAccountStatusResponse> {
     return this.request<AsaasAccountStatusResponse>(
       'GET',
-      `/accounts/${id}`,
-      {},
+      '/myAccount/status/',
+      { apiKey: subaccountApiKey },
     );
   }
 
