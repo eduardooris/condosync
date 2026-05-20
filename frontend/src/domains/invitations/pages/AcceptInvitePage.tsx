@@ -27,6 +27,8 @@ import {
   SelectValue,
 } from '@/shared/components/ui/Select';
 import { Spinner } from '@/shared/components/ui/Spinner';
+import { formatCpf } from '@/shared/utils/documents';
+import { digitsOnly, formatWhatsappInput } from '@/shared/utils/phone';
 
 const roleLabels: Record<string, string> = {
   ADMIN: 'Síndico',
@@ -34,29 +36,6 @@ const roleLabels: Record<string, string> = {
   RESPONSIBLE: 'Responsável financeiro',
   RESIDENT: 'Morador',
 };
-
-function formatCpfInput(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) {
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  }
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function formatWhatsappInput(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length === 0) return '';
-  if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 6) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  }
-  if (digits.length <= 10) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  }
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
 
 export function AcceptInvitePage() {
   const { token = '' } = useParams<{ token: string }>();
@@ -224,9 +203,9 @@ export function AcceptInvitePage() {
                         autoComplete="off"
                         placeholder="000.000.000-00"
                         invalid={Boolean(form.formState.errors.cpf)}
-                        value={formatCpfInput(field.value ?? '')}
+                        value={formatCpf(field.value ?? '')}
                         onChange={(e) =>
-                          field.onChange(e.target.value.replace(/\D/g, ''))
+                          field.onChange(digitsOnly(e.target.value))
                         }
                       />
                     )}

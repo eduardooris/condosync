@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FormField } from '@/shared/components/ui/FormField';
@@ -8,6 +8,8 @@ import { useSetupStore } from '@/domains/setup/store/setup.store';
 import { condominiumsService } from '@/domains/condominiums/services/condominiums.service';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { queryKeys } from '@/shared/lib/queryKeys';
+import { formatCpfOrCnpj } from '@/shared/utils/documents';
+import { digitsOnly, formatWhatsappInput } from '@/shared/utils/phone';
 
 type FormData = {
   name: string;
@@ -24,10 +26,6 @@ interface StepIdentityProps {
   onContinue: () => void;
 }
 
-function digits(value: string) {
-  return value.replace(/\D/g, '');
-}
-
 export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
   const queryClient = useQueryClient();
   const setActiveCondominium = useAuthStore((s) => s.setActiveCondominium);
@@ -39,7 +37,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
   const form = useForm<FormData>({
     defaultValues: {
       name: identity.name,
-      cnpj: identity.cnpj,
+      cnpj: identity.cnpj ? formatCpfOrCnpj(identity.cnpj) : '',
       adminContactPhone: identity.adminContactPhone ?? '',
       street: identity.address.street ?? '',
       number: identity.address.number ?? '',
@@ -50,7 +48,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const cleanedCnpj = digits(data.cnpj);
+      const cleanedCnpj = digitsOnly(data.cnpj);
       const address = {
         street: data.street?.trim() || undefined,
         number: data.number?.trim() || undefined,
@@ -60,7 +58,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
       patchIdentity({
         name: data.name.trim(),
         cnpj: cleanedCnpj,
-        adminContactPhone: digits(data.adminContactPhone ?? ''),
+        adminContactPhone: digitsOnly(data.adminContactPhone ?? ''),
         address,
       });
 
@@ -68,7 +66,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
         return condominiumsService.update(condominiumId, {
           name: data.name.trim(),
           cnpj: cleanedCnpj,
-          adminContactPhone: digits(data.adminContactPhone ?? ''),
+          adminContactPhone: digitsOnly(data.adminContactPhone ?? ''),
           address,
         });
       }
@@ -76,7 +74,7 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
       return condominiumsService.create({
         name: data.name.trim(),
         cnpj: cleanedCnpj,
-        adminContactPhone: digits(data.adminContactPhone ?? ''),
+        adminContactPhone: digitsOnly(data.adminContactPhone ?? ''),
         address,
       });
     },
@@ -137,20 +135,33 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
           hint="Opcional. Use o CNPJ se o condomínio for registrado como PJ, ou seu CPF (síndico) se for informal — você poderá usar o mesmo documento no recebimento das cobranças."
           error={form.formState.errors.cnpj?.message}
         >
-          <Input
-            id="setup-cnpj"
-            placeholder="00.000.000/0000-00  ou  000.000.000-00"
-            inputMode="numeric"
-            maxLength={18}
-            invalid={Boolean(form.formState.errors.cnpj)}
-            {...form.register('cnpj', {
+          <Controller
+            control={form.control}
+            name="cnpj"
+            rules={{
               validate: (value) => {
-                const len = digits(value ?? '').length;
-                if (len === 0) return true; // opcional
+                const len = digitsOnly(value ?? '').length;
+                if (len === 0) return true;
                 if (len === 11 || len === 14) return true;
                 return 'Informe 11 dígitos (CPF) ou 14 (CNPJ), ou deixe em branco.';
               },
-            })}
+            }}
+            render={({ field }) => (
+              <Input
+                id="setup-cnpj"
+                placeholder="00.000.000/0000-00  ou  000.000.000-00"
+                inputMode="numeric"
+                maxLength={18}
+                invalid={Boolean(form.formState.errors.cnpj)}
+                value={formatCpfOrCnpj(field.value ?? '')}
+                onChange={(e) =>
+                  field.onChange(digitsOnly(e.target.value))
+                }
+                onBlur={field.onBlur}
+                name={field.name}
+                ref={field.ref}
+              />
+            )}
           />
         </FormField>
 
@@ -160,15 +171,30 @@ export function StepIdentity({ onBack, onContinue }: StepIdentityProps) {
           hint="DDD + número. Esse contato será enviado aos moradores nas mensagens de cobrança."
           error={form.formState.errors.adminContactPhone?.message}
         >
-          <Input
-            id="setup-admin-phone"
-            placeholder="85991712228"
-            inputMode="numeric"
-            invalid={Boolean(form.formState.errors.adminContactPhone)}
-            {...form.register('adminContactPhone', {
+          <Controller
+            control={form.control}
+            name="adminContactPhone"
+            rules={{
               validate: (value) =>
-                !value || [10, 11].includes(digits(value).length) || 'Informe DDD + número',
-            })}
+                !value ||
+                [10, 11].includes(digitsOnly(value).length) ||
+                'Informe DDD + número',
+            }}
+            render={({ field }) => (
+              <Input
+                id="setup-admin-phone"
+                placeholder="(85) 99171-2228"
+                inputMode="numeric"
+                invalid={Boolean(form.formState.errors.adminContactPhone)}
+                value={formatWhatsappInput(field.value ?? '')}
+                onChange={(e) =>
+                  field.onChange(digitsOnly(e.target.value))
+                }
+                onBlur={field.onBlur}
+                name={field.name}
+                ref={field.ref}
+              />
+            )}
           />
         </FormField>
 

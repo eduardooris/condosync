@@ -14,6 +14,7 @@ import {
 import { TeamSection } from '@/domains/condominiums/components/sections/TeamSection';
 import { AdvancedSection } from '@/domains/condominiums/components/sections/AdvancedSection';
 import { cn } from '@/shared/utils/cn';
+import { formatCpfOrCnpj } from '@/shared/utils/documents';
 
 type SectionId = 'general' | 'financial' | 'communication' | 'polls' | 'occurrences' | 'team' | 'advanced';
 
@@ -75,7 +76,9 @@ export function CondominiumDetailPage() {
             <Settings className="h-5 w-5 text-brand-700 dark:text-brand-300" strokeWidth={2} aria-hidden />
             {data.name}
           </h1>
-          <p className="mt-1 text-ds-sm text-ds-dim">CNPJ {data.cnpj}</p>
+          <p className="mt-1 text-ds-sm text-ds-dim">
+            {data.cnpj ? formatCpfOrCnpj(data.cnpj) : 'Sem documento cadastrado'}
+          </p>
         </div>
       </header>
 

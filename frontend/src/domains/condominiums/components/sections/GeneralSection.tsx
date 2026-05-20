@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/shared/components/ui/Button';
@@ -8,6 +8,8 @@ import { SectionCard, SectionShell } from '@/domains/condominiums/components/Sec
 import { condominiumsService } from '@/domains/condominiums/services/condominiums.service';
 import type { Condominium } from '@/shared/types/api';
 import { queryKeys } from '@/shared/lib/queryKeys';
+import { formatCnpj } from '@/shared/utils/documents';
+import { digitsOnly } from '@/shared/utils/phone';
 
 interface GeneralSectionProps {
   condominium: Condominium;
@@ -22,17 +24,13 @@ type FormData = {
   state: string;
 };
 
-function digits(value: string) {
-  return value.replace(/\D/g, '');
-}
-
 export function GeneralSection({ condominium }: GeneralSectionProps) {
   const queryClient = useQueryClient();
   const address = (condominium.address ?? {}) as Record<string, string | undefined>;
   const form = useForm<FormData>({
     defaultValues: {
       name: condominium.name,
-      cnpj: condominium.cnpj,
+      cnpj: formatCnpj(condominium.cnpj ?? ''),
       street: address.street ?? '',
       number: address.number ?? '',
       city: address.city ?? '',
@@ -44,7 +42,7 @@ export function GeneralSection({ condominium }: GeneralSectionProps) {
     mutationFn: (data: FormData) =>
       condominiumsService.update(condominium.id, {
         name: data.name.trim(),
-        cnpj: digits(data.cnpj),
+        cnpj: digitsOnly(data.cnpj),
         address: {
           street: data.street?.trim() || undefined,
           number: data.number?.trim() || undefined,
@@ -72,7 +70,26 @@ export function GeneralSection({ condominium }: GeneralSectionProps) {
               <Input id="g-name" {...form.register('name', { required: true })} />
             </FormField>
             <FormField label="CNPJ" htmlFor="g-cnpj" required hint="14 dígitos">
-              <Input id="g-cnpj" maxLength={18} {...form.register('cnpj', { required: true })} />
+              <Controller
+                control={form.control}
+                name="cnpj"
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Input
+                    id="g-cnpj"
+                    inputMode="numeric"
+                    maxLength={18}
+                    placeholder="00.000.000/0000-00"
+                    value={formatCnpj(field.value ?? '')}
+                    onChange={(e) =>
+                      field.onChange(digitsOnly(e.target.value))
+                    }
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
+                )}
+              />
             </FormField>
           </div>
 

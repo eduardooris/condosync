@@ -18,6 +18,8 @@ import {
 } from '@radix-ui/react-dropdown-menu';
 import type { Resident } from '@/shared/types/api';
 import { cn } from '@/shared/utils/cn';
+import { formatCpfOrCnpj } from '@/shared/utils/documents';
+import { formatWhatsappInput } from '@/shared/utils/phone';
 
 const AVATAR_GRADIENTS = [
   'from-violet-500 to-fuchsia-500',
@@ -108,12 +110,12 @@ export function ResidentRow({
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-ds-dim">
           <span className="inline-flex items-center gap-1">
             <CreditCard className="h-3 w-3" aria-hidden />
-            {resident.cpf}
+            {formatCpfOrCnpj(resident.cpf)}
           </span>
           {resident.phoneWhatsapp ? (
             <span className="inline-flex items-center gap-1">
               <Phone className="h-3 w-3" aria-hidden />
-              {resident.phoneWhatsapp}
+              {formatWhatsappInput(resident.phoneWhatsapp)}
             </span>
           ) : null}
           {resident.email ? (

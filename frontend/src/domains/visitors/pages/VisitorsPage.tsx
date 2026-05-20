@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/Select';
+import { formatCpfOrCnpj } from '@/shared/utils/documents';
+import { digitsOnly } from '@/shared/utils/phone';
 
 export function VisitorsPage() {
   const condo = useAuthStore((s) => s.activeCondominium);
@@ -159,8 +161,27 @@ export function VisitorsPage() {
             <Input id="visitor-name" {...visitorForm.register('visitorName', { required: true })} />
           </FormField>
           <div className="grid grid-cols-1 gap-3 ds-sm:grid-cols-2">
-            <FormField label="Documento" htmlFor="visitor-document">
-              <Input id="visitor-document" {...visitorForm.register('visitorDocument')} />
+            <FormField
+              label="Documento"
+              htmlFor="visitor-document"
+              hint="CPF ou CNPJ (opcional)."
+            >
+              <Controller
+                control={visitorForm.control}
+                name="visitorDocument"
+                render={({ field }) => (
+                  <Input
+                    id="visitor-document"
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    value={formatCpfOrCnpj(field.value ?? '')}
+                    onChange={(e) => field.onChange(digitsOnly(e.target.value))}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
+                )}
+              />
             </FormField>
             <FormField label="Data/hora prevista" htmlFor="visitor-expected" required>
               <Input id="visitor-expected" type="datetime-local" {...visitorForm.register('expectedAt', { required: true })} />

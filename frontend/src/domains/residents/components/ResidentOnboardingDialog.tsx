@@ -21,6 +21,8 @@ import {
 } from '@/domains/residents/schemas/resident.schema';
 import type { Unit } from '@/shared/types/api';
 import { cn } from '@/shared/utils/cn';
+import { formatCpf } from '@/shared/utils/documents';
+import { digitsOnly, formatWhatsappInput } from '@/shared/utils/phone';
 
 type Step = 1 | 2;
 
@@ -35,29 +37,6 @@ const STEPS: { n: Step; label: string }[] = [
   { n: 1, label: 'Cadastro' },
   { n: 2, label: 'Resumo' },
 ];
-
-function formatCpfInput(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) {
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  }
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function formatWhatsappInput(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length === 0) return '';
-  if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 6) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  }
-  if (digits.length <= 10) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  }
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
 
 export function ResidentOnboardingDialog({ open, onOpenChange, condominiumId, unit }: Props) {
   const queryClient = useQueryClient();
@@ -192,8 +171,12 @@ export function ResidentOnboardingDialog({ open, onOpenChange, condominiumId, un
               <Input
                 id="onb-cpf"
                 invalid={Boolean(form.formState.errors.cpf)}
-                value={formatCpfInput(cpfValue ?? '')}
-                onChange={(e) => form.setValue('cpf', e.target.value, { shouldValidate: true })}
+                value={formatCpf(cpfValue ?? '')}
+                onChange={(e) =>
+                  form.setValue('cpf', digitsOnly(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
               />
             </FormField>
             <FormField

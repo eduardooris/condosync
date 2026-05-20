@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -14,6 +14,8 @@ import {
   type EditResidentFormInput,
 } from '@/domains/residents/schemas/resident.schema';
 import type { Resident, Unit } from '@/shared/types/api';
+import { formatCpf } from '@/shared/utils/documents';
+import { digitsOnly, formatWhatsappInput } from '@/shared/utils/phone';
 
 interface EditResidentDialogProps {
   open: boolean;
@@ -97,11 +99,22 @@ export function EditResidentDialog({
           hint="11 dígitos"
           error={form.formState.errors.cpf?.message}
         >
-          <Input
-            id="edit-cpf"
-            inputMode="numeric"
-            invalid={Boolean(form.formState.errors.cpf)}
-            {...form.register('cpf')}
+          <Controller
+            control={form.control}
+            name="cpf"
+            render={({ field }) => (
+              <Input
+                id="edit-cpf"
+                inputMode="numeric"
+                placeholder="000.000.000-00"
+                invalid={Boolean(form.formState.errors.cpf)}
+                value={formatCpf(field.value ?? '')}
+                onChange={(e) => field.onChange(digitsOnly(e.target.value))}
+                onBlur={field.onBlur}
+                name={field.name}
+                ref={field.ref}
+              />
+            )}
           />
         </FormField>
         <FormField
@@ -110,11 +123,22 @@ export function EditResidentDialog({
           hint="DDD + número"
           error={form.formState.errors.phoneWhatsapp?.message}
         >
-          <Input
-            id="edit-wa"
-            inputMode="tel"
-            invalid={Boolean(form.formState.errors.phoneWhatsapp)}
-            {...form.register('phoneWhatsapp')}
+          <Controller
+            control={form.control}
+            name="phoneWhatsapp"
+            render={({ field }) => (
+              <Input
+                id="edit-wa"
+                inputMode="tel"
+                placeholder="(85) 99171-2228"
+                invalid={Boolean(form.formState.errors.phoneWhatsapp)}
+                value={formatWhatsappInput(field.value ?? '')}
+                onChange={(e) => field.onChange(digitsOnly(e.target.value))}
+                onBlur={field.onBlur}
+                name={field.name}
+                ref={field.ref}
+              />
+            )}
           />
         </FormField>
         <FormField label="E-mail" htmlFor="edit-email" error={form.formState.errors.email?.message}>

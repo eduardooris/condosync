@@ -13,6 +13,11 @@ import {
 } from '@/domains/condominiums/services/condominiums.service';
 import type { Condominium } from '@/shared/types/api';
 import { queryKeys } from '@/shared/lib/queryKeys';
+import {
+  formatPixKeyValue,
+  normalizePixKeyValue,
+} from '@/shared/utils/documents';
+import { digitsOnly, formatWhatsappInput } from '@/shared/utils/phone';
 
 interface FinancialSectionProps {
   condominium: Condominium;
@@ -30,10 +35,6 @@ function formatBrl(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-function onlyDigits(value: string): string {
-  return value.replace(/\D/g, '');
-}
-
 export function FinancialSection({ condominium }: FinancialSectionProps) {
   const queryClient = useQueryClient();
   const initialFee = Number(condominium.monthlyFeeAmount ?? 0);
@@ -47,15 +48,22 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
   const [pixKeyType, setPixKeyType] = useState<PixKeyType>(
     condoWithPix.pixKeyType ?? 'EVP',
   );
-  const [pixKeyValue, setPixKeyValue] = useState(condoWithPix.pixKeyValue ?? '');
-  const [adminContactPhone, setAdminContactPhone] = useState(
-    (condominium as Condominium & { adminContactPhone?: string | null }).adminContactPhone ?? '',
+  const [pixKeyValue, setPixKeyValue] = useState(() =>
+    condoWithPix.pixKeyValue
+      ? formatPixKeyValue(condoWithPix.pixKeyType ?? 'EVP', condoWithPix.pixKeyValue)
+      : '',
   );
+  const [adminContactPhone, setAdminContactPhone] = useState(() => {
+    const raw =
+      (condominium as Condominium & { adminContactPhone?: string | null })
+        .adminContactPhone ?? '';
+    return raw ? formatWhatsappInput(raw) : '';
+  });
 
   const feeNumber = Number(feeText.replace(/\./g, '').replace(',', '.'));
   const feeValid = !Number.isNaN(feeNumber) && feeNumber >= 0;
   const pixKeyValid = pixKeyValue.trim().length > 0;
-  const adminPhoneDigits = onlyDigits(adminContactPhone);
+  const adminPhoneDigits = digitsOnly(adminContactPhone);
   const adminPhoneValid =
     adminPhoneDigits.length === 0 ||
     adminPhoneDigits.length === 10 ||
@@ -68,7 +76,7 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
         billingGenerationDay: genDay,
         billingDueDay: dueDay,
         pixKeyType,
-        pixKeyValue: pixKeyValue.trim(),
+        pixKeyValue: normalizePixKeyValue(pixKeyType, pixKeyValue),
         adminContactPhone: adminPhoneDigits || undefined,
       }),
     onSuccess: () => {
@@ -115,7 +123,11 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
             <NativeSelect
               id="fin-pix-type"
               value={pixKeyType}
-              onChange={(e) => setPixKeyType(e.target.value as PixKeyType)}
+              onChange={(e) => {
+                const next = e.target.value as PixKeyType;
+                setPixKeyType(next);
+                setPixKeyValue((prev) => formatPixKeyValue(next, prev));
+              }}
             >
               {PIX_TYPES.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -128,8 +140,21 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
             <Input
               id="fin-pix-value"
               value={pixKeyValue}
-              onChange={(e) => setPixKeyValue(e.target.value)}
-              placeholder="Informe a chave Pix do condomínio"
+              onChange={(e) =>
+                setPixKeyValue(formatPixKeyValue(pixKeyType, e.target.value))
+              }
+              placeholder={
+                pixKeyType === 'CPF'
+                  ? '000.000.000-00'
+                  : pixKeyType === 'CNPJ'
+                    ? '00.000.000/0000-00'
+                    : pixKeyType === 'PHONE'
+                      ? '(85) 99171-2228'
+                      : 'Informe a chave Pix do condomínio'
+              }
+              inputMode={
+                pixKeyType === 'EMAIL' || pixKeyType === 'EVP' ? 'text' : 'numeric'
+              }
             />
           </FormField>
         </div>
@@ -142,9 +167,11 @@ export function FinancialSection({ condominium }: FinancialSectionProps) {
             <Input
               id="fin-admin-phone"
               value={adminContactPhone}
-              onChange={(e) => setAdminContactPhone(e.target.value)}
+              onChange={(e) =>
+                setAdminContactPhone(formatWhatsappInput(e.target.value))
+              }
               inputMode="numeric"
-              placeholder="85991712228"
+              placeholder="(85) 99171-2228"
               invalid={!adminPhoneValid}
             />
           </FormField>

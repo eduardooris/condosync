@@ -10,6 +10,11 @@ import { useSetupStore } from '@/domains/setup/store/setup.store';
 import { condominiumsService } from '@/domains/condominiums/services/condominiums.service';
 import { DayOfMonthGrid } from '@/shared/components/ui/DayOfMonthGrid';
 import { queryKeys } from '@/shared/lib/queryKeys';
+import {
+  formatPixKeyValue,
+  normalizePixKeyValue,
+  type PixKeyType,
+} from '@/shared/utils/documents';
 
 interface StepFinancialProps {
   onBack: () => void;
@@ -20,10 +25,7 @@ function formatBrl(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-const PIX_TYPES: Array<{
-  value: 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'EVP';
-  label: string;
-}> = [
+const PIX_TYPES: Array<{ value: PixKeyType; label: string }> = [
   { value: 'CPF', label: 'CPF' },
   { value: 'CNPJ', label: 'CNPJ' },
   { value: 'EMAIL', label: 'E-mail' },
@@ -43,7 +45,11 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
   const [genDay, setGenDayState] = useState(financial.billingGenerationDay);
   const [dueDay, setDueDay] = useState(financial.billingDueDay);
   const [pixKeyType, setPixKeyType] = useState(financial.pixKeyType);
-  const [pixKeyValue, setPixKeyValue] = useState(financial.pixKeyValue);
+  const [pixKeyValue, setPixKeyValue] = useState(() =>
+    financial.pixKeyValue
+      ? formatPixKeyValue(financial.pixKeyType, financial.pixKeyValue)
+      : '',
+  );
 
   function setGenDay(day: number) {
     setGenDayState(day);
@@ -62,14 +68,14 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
         billingGenerationDay: genDay,
         billingDueDay: dueDay,
         pixKeyType,
-        pixKeyValue: pixKeyValue?.trim(),
+        pixKeyValue: normalizePixKeyValue(pixKeyType, pixKeyValue ?? ''),
       });
       return condominiumsService.update(condominiumId, {
         monthlyFeeAmount: feeNumber,
         billingGenerationDay: genDay,
         billingDueDay: dueDay,
         pixKeyType,
-        pixKeyValue: pixKeyValue?.trim(),
+        pixKeyValue: normalizePixKeyValue(pixKeyType, pixKeyValue ?? ''),
       });
     },
     onSuccess: () => {
@@ -159,11 +165,11 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
               <NativeSelect
                 id="setup-pix-type"
                 value={pixKeyType}
-                onChange={(e) =>
-                  setPixKeyType(
-                    e.target.value as 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'EVP',
-                  )
-                }
+                onChange={(e) => {
+                  const next = e.target.value as PixKeyType;
+                  setPixKeyType(next);
+                  setPixKeyValue((prev) => formatPixKeyValue(next, prev));
+                }}
               >
                 {PIX_TYPES.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -176,8 +182,23 @@ export function StepFinancial({ onBack, onContinue }: StepFinancialProps) {
               <Input
                 id="setup-pix-value"
                 value={pixKeyValue}
-                onChange={(e) => setPixKeyValue(e.target.value)}
-                placeholder="Informe a chave Pix do condomínio"
+                onChange={(e) =>
+                  setPixKeyValue(formatPixKeyValue(pixKeyType, e.target.value))
+                }
+                placeholder={
+                  pixKeyType === 'CPF'
+                    ? '000.000.000-00'
+                    : pixKeyType === 'CNPJ'
+                      ? '00.000.000/0000-00'
+                      : pixKeyType === 'PHONE'
+                        ? '(85) 99171-2228'
+                        : 'Informe a chave Pix do condomínio'
+                }
+                inputMode={
+                  pixKeyType === 'EMAIL' || pixKeyType === 'EVP'
+                    ? 'text'
+                    : 'numeric'
+                }
               />
             </FormField>
           </div>

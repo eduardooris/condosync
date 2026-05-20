@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Building2, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { Button } from '@/shared/components/ui/Button';
@@ -20,11 +20,8 @@ import {
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { cn } from '@/shared/utils/cn';
 import { canAccessCondominiumAdminRoutes } from '@/shared/utils/roles';
-
-function formatCnpj(raw: string) {
-  const digits = raw.replace(/\D/g, '').slice(0, 14);
-  return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-}
+import { formatCnpj } from '@/shared/utils/documents';
+import { digitsOnly } from '@/shared/utils/phone';
 
 export function CondominiumsPage() {
   const setActiveCondominium = useAuthStore((s) => s.setActiveCondominium);
@@ -85,13 +82,27 @@ export function CondominiumsPage() {
                 label="CNPJ"
                 htmlFor="condo-cnpj"
                 required
-                hint="14 dígitos, sem pontuação"
+                hint="14 dígitos"
               >
-                <Input
-                  id="condo-cnpj"
-                  placeholder="00000000000000"
-                  maxLength={14}
-                  {...form.register('cnpj', { required: true })}
+                <Controller
+                  control={form.control}
+                  name="cnpj"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Input
+                      id="condo-cnpj"
+                      inputMode="numeric"
+                      placeholder="00.000.000/0000-00"
+                      maxLength={18}
+                      value={formatCnpj(field.value ?? '')}
+                      onChange={(e) =>
+                        field.onChange(digitsOnly(e.target.value))
+                      }
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  )}
                 />
               </FormField>
 
@@ -138,7 +149,7 @@ export function CondominiumsPage() {
                       {condo.name}
                     </h3>
                     <p className="text-ds-xs text-ds-dim">
-                      {formatCnpj(condo.cnpj)}
+                      {formatCnpj(condo.cnpj ?? '')}
                     </p>
                   </div>
                 </div>

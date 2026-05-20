@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { ExternalLink, Landmark, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ExternalLink, Landmark, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/shared/components/ui/Button';
 import { FormField } from '@/shared/components/ui/FormField';
@@ -19,6 +19,18 @@ import type {
   PaymentAccountHolderType,
 } from '@/domains/payments/services/payment-accounts.service';
 import { cn } from '@/shared/utils/cn';
+import { formatCep } from '@/shared/utils/cep';
+import {
+  formatCpfCnpjByHolder,
+  formatCpfOrCnpj,
+} from '@/shared/utils/documents';
+import {
+  digitsOnly,
+  formatMobilePhoneLocalDisplay,
+  isValidAsaasMobilePhone,
+  toAsaasMobilePhone,
+} from '@/shared/utils/phone';
+import { useCepAutocomplete } from '@/shared/hooks/useCepAutocomplete';
 
 interface StepPaymentsProps {
   onBack: () => void;
@@ -40,10 +52,6 @@ interface FormValues {
   city: string;
   state: string;
   postalCode: string;
-}
-
-function digitsOnly(value: string): string {
-  return value.replace(/\D/g, '');
 }
 
 const HOLDER_TYPE_OPTIONS: {
@@ -91,14 +99,18 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
       // do condomínio + perfil dele. Quanto menos redigitação, melhor.
       defaultValues: {
         holderType: inferredHolderType,
-        cpfCnpj: condoIdentity.cnpj ?? '',
+        cpfCnpj: condoIdentity.cnpj
+          ? formatCpfOrCnpj(condoIdentity.cnpj)
+          : '',
         legalName:
           inferredHolderType === 'PJ'
             ? condoIdentity.name
             : (authUser?.name ?? ''),
         birthDate: '',
         email: authUser?.email ?? '',
-        mobilePhone: condoIdentity.adminContactPhone ?? '',
+        mobilePhone: condoIdentity.adminContactPhone
+          ? formatMobilePhoneLocalDisplay(condoIdentity.adminContactPhone)
+          : '',
         incomeValue: '',
         street: condoIdentity.address?.street ?? '',
         number: condoIdentity.address?.number ?? '',
@@ -106,12 +118,32 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
         province: '',
         city: condoIdentity.address?.city ?? '',
         state: condoIdentity.address?.state?.toUpperCase() ?? '',
-        postalCode: digitsOnly(condoIdentity.address?.zip ?? ''),
+        postalCode: formatCep(condoIdentity.address?.zip ?? ''),
       },
     });
 
   const holderType = watch('holderType');
-  const cpfCnpjMaxLen = holderType === 'PJ' ? 14 : 11;
+  const postalCode = watch('postalCode');
+  const cpfCnpjMaxLength = holderType === 'PJ' ? 18 : 14;
+  const { resolveCep, isLoading: cepLoading, reset: resetCepLookup } =
+    useCepAutocomplete();
+
+  useEffect(() => {
+    const cep = digitsOnly(postalCode ?? '');
+    if (cep.length < 8) {
+      resetCepLookup();
+      return;
+    }
+    void resolveCep(cep, (addr) => {
+      if (addr.street) setValue('street', addr.street, { shouldDirty: true });
+      if (addr.province) setValue('province', addr.province, { shouldDirty: true });
+      if (addr.city) setValue('city', addr.city, { shouldDirty: true });
+      if (addr.state) setValue('state', addr.state, { shouldDirty: true });
+      if (addr.complement) {
+        setValue('complement', addr.complement, { shouldDirty: true });
+      }
+    });
+  }, [postalCode, resolveCep, resetCepLookup, setValue]);
 
   // Indica se o pré-preenchimento (silencioso, via defaultValues) tinha dados
   // relevantes para mostrar um aviso amigável.
@@ -142,7 +174,7 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
           ? values.birthDate
           : undefined,
       email: values.email.trim(),
-      mobilePhone: digitsOnly(values.mobilePhone),
+      mobilePhone: toAsaasMobilePhone(values.mobilePhone),
       incomeValue: incomeNumber,
       address: {
         street: values.street.trim(),
@@ -284,13 +316,38 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
                   label={holderType === 'PJ' ? 'CNPJ' : 'CPF'}
                   htmlFor="cpfCnpj"
                   required
-                  hint={`Só números (${cpfCnpjMaxLen} dígitos).`}
+                  hint={
+                    holderType === 'PJ'
+                      ? '14 dígitos (CNPJ).'
+                      : '11 dígitos (CPF).'
+                  }
                 >
-                  <Input
-                    id="cpfCnpj"
-                    inputMode="numeric"
-                    maxLength={cpfCnpjMaxLen + 4}
-                    {...register('cpfCnpj', { required: true })}
+                  <Controller
+                    control={control}
+                    name="cpfCnpj"
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <Input
+                        id="cpfCnpj"
+                        inputMode="numeric"
+                        maxLength={cpfCnpjMaxLength}
+                        placeholder={
+                          holderType === 'PJ'
+                            ? '00.000.000/0000-00'
+                            : '000.000.000-00'
+                        }
+                        value={formatCpfCnpjByHolder(
+                          field.value ?? '',
+                          holderType,
+                        )}
+                        onChange={(e) =>
+                          field.onChange(digitsOnly(e.target.value))
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    )}
                   />
                 </FormField>
                 <FormField
@@ -331,13 +388,45 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
                   label="Telefone (WhatsApp)"
                   htmlFor="mobilePhone"
                   required
-                  hint="Com DDI 55 + DDD. Ex.: 5585991712228."
+                  hint="DDD + número. O código do Brasil (+55) é enviado automaticamente."
+                  error={formState.errors.mobilePhone?.message}
                 >
-                  <Input
-                    id="mobilePhone"
-                    inputMode="numeric"
-                    {...register('mobilePhone', { required: true })}
-                  />
+                  <div className="flex gap-2">
+                    <span
+                      className="inline-flex h-11 shrink-0 items-center rounded-ds-md border border-ds-stroke bg-ds-surface px-3 text-ds-sm font-medium text-ds-dim dark:bg-white/[0.04]"
+                      aria-hidden
+                    >
+                      +55
+                    </span>
+                    <Controller
+                      control={control}
+                      name="mobilePhone"
+                      rules={{
+                        required: true,
+                        validate: (v) =>
+                          isValidAsaasMobilePhone(toAsaasMobilePhone(v)) ||
+                          'Informe DDD + número com 8 ou 9 dígitos.',
+                      }}
+                      render={({ field }) => (
+                        <Input
+                          id="mobilePhone"
+                          inputMode="numeric"
+                          placeholder="(85) 99171-2228"
+                          className="flex-1"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(
+                              formatMobilePhoneLocalDisplay(e.target.value),
+                            )
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                          invalid={Boolean(formState.errors.mobilePhone)}
+                        />
+                      )}
+                    />
+                  </div>
                 </FormField>
               </div>
 
@@ -373,13 +462,41 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
               <h2 className="text-ds-md font-semibold text-ds-body">Endereço do titular</h2>
 
               <div className="grid gap-4 ds-sm:grid-cols-[1fr_auto]">
-                <FormField label="CEP" htmlFor="postalCode" required hint="Só dígitos.">
-                  <Input
-                    id="postalCode"
-                    inputMode="numeric"
-                    maxLength={8}
-                    {...register('postalCode', { required: true })}
-                  />
+                <FormField
+                  label="CEP"
+                  htmlFor="postalCode"
+                  required
+                  hint="Ao digitar 8 dígitos, buscamos rua, bairro e cidade."
+                >
+                  <div className="relative">
+                    <Controller
+                      control={control}
+                      name="postalCode"
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <Input
+                          id="postalCode"
+                          inputMode="numeric"
+                          maxLength={9}
+                          placeholder="60175-000"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(formatCep(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                          invalid={Boolean(formState.errors.postalCode)}
+                        />
+                      )}
+                    />
+                    {cepLoading ? (
+                      <Loader2
+                        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ds-dim"
+                        aria-label="Buscando CEP"
+                      />
+                    ) : null}
+                  </div>
                 </FormField>
                 <FormField label="UF" htmlFor="state" required>
                   <NativeSelect id="state" {...register('state', { required: true })}>
