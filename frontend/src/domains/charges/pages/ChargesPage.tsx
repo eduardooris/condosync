@@ -193,8 +193,14 @@ export function ChargesPage() {
                           `${r.emitted} na Asaas; ${r.failed} falha${r.failed !== 1 ? 's' : ''}.`,
                         );
                       } else {
+                        const detail = r.failures
+                          .slice(0, 2)
+                          .map((f) => `${f.unitLabel}: ${f.message}`)
+                          .join(' · ');
                         toast.error(
-                          'Nenhuma cobrança foi emitida. Verifique responsáveis financeiros e subconta ativa.',
+                          detail ||
+                            'Nenhuma cobrança foi emitida. Verifique responsável financeiro, CPF/telefone e subconta ativa.',
+                          { duration: 14_000 },
                         );
                       }
                     },

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -36,6 +37,11 @@ import {
 } from '../notifications/notifications.service';
 import { NotificationType } from '../../database/entities/notification.entity';
 import { PaymentAccountsService } from '../payments/accounts/payment-accounts.service';
+import {
+  AsaasException,
+  formatAsaasErrorDescriptions,
+} from '../payments/asaas/asaas.errors';
+import type { AsaasErrorResponse } from '../payments/asaas/asaas.types';
 import { ChargesAsaasService } from '../payments/charges/charges-asaas.service';
 import { Resident } from '../../database/entities/resident.entity';
 import { ConfigService } from '@nestjs/config';
@@ -92,8 +98,31 @@ export class ChargesService {
       chargeId,
       unitId: unit.id,
       unitLabel: this.unitLabel(unit),
-      message: err instanceof Error ? err.message : 'Falha ao emitir na Asaas.',
+      message: this.formatAsaasEmitError(err),
     };
+  }
+
+  /** Extrai mensagem PT-BR de AsaasException / HttpException para o síndico. */
+  private formatAsaasEmitError(err: unknown): string {
+    if (err instanceof AsaasException) {
+      const detail = formatAsaasErrorDescriptions(
+        err.upstream as AsaasErrorResponse | null,
+      );
+      if (detail) return detail;
+    }
+    if (err instanceof HttpException) {
+      const body = err.getResponse();
+      if (typeof body === 'string') return body;
+      if (body && typeof body === 'object' && 'message' in body) {
+        const msg = (body as { message?: string | string[] }).message;
+        if (Array.isArray(msg)) return msg.join(' ');
+        if (typeof msg === 'string' && msg.trim()) return msg;
+      }
+    }
+    if (err instanceof Error && err.message.trim()) {
+      return err.message;
+    }
+    return 'Falha ao emitir na Asaas.';
   }
 
   /**
@@ -368,7 +397,14 @@ export class ChargesService {
               billingMonth: month,
               chargeId: row.id,
               unitId: unit.id,
+              unitLabel: failure.unitLabel,
               err_message: failure.message,
+              asaas_errors:
+                err instanceof AsaasException
+                  ? formatAsaasErrorDescriptions(
+                      err.upstream as AsaasErrorResponse | null,
+                    )
+                  : null,
             },
             'charges.generate_month.asaas_emit_failed',
           );

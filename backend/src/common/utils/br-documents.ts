@@ -55,6 +55,22 @@ export function normalizeBrazilWhatsapp(phone: string): string {
 }
 
 /**
+ * Formato exigido pela Asaas em `mobilePhone` (subconta e customer):
+ * `55` + DDD (2) + 8 ou 9 dígitos, só dígitos.
+ */
+export function toAsaasMobilePhone(raw: string | null | undefined): string | undefined {
+  if (!raw?.trim()) return undefined;
+  let d = raw.replace(/\D/g, '');
+  if (!d) return undefined;
+  if (d.startsWith('55')) d = d.slice(2);
+  while (d.length > 11 && d.startsWith('0')) {
+    d = d.slice(1);
+  }
+  const out = `55${d}`;
+  return /^55\d{10,11}$/.test(out) ? out : undefined;
+}
+
+/**
  * Formata um número BR para envio via WhatsApp (whatsmeow / Cloud API).
  *
  * O WhatsApp identifica usuários BR pelo número *sem* o nono dígito de

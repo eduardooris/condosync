@@ -102,12 +102,27 @@ export function asaasForbidden(
   );
 }
 
+/** Junta `errors[].description` do envelope Asaas (422/400). */
+export function formatAsaasErrorDescriptions(
+  upstream: AsaasErrorResponse | string | null | undefined,
+): string | null {
+  if (!upstream || typeof upstream !== 'object' || !Array.isArray(upstream.errors)) {
+    return null;
+  }
+  const parts = upstream.errors
+    .map((e) => e.description?.trim())
+    .filter((d): d is string => Boolean(d));
+  if (parts.length === 0) return null;
+  return parts.join(' ');
+}
+
 export function asaasValidation(
   upstream: AsaasErrorResponse,
 ): AsaasException {
+  const detail = formatAsaasErrorDescriptions(upstream);
   return new AsaasException(
     'ASAAS_VALIDATION_FAILED',
-    'Dados rejeitados pela Asaas.',
+    detail ? `Asaas: ${detail}` : 'Dados rejeitados pela Asaas.',
     HttpStatus.UNPROCESSABLE_ENTITY,
     upstream,
   );

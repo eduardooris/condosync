@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { toAsaasMobilePhone } from '../../../common/utils/br-documents';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Resident } from '../../../database/entities/resident.entity';
 import { PaymentCustomer } from '../../../database/entities/payment-customer.entity';
@@ -39,6 +40,7 @@ export class PaymentCustomersService {
   ): Promise<PaymentCustomer> {
     const account = await this.accounts.requireActive(condominiumId);
     const apiKey = await this.accounts.resolveApiKey(condominiumId);
+    const mobilePhone = toAsaasMobilePhone(resident.phoneWhatsapp);
 
     // 1) Reuso por (payment_account_id, cpf).
     let customer = await this.repo.findByAccountAndCpf(account.id, resident.cpf);
@@ -57,7 +59,7 @@ export class PaymentCustomersService {
             name: resident.fullName,
             cpfCnpj: resident.cpf,
             email: resident.email ?? undefined,
-            mobilePhone: resident.phoneWhatsapp ?? undefined,
+            mobilePhone,
             externalReference: customer.id,
           });
           customer.legalName = resident.fullName;
@@ -80,7 +82,7 @@ export class PaymentCustomersService {
         name: resident.fullName,
         cpfCnpj: resident.cpf,
         email: resident.email ?? undefined,
-        mobilePhone: resident.phoneWhatsapp ?? undefined,
+        mobilePhone,
         externalReference: `condo:${condominiumId}:resident:${resident.id}`,
       });
       customer = await this.repo.saveCustomer(

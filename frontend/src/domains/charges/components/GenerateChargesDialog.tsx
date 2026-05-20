@@ -110,15 +110,15 @@ function GenerateChargesDialogBody({
             `Nenhuma cobrança nova: já existem lançamentos para ${month} em todas as unidades.`,
           );
         } else if (result.asaasFailed > 0) {
-          const labels = result.failures
-            .slice(0, 3)
-            .map((f) => f.unitLabel)
-            .join(', ');
+          const detail = result.failures
+            .slice(0, 2)
+            .map((f) => `${f.unitLabel}: ${f.message}`)
+            .join(' · ');
           toast.error(
-            `${result.created} criada(s), mas ${result.asaasFailed} não foram para a Asaas` +
-              (labels ? ` (${labels}${result.failures.length > 3 ? '…' : ''})` : '') +
-              '. Use "Emitir pendentes na Asaas" na lista de cobranças.',
-            { duration: 10_000 },
+            `${result.created} criada(s), mas ${result.asaasFailed} não foram para a Asaas.` +
+              (detail ? ` ${detail}` : '') +
+              ' Use "Emitir pendentes na Asaas" após corrigir.',
+            { duration: 14_000 },
           );
         } else {
           const asaasPart =
