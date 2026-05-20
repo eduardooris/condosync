@@ -32,6 +32,14 @@ export class PaymentAccountsRepository {
       .getOne();
   }
 
+  findByIdWithSecrets(id: string): Promise<PaymentAccount | null> {
+    return this.repo
+      .createQueryBuilder('pa')
+      .addSelect(['pa.asaasApiKey', 'pa.asaasWebhookToken'])
+      .where('pa.id = :id', { id })
+      .getOne();
+  }
+
   /**
    * Resolve por token de webhook (subconta envia no header `asaas-access-token`).
    * Usado pelo `AsaasWebhookGuard` para identificar a subconta sem expor IDs.

@@ -4,6 +4,7 @@ import type {
   CondominiumDetail,
   CondominiumSummary,
   PaymentAccountDetail,
+  PaymentAccountSecrets,
   PaymentAccountSummary,
   UserDetail,
   UserSummary,
@@ -20,6 +21,14 @@ export const masterService = {
   getPaymentAccount: async (id: string): Promise<PaymentAccountDetail> => {
     const { data } = await http.get<PaymentAccountDetail>(
       `/master/payment-accounts/${id}`,
+    );
+    return data;
+  },
+  getPaymentAccountSecrets: async (
+    id: string,
+  ): Promise<PaymentAccountSecrets> => {
+    const { data } = await http.get<PaymentAccountSecrets>(
+      `/master/payment-accounts/${id}/secrets`,
     );
     return data;
   },

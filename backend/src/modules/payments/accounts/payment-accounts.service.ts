@@ -219,7 +219,37 @@ export class PaymentAccountsService {
     if (!account) {
       throw new NotFoundException('Subconta de pagamento não encontrada.');
     }
-    return this.crypto.decrypt(account.asaasApiKey);
+    return this.crypto.decrypt(this.toBuffer(account.asaasApiKey));
+  }
+
+  /**
+   * Back-office master: devolve credenciais da subconta para debug/integração.
+   * **Nunca** usar em endpoints do PWA do síndico — só `MasterRoleGuard`.
+   */
+  async getSecretsByAccountId(accountId: string): Promise<{
+    paymentAccountId: string;
+    condominiumId: string;
+    asaasAccountId: string;
+    asaasWalletId: string;
+    asaasApiKey: string;
+    asaasWebhookToken: string;
+  }> {
+    const account = await this.repo.findByIdWithSecrets(accountId);
+    if (!account) {
+      throw new NotFoundException('Subconta de pagamento não encontrada.');
+    }
+    this.logger.warn(
+      { paymentAccountId: account.id, condominiumId: account.condominiumId },
+      'master: credenciais da subconta Asaas consultadas',
+    );
+    return {
+      paymentAccountId: account.id,
+      condominiumId: account.condominiumId,
+      asaasAccountId: account.asaasAccountId,
+      asaasWalletId: account.asaasWalletId,
+      asaasApiKey: this.crypto.decrypt(this.toBuffer(account.asaasApiKey)),
+      asaasWebhookToken: account.asaasWebhookToken,
+    };
   }
 
   /**

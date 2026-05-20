@@ -41,6 +41,16 @@ export interface PaymentAccountDetail extends PaymentAccountSummary {
   };
 }
 
+/** Resposta de GET /master/payment-accounts/:id/secrets — dados sensíveis. */
+export interface PaymentAccountSecrets {
+  paymentAccountId: string;
+  condominiumId: string;
+  asaasAccountId: string;
+  asaasWalletId: string;
+  asaasApiKey: string;
+  asaasWebhookToken: string;
+}
+
 export type ChargeStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'EXEMPT' | 'CANCELED';
 
 export interface ChargeRow {

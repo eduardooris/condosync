@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
@@ -23,18 +24,17 @@ import { PaymentWebhookEvent } from '../../database/entities/payment-webhook-eve
 import { Charge } from '../../database/entities/charge.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
 import { QUEUE_ASAAS_WEBHOOK } from '../../queues/queue-names';
+import { PaymentAccountsService } from '../payments/accounts/payment-accounts.service';
 
 /**
  * Endpoints cross-tenant pro back-office.
  *
  *   GET  /master/payment-accounts        → lista todas as subcontas
  *   GET  /master/payment-accounts/:id    → detalhe + condomínio + último sync
+ *   GET  /master/payment-accounts/:id/secrets → apiKey + webhook token (master)
  *   GET  /master/charges                 → lista cobranças (filtros via query)
  *   GET  /master/webhook-events          → lista eventos recebidos (debug)
  *   POST /master/webhook-events/:id/reprocess → re-enfileira evento que falhou
- *
- * NUNCA expor o `asaas_api_key` aqui — segredos só via `/dev/secrets` que
- * tem checagem extra de ambiente.
  */
 @ApiTags('master')
 @ApiBearerAuth('bearer')
@@ -52,6 +52,7 @@ export class MasterPaymentsController {
     private readonly condoRepo: Repository<Condominium>,
     @InjectQueue(QUEUE_ASAAS_WEBHOOK)
     private readonly webhookQueue: Queue,
+    private readonly paymentAccounts: PaymentAccountsService,
   ) {}
 
   // ── PAYMENT ACCOUNTS ────────────────────────────────────────────────────
@@ -91,7 +92,7 @@ export class MasterPaymentsController {
   async getPaymentAccount(@Param('id', ParseUUIDPipe) id: string) {
     const account = await this.accountsRepo.findOne({ where: { id } });
     if (!account) {
-      return null;
+      throw new NotFoundException('Subconta não encontrada.');
     }
     const condo = await this.condoRepo.findOne({
       where: { id: account.condominiumId },
@@ -137,6 +138,15 @@ export class MasterPaymentsController {
       updatedAt: account.updatedAt,
       metrics: { totalCharges, paidCharges, pendingCharges },
     };
+  }
+
+  @Get('payment-accounts/:id/secrets')
+  @ApiOperation({
+    summary:
+      'Credenciais da subconta (apiKey + webhook token). Somente master-admin.',
+  })
+  getPaymentAccountSecrets(@Param('id', ParseUUIDPipe) id: string) {
+    return this.paymentAccounts.getSecretsByAccountId(id);
   }
 
   // ── CHARGES ────────────────────────────────────────────────────────────

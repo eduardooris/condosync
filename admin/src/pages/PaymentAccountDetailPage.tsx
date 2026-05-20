@@ -2,7 +2,17 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { ArrowLeft, RefreshCw, Webhook, Zap, ExternalLink } from 'lucide-react';
+import {
+  ArrowLeft,
+  Copy,
+  Eye,
+  EyeOff,
+  KeyRound,
+  RefreshCw,
+  Webhook,
+  Zap,
+  ExternalLink,
+} from 'lucide-react';
 import { masterService } from '@/services/master.service';
 import { StatusBadge } from '@/components/StatusBadge';
 import { extractApiError } from '@/lib/http';
@@ -11,6 +21,7 @@ export function PaymentAccountDetailPage() {
   const { accountId } = useParams<{ accountId: string }>();
   const qc = useQueryClient();
   const [confirmingPix, setConfirmingPix] = useState<string | null>(null);
+  const [secretsOpen, setSecretsOpen] = useState(false);
 
   const accountQuery = useQuery({
     queryKey: ['master', 'payment-account', accountId],
@@ -30,6 +41,14 @@ export function PaymentAccountDetailPage() {
     queryKey: ['master', 'asaas-webhooks', condoId],
     queryFn: () => masterService.listAsaasWebhooks(condoId!),
     enabled: !!condoId,
+  });
+
+  const secretsQuery = useQuery({
+    queryKey: ['master', 'payment-account-secrets', accountId],
+    queryFn: () => masterService.getPaymentAccountSecrets(accountId!),
+    enabled: secretsOpen && !!accountId,
+    staleTime: 0,
+    retry: false,
   });
 
   const refreshWebhookMut = useMutation({
@@ -137,6 +156,42 @@ export function PaymentAccountDetailPage() {
           ) : null}
         </div>
 
+        <div className="mt-4 rounded border border-warning/30 bg-warning/5 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-warning">
+              <KeyRound className="h-3.5 w-3.5" />
+              Credenciais da subconta (Asaas)
+            </p>
+            <button
+              type="button"
+              onClick={() => setSecretsOpen((v) => !v)}
+              className="inline-flex h-7 items-center gap-1 rounded border border-border bg-bg-elevated px-2 text-xs font-medium text-fg-dim hover:text-fg"
+            >
+              {secretsOpen ? (
+                <>
+                  <EyeOff className="h-3.5 w-3.5" />
+                  Ocultar
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5" />
+                  Revelar apiKey
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] text-fg-subtle">
+            Uso restrito a operação/debug. Não compartilhe nem cole em canais públicos.
+          </p>
+          {secretsOpen ? (
+            <SecretsPanel
+              loading={secretsQuery.isLoading}
+              error={secretsQuery.isError ? extractApiError(secretsQuery.error) : null}
+              data={secretsQuery.data}
+            />
+          ) : null}
+        </div>
+
         {webhooksAsaasQuery.data ? (
           <div className="mt-4 rounded border border-border bg-bg p-3 text-xs">
             <p className="text-fg-subtle mb-1">URL esperada:</p>
@@ -239,6 +294,81 @@ function Stat({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+function SecretsPanel({
+  loading,
+  error,
+  data,
+}: {
+  loading: boolean;
+  error: string | null;
+  data?: {
+    asaasAccountId: string;
+    asaasWalletId: string;
+    asaasApiKey: string;
+    asaasWebhookToken: string;
+  };
+}) {
+  if (loading) {
+    return <p className="mt-3 text-xs text-fg-dim">Carregando credenciais…</p>;
+  }
+  if (error) {
+    return <p className="mt-3 text-xs text-danger">{error}</p>;
+  }
+  if (!data) return null;
+
+  return (
+    <dl className="mt-3 space-y-2 text-xs">
+      <SecretRow label="Asaas account ID" value={data.asaasAccountId} />
+      <SecretRow label="Wallet ID" value={data.asaasWalletId} />
+      <SecretRow label="ApiKey (subconta)" value={data.asaasApiKey} mono />
+      <SecretRow label="Webhook token" value={data.asaasWebhookToken} mono />
+    </dl>
+  );
+}
+
+function SecretRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success('Copiado.');
+    } catch {
+      toast.error('Não foi possível copiar.');
+    }
+  }
+
+  return (
+    <div className="rounded bg-bg-elevated p-2">
+      <dt className="text-fg-subtle">{label}</dt>
+      <dd className="mt-1 flex items-start justify-between gap-2">
+        <span
+          className={
+            (mono ? 'font-mono break-all ' : '') + 'text-fg min-w-0 flex-1'
+          }
+        >
+          {value}
+        </span>
+        <button
+          type="button"
+          onClick={() => void copy()}
+          className="inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[10px] text-fg-dim hover:text-fg"
+          title="Copiar"
+        >
+          <Copy className="h-3 w-3" />
+          Copiar
+        </button>
+      </dd>
     </div>
   );
 }
