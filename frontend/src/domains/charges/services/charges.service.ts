@@ -21,8 +21,31 @@ export interface UpdateChargeInput {
   dueDate?: string;
 }
 
+export interface GenerateMonthAsaasFailure {
+  chargeId: string;
+  unitId: string;
+  unitLabel: string;
+  message: string;
+}
+
 export interface GenerateMonthResult {
   created: number;
+  skipped: number;
+  asaasEmitted: number;
+  asaasFailed: number;
+  failures: GenerateMonthAsaasFailure[];
+}
+
+export interface EmitPendingAsaasResult {
+  emitted: number;
+  failed: number;
+  failures: GenerateMonthAsaasFailure[];
+}
+
+export interface MarkPaidInput {
+  paidAt?: string;
+  method?: string;
+  note?: string;
 }
 
 export const chargesService = {
@@ -51,20 +74,17 @@ export const chargesService = {
       payload,
     ),
 
-  markPaid: (id: string) =>
-    api.patch<{ paidAt: string }, Charge>(`/charges/${id}/mark-paid`, {
-      paidAt: new Date().toISOString(),
+  markPaid: (id: string, payload?: MarkPaidInput) =>
+    api.patch<MarkPaidInput, Charge>(`/charges/${id}/mark-paid`, {
+      paidAt: payload?.paidAt ?? new Date().toISOString(),
+      ...(payload?.method ? { method: payload.method } : {}),
+      ...(payload?.note?.trim() ? { note: payload.note.trim() } : {}),
     }),
 
-  /**
-   * Auto-declaração de pagamento pelo morador. Vai pra rota escopada
-   * por condomínio porque o backend valida tenancy do `condominiumId`
-   * antes de aceitar — admin usa `markPaid(id)` na rota global.
-   */
-  markPaidMine: (condId: string, chargeId: string) =>
-    api.patch<{ paidAt: string }, Charge>(
-      `/condominiums/${condId}/charges/mine/${chargeId}/mark-paid`,
-      { paidAt: new Date().toISOString() },
+  emitAsaasPending: (condId: string) =>
+    api.post<undefined, EmitPendingAsaasResult>(
+      `/condominiums/${condId}/charges/emit-asaas-pending`,
+      undefined,
     ),
 
   exempt: (id: string, reason: string) =>

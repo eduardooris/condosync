@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Receipt, Search, Filter, CheckCircle2, Ban, Zap, Pencil, Settings2, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
-import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import {
   DialogFooter,
   FormDialog,
@@ -17,6 +16,9 @@ import { Input } from '@/shared/components/ui/Input';
 import { ListSkeleton } from '@/shared/components/ui/Skeleton';
 import { PullToRefresh } from '@/shared/components/ui/PullToRefresh';
 import { Textarea } from '@/shared/components/ui/Textarea';
+import { NativeSelect } from '@/shared/components/ui/NativeSelect';
+import { MANUAL_PAID_METHODS } from '@/domains/charges/constants/manual-paid-methods';
+import type { ManualPaidMethod } from '@/domains/charges/constants/manual-paid-methods';
 import { useChargesPage, type StatusFilter } from '@/domains/charges/hooks/useChargesPage';
 import { GenerateChargesDialog } from '@/domains/charges/components/GenerateChargesDialog';
 import { EditChargeDialog } from '@/domains/charges/components/EditChargeDialog';
@@ -25,6 +27,7 @@ import {
   type CondominiumPaymentSlice,
 } from '@/domains/charges/components/ChargeDetailDialog';
 import type { Charge } from '@/shared/types/api';
+import { hasAsaasPayment, type ChargeWithPaymentMethods } from '@/domains/payments/types';
 import { cn } from '@/shared/utils/cn';
 import { useAuthStore } from '@/shared/stores/auth.store';
 
@@ -94,7 +97,7 @@ export function ChargesPage() {
   } = useChargesPage();
   const {
     payMutation,
-    payMineMutation,
+    emitAsaasPendingMutation,
     exemptMutation,
     resendWhatsappMutation,
   } = chargesQuery;
@@ -109,8 +112,20 @@ export function ChargesPage() {
   // Estado dos dois confirmadores: marcar paga (somente confirma) e isentar
   // (confirma + pede o motivo em formulário) — evitam clique acidental.
   const [chargeToPay, setChargeToPay] = useState<Charge | null>(null);
+  const [payMethod, setPayMethod] = useState<ManualPaidMethod>('MANUAL_CASH');
+  const [payNote, setPayNote] = useState('');
   const [chargeToExempt, setChargeToExempt] = useState<Charge | null>(null);
   const [exemptReason, setExemptReason] = useState('');
+
+  const openWithoutAsaas = useMemo(
+    () =>
+      list.filter(
+        (c) =>
+          !hasAsaasPayment(c as ChargeWithPaymentMethods) &&
+          (c.status === 'PENDING' || c.status === 'OVERDUE'),
+      ),
+    [list],
+  );
 
   if (chargesQuery.isLoading) return <ListSkeleton rows={8} />;
 
@@ -158,6 +173,38 @@ export function ChargesPage() {
                 <Settings2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Ajustar taxa
               </Link>
+            ) : null}
+            {openWithoutAsaas.length > 0 ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                fullWidth
+                className="ds-sm:w-auto"
+                disabled={emitAsaasPendingMutation.isPending}
+                onClick={() =>
+                  emitAsaasPendingMutation.mutate(undefined, {
+                    onSuccess: (r) => {
+                      if (r.emitted > 0 && r.failed === 0) {
+                        toast.success(
+                          `${r.emitted} cobrança${r.emitted !== 1 ? 's' : ''} enviada${r.emitted !== 1 ? 's' : ''} à Asaas.`,
+                        );
+                      } else if (r.emitted > 0) {
+                        toast.success(
+                          `${r.emitted} na Asaas; ${r.failed} falha${r.failed !== 1 ? 's' : ''}.`,
+                        );
+                      } else {
+                        toast.error(
+                          'Nenhuma cobrança foi emitida. Verifique responsáveis financeiros e subconta ativa.',
+                        );
+                      }
+                    },
+                    onError: () =>
+                      toast.error('Não foi possível emitir cobranças na Asaas.'),
+                  })
+                }
+              >
+                Emitir pendentes na Asaas ({openWithoutAsaas.length})
+              </Button>
             ) : null}
             <Button
               size="sm"
@@ -381,9 +428,13 @@ export function ChargesPage() {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => setChargeToPay(charge)}
+                          onClick={() => {
+                            setPayMethod('MANUAL_CASH');
+                            setPayNote('');
+                            setChargeToPay(charge);
+                          }}
                           disabled={payMutation.isPending}
-                          title="Confirmar pagamento dessa cobrança"
+                          title="Baixa manual (dinheiro, Pix fora do Asaas, etc.)"
                         >
                           <CheckCircle2 className="h-3 w-3" aria-hidden />
                           Marcar paga
@@ -437,54 +488,89 @@ export function ChargesPage() {
         unitLabel={detailCharge ? unitLabelForCharge(detailCharge, unitLabelById, myUnitId) : '—'}
         condominium={condominiumQuery.data as CondominiumPaymentSlice | undefined}
         condominiumLoading={condominiumQuery.isLoading}
-        markPaidPending={payMineMutation.isPending}
-        onMarkPaidByResident={
-          // Só morador (não-admin) vê o botão "Já paguei" — admin tem o
-          // botão "Marcar paga" direto na linha da lista.
-          !canManage
-            ? async (id: string) => {
-                try {
-                  await payMineMutation.mutateAsync(id);
-                  toast.success(
-                    'Pagamento registrado. A administração vai revisar.',
-                  );
-                } catch {
-                  toast.error(
-                    'Não foi possível registrar o pagamento. Tente novamente em alguns minutos.',
-                  );
-                }
-              }
-            : undefined
-        }
       />
 
       {canManage ? (
         <>
-          <ConfirmDialog
+          <FormDialog
             open={Boolean(chargeToPay)}
             onOpenChange={(open) => {
-              if (!open) setChargeToPay(null);
+              if (!open) {
+                setChargeToPay(null);
+                setPayNote('');
+              }
             }}
-            title="Confirmar pagamento?"
+            title="Marcar como paga"
             description={
               chargeToPay
-                ? `Marcar como paga a cobrança de ${unitLabelForCharge(chargeToPay, unitLabelById, myUnitId)} — ${formatBrl(chargeToPay.amount)} (venc. ${chargeToPay.dueDate ? formatDate(String(chargeToPay.dueDate)) : '—'})? O status muda para "Pago" e o morador é notificado.`
+                ? `${unitLabelForCharge(chargeToPay, unitLabelById, myUnitId)} · ${formatBrl(chargeToPay.amount)} · venc. ${chargeToPay.dueDate ? formatDate(String(chargeToPay.dueDate)) : '—'}`
                 : ''
             }
-            confirmLabel="Marcar paga"
-            confirmDisabled={payMutation.isPending}
-            onConfirm={() => {
-              if (!chargeToPay) return;
-              payMutation.mutate(chargeToPay.id, {
-                onSuccess: () => {
-                  toast.success('Cobrança marcada como paga.');
-                  setChargeToPay(null);
-                },
-                onError: () =>
-                  toast.error('Não foi possível marcar como paga.'),
-              });
-            }}
-          />
+          >
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!chargeToPay) return;
+                payMutation.mutate(
+                  {
+                    id: chargeToPay.id,
+                    payload: { method: payMethod, note: payNote },
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success('Cobrança marcada como paga.');
+                      setChargeToPay(null);
+                      setPayNote('');
+                    },
+                    onError: () =>
+                      toast.error('Não foi possível marcar como paga.'),
+                  },
+                );
+              }}
+            >
+              <FormField label="Forma de pagamento" htmlFor="pay-method" required>
+                <NativeSelect
+                  id="pay-method"
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value as ManualPaidMethod)}
+                >
+                  {MANUAL_PAID_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </FormField>
+              <FormField
+                label="Observação"
+                htmlFor="pay-note"
+                hint="Opcional — ex.: recibo nº, data do depósito."
+              >
+                <Textarea
+                  id="pay-note"
+                  rows={2}
+                  value={payNote}
+                  onChange={(e) => setPayNote(e.target.value)}
+                  maxLength={280}
+                  placeholder="Detalhes do recebimento…"
+                />
+              </FormField>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setChargeToPay(null)}
+                  disabled={payMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={payMutation.isPending}>
+                  {payMutation.isPending ? 'Salvando…' : 'Confirmar pagamento'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormDialog>
 
           <FormDialog
             open={Boolean(chargeToExempt)}

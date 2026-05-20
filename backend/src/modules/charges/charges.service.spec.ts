@@ -8,6 +8,7 @@ import { Unit } from '../../database/entities/unit.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
 import { Resident } from '../../database/entities/resident.entity';
 import { ForbiddenException } from '@nestjs/common';
+import { getLoggerToken } from 'nestjs-pino';
 import { ChargeStatus } from '../../common/enums';
 import { TenantMembershipService } from '../../common/services/tenant-membership.service';
 import { QUEUE_WHATSAPP_SEND } from '../../queues/queue-names';
@@ -53,6 +54,7 @@ describe('ChargesService', () => {
     cancelPayment: jest.fn().mockResolvedValue(undefined),
     fetchPixQrCode: jest.fn().mockResolvedValue(null),
   };
+  const logger = { warn: jest.fn(), log: jest.fn(), info: jest.fn(), error: jest.fn() };
   // Quando `ASAAS_ACCOUNTS_ENABLED=false`, ChargesService pula a integração.
   // Mantemos `false` no spec para os testes existentes não dependerem de Asaas.
   const config = {
@@ -86,6 +88,7 @@ describe('ChargesService', () => {
         { provide: PaymentAccountsService, useValue: paymentAccounts },
         { provide: ChargesAsaasService, useValue: chargesAsaas },
         { provide: ConfigService, useValue: config },
+        { provide: getLoggerToken(ChargesService.name), useValue: logger },
       ],
     }).compile();
     service = module.get(ChargesService);
@@ -115,9 +118,13 @@ describe('ChargesService', () => {
     });
     tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
     chargesRepo.save.mockImplementation(async (c) => c);
-    const out = await service.markPaid('u1', 'ch1');
+    const out = await service.markPaid('u1', 'ch1', undefined, {
+      method: 'MANUAL_CASH',
+    });
     expect(out.status).toBe(ChargeStatus.PAID);
     expect(out.paidAt).toBeInstanceOf(Date);
+    expect(chargesAsaas.cancelPayment).toHaveBeenCalled();
+    expect(out.paidMethod).toBe('MANUAL_CASH');
   });
 
   it('markPaid bloqueia transição inválida (PAID → PAID)', async () => {

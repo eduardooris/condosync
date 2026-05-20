@@ -35,6 +35,18 @@ export class ChargesSchedulerService {
     );
   }
 
+  /** 03:30 BRT — reemite cobranças órfãs (sem `asaas_payment_id`). */
+  @Cron('30 3 * * *', { timeZone: 'America/Sao_Paulo' })
+  async dailyEmitPendingAsaas(): Promise<void> {
+    this.logger.log('Enfileirando compensação Asaas (cobranças pendentes)');
+    const today = new Date().toISOString().slice(0, 10);
+    await this.chargesGenerationQueue.add(
+      'emit-pending-asaas',
+      {},
+      { jobId: `charges-asaas-pending:${today}` },
+    );
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async dailyOverdue(): Promise<void> {
     this.logger.log('Enfileirando verificação de cobranças em atraso');

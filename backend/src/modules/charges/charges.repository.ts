@@ -74,6 +74,37 @@ export class ChargesRepository {
   }
 
   /**
+   * Cobranças em aberto criadas localmente mas sem `asaas_payment_id`
+   * (falha na emissão mensal ou compensação pendente).
+   */
+  findOpenWithoutAsaasByCondo(condominiumId: string, limit = 200) {
+    return this.repo
+      .createQueryBuilder('c')
+      .innerJoinAndSelect('c.unit', 'u')
+      .where('u.condominium_id = :condominiumId', { condominiumId })
+      .andWhere('c.asaas_payment_id IS NULL')
+      .andWhere('c.status IN (:...statuses)', {
+        statuses: [ChargeStatus.PENDING, ChargeStatus.OVERDUE],
+      })
+      .orderBy('c.created_at', 'ASC')
+      .limit(limit)
+      .getMany();
+  }
+
+  findOpenWithoutAsaasAllCondos(limit = 500) {
+    return this.repo
+      .createQueryBuilder('c')
+      .innerJoinAndSelect('c.unit', 'u')
+      .where('c.asaas_payment_id IS NULL')
+      .andWhere('c.status IN (:...statuses)', {
+        statuses: [ChargeStatus.PENDING, ChargeStatus.OVERDUE],
+      })
+      .orderBy('c.created_at', 'ASC')
+      .limit(limit)
+      .getMany();
+  }
+
+  /**
    * Conta UNIDADES distintas com pelo menos uma cobrança em aberto
    * (PENDING ou OVERDUE) — métrica "inadimplência (unidades)" do dashboard.
    * Antes contava cobranças (uma unidade com 3 atrasos virava 3); agora é

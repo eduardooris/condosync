@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   chargesService,
   type CreateChargeInput,
+  type MarkPaidInput,
   type UpdateChargeInput,
 } from '@/domains/charges/services/charges.service';
 import { queryKeys } from '@/shared/lib/queryKeys';
@@ -26,14 +27,13 @@ export function useCharges(
   });
 
   const payMutation = useMutation({
-    mutationFn: (id: string) => chargesService.markPaid(id),
+    mutationFn: ({ id, payload }: { id: string; payload?: MarkPaidInput }) =>
+      chargesService.markPaid(id, payload),
     onSuccess: invalidate,
   });
 
-  /** Morador declara que pagou — escopo /condominiums/:id/charges/mine. */
-  const payMineMutation = useMutation({
-    mutationFn: (chargeId: string) =>
-      chargesService.markPaidMine(condId!, chargeId),
+  const emitAsaasPendingMutation = useMutation({
+    mutationFn: () => chargesService.emitAsaasPending(condId!),
     onSuccess: invalidate,
   });
 
@@ -68,7 +68,7 @@ export function useCharges(
   return {
     ...query,
     payMutation,
-    payMineMutation,
+    emitAsaasPendingMutation,
     exemptMutation,
     generateMutation,
     createMutation,

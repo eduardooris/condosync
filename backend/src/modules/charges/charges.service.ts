@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { InjectQueue } from '@nestjs/bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bull';
@@ -23,7 +24,12 @@ import {
   isTerminalStatus,
 } from './charge-status.machine';
 import { toChargeResponse } from './charge.mapper';
-import { ChargeResponseDto } from './dto/charge-response.dto';
+import {
+  ChargeResponseDto,
+  EmitPendingAsaasResponseDto,
+  GenerateMonthAsaasFailureDto,
+  GenerateMonthResponseDto,
+} from './dto/charge-response.dto';
 import {
   NotificationsService,
   type CreateNotificationInput,
@@ -69,7 +75,26 @@ export class ChargesService {
     @InjectRepository(Resident)
     private readonly residentRepo: Repository<Resident>,
     private readonly config: ConfigService<Env, true>,
+    @InjectPinoLogger(ChargesService.name)
+    private readonly logger: PinoLogger,
   ) {}
+
+  private unitLabel(unit: Unit): string {
+    return `${unit.block}-${unit.number}`;
+  }
+
+  private asaasFailure(
+    chargeId: string,
+    unit: Unit,
+    err: unknown,
+  ): GenerateMonthAsaasFailureDto {
+    return {
+      chargeId,
+      unitId: unit.id,
+      unitLabel: this.unitLabel(unit),
+      message: err instanceof Error ? err.message : 'Falha ao emitir na Asaas.',
+    };
+  }
 
   /**
    * Pré-flight da geração de cobranças. Bloqueia quando:
@@ -284,7 +309,7 @@ export class ChargesService {
   async generateMonth(
     condominiumId: string,
     billingMonth?: string,
-  ): Promise<{ created: number }> {
+  ): Promise<GenerateMonthResponseDto> {
     const month = billingMonth ?? this.currentBillingMonth();
     const condo = await this.condoRepo.findOne({
       where: { id: condominiumId },
@@ -292,15 +317,9 @@ export class ChargesService {
     if (!condo) {
       throw new NotFoundException('Condomínio não encontrado.');
     }
-    // Pre-flight RN-PG-03: subconta ACTIVE + 100% das unidades têm responsável.
-    // Quando ASAAS_ACCOUNTS_ENABLED=false, pula tudo (modo legado Pix manual).
     const { asaasEnabled } = await this.runChargeGenerationPreflight(
       condominiumId,
     );
-    // RN: a dívida é do imóvel, não do ocupante. Geramos cobrança para
-    // TODAS as unidades não isentas (incluindo VACANT) — o proprietário
-    // continua responsável pela taxa mesmo quando a unidade está vazia.
-    // Para isentar uma unidade permanentemente, use `isExempt = true`.
     const units = await this.unitRepo.find({
       where: {
         condominiumId,
@@ -308,6 +327,10 @@ export class ChargesService {
       },
     });
     let created = 0;
+    let skipped = 0;
+    let asaasEmitted = 0;
+    let asaasFailed = 0;
+    const failures: GenerateMonthAsaasFailureDto[] = [];
     const newIds: string[] = [];
     const notifItems: CreateNotificationInput[] = [];
     for (const unit of units) {
@@ -315,7 +338,10 @@ export class ChargesService {
         unit.id,
         month,
       );
-      if (exists) continue;
+      if (exists) {
+        skipped += 1;
+        continue;
+      }
       const dueDate = this.buildDueDate(month, condo.billingDueDay);
       let row = await this.chargesRepo.save(
         this.chargesRepo.create({
@@ -327,24 +353,29 @@ export class ChargesService {
           status: ChargeStatus.PENDING,
         }),
       );
-      // Emissão na Asaas — falha numa charge marca como "emitida pela metade"
-      // mas não bloqueia as demais. Compensação completa (rollback de tudo)
-      // seria caro e raro de bater o cenário; reconciliação cron pega.
       if (asaasEnabled) {
         try {
           row.unit = unit;
           row = await this.chargesAsaas.emitPayment(row);
+          asaasEmitted += 1;
         } catch (err) {
-          // Não derruba o lote — apenas loga e segue. Charge fica sem
-          // `asaas_payment_id`; reconciliação detectará e re-tentará.
-          // (Logger formal não está injetado neste service.)
-          void err;
+          asaasFailed += 1;
+          const failure = this.asaasFailure(row.id, unit, err);
+          failures.push(failure);
+          this.logger.warn(
+            {
+              condominiumId,
+              billingMonth: month,
+              chargeId: row.id,
+              unitId: unit.id,
+              err_message: failure.message,
+            },
+            'charges.generate_month.asaas_emit_failed',
+          );
         }
       }
       newIds.push(row.id);
       created += 1;
-      // Resolve destinatários por unidade aqui mesmo — uma query por unidade,
-      // mas o broadcast `createMany` final fica em transação única.
       const userIds = await this.tenantMembership.listUnitUserIds(
         condominiumId,
         unit.id,
@@ -360,13 +391,114 @@ export class ChargesService {
       try {
         await this.notifications.createMany(notifItems);
       } catch (err) {
-        // Não derruba a geração — apenas loga via re-throw controlado.
-        // (logger formal não está injetado neste service; manter silencioso evita
-        // mascarar o sucesso da geração.)
-        void err;
+        this.logger.warn(
+          { condominiumId, err_message: (err as Error).message },
+          'charges.generate_month.notifications_failed',
+        );
       }
     }
-    return { created };
+    if (asaasEnabled && asaasFailed > 0) {
+      this.logger.warn(
+        {
+          condominiumId,
+          billingMonth: month,
+          created,
+          asaasEmitted,
+          asaasFailed,
+        },
+        'charges.generate_month.partial_asaas_failure',
+      );
+    }
+    return {
+      created,
+      skipped,
+      asaasEmitted,
+      asaasFailed,
+      failures,
+    };
+  }
+
+  /**
+   * Re-emite na Asaas cobranças locais em aberto sem `asaas_payment_id`.
+   * Usado pelo síndico (ação manual) e pelo cron de compensação.
+   */
+  async emitPendingAsaasForCondominium(
+    condominiumId: string,
+  ): Promise<EmitPendingAsaasResponseDto> {
+    const asaasEnabled = this.config.get('ASAAS_ACCOUNTS_ENABLED', {
+      infer: true,
+    });
+    if (!asaasEnabled) {
+      return { emitted: 0, failed: 0, failures: [] };
+    }
+    await this.paymentAccounts.requireActive(condominiumId);
+    const charges = await this.chargesRepo.findOpenWithoutAsaasByCondo(
+      condominiumId,
+    );
+    let emitted = 0;
+    let failed = 0;
+    const failures: GenerateMonthAsaasFailureDto[] = [];
+    for (const charge of charges) {
+      try {
+        await this.chargesAsaas.emitPayment(charge);
+        emitted += 1;
+      } catch (err) {
+        failed += 1;
+        const unit = charge.unit;
+        if (!unit) continue;
+        const f = this.asaasFailure(charge.id, unit, err);
+        failures.push(f);
+        this.logger.warn(
+          {
+            condominiumId,
+            chargeId: charge.id,
+            err_message: f.message,
+          },
+          'charges.emit_pending.asaas_failed',
+        );
+      }
+    }
+    return { emitted, failed, failures };
+  }
+
+  /** Cron: tenta emitir cobranças órfãs em todos os condomínios. */
+  async emitPendingAsaasForAllCondos(): Promise<void> {
+    if (!this.config.get('ASAAS_ACCOUNTS_ENABLED', { infer: true })) {
+      return;
+    }
+    const charges = await this.chargesRepo.findOpenWithoutAsaasAllCondos();
+    if (charges.length === 0) return;
+    this.logger.info(
+      { count: charges.length },
+      'charges.emit_pending.cron_start',
+    );
+    const byCondo = new Map<string, Charge[]>();
+    for (const c of charges) {
+      const condoId = c.unit?.condominiumId;
+      if (!condoId) continue;
+      const list = byCondo.get(condoId) ?? [];
+      list.push(c);
+      byCondo.set(condoId, list);
+    }
+    for (const [condominiumId] of byCondo) {
+      try {
+        const result = await this.emitPendingAsaasForCondominium(condominiumId);
+        if (result.emitted > 0 || result.failed > 0) {
+          this.logger.info(
+            { condominiumId, ...result },
+            'charges.emit_pending.cron_condo_done',
+          );
+        }
+      } catch (err) {
+        this.logger.warn(
+          {
+            condominiumId,
+            err_message: (err as Error).message,
+          },
+          'charges.emit_pending.cron_condo_skipped',
+        );
+      }
+    }
   }
 
   // ── Ações isoladas ────────────────────────────────────────────────
@@ -386,11 +518,10 @@ export class ChargesService {
       charge.unit.condominiumId,
     );
     assertChargeTransition(charge.status, ChargeStatus.PAID);
+    await this.chargesAsaas.cancelPayment(charge);
     charge.status = ChargeStatus.PAID;
     charge.paidAt = paidAt ?? new Date();
-    if (extra?.method) {
-      charge.paidMethod = extra.method;
-    }
+    charge.paidMethod = extra?.method ?? 'MANUAL_OTHER';
     if (extra?.note) {
       charge.paidNote = extra.note;
     }
@@ -405,40 +536,20 @@ export class ChargesService {
   }
 
   /**
-   * Auto-declaração de pagamento pelo morador (US-08 — "já paguei").
-   * Valida que a cobrança pertence ao condomínio informado **e** que
-   * a unidade da cobrança tem o usuário vinculado como morador.
-   *
-   * Hoje a transição é direta para `PAID` (mesma do markPaid admin).
-   * Em V2, quando houver `IPaymentAdapter`, esta rota só deveria mover
-   * para um estado `PENDING_CONFIRMATION` e o webhook do banco
-   * confirmaria.
+   * Auto-declaração pelo morador desativada — baixa manual só pelo síndico
+   * (evita inflar receita no dashboard sem pagamento real).
    */
   async markPaidByResident(
-    userId: string,
-    condominiumId: string,
-    chargeId: string,
-    paidAt?: Date,
+    _userId: string,
+    _condominiumId: string,
+    _chargeId: string,
+    _paidAt?: Date,
   ): Promise<ChargeResponseDto> {
-    const charge = await this.findInCondo(condominiumId, chargeId);
-    await this.tenantMembership.assertUserOwnsUnit(
-      userId,
-      condominiumId,
-      charge.unitId,
+    throw new BadRequestException(
+      'A confirmação de pagamento é feita pela administração após o recebimento. ' +
+        'Se você pagou via Pix ou boleto da cobrança, aguarde a baixa automática. ' +
+        'Para pagamento em dinheiro, solicite ao síndico.',
     );
-    assertChargeTransition(charge.status, ChargeStatus.PAID);
-    charge.status = ChargeStatus.PAID;
-    charge.paidAt = paidAt ?? new Date();
-    const saved = await this.chargesRepo.save(charge);
-    const condo = await this.condoRepo.findOne({
-      where: { id: condominiumId },
-    });
-    // Morador auto-declarou pagamento → notifica admins/sub-admins para
-    // confirmação manual e também os co-moradores da unidade (transparência).
-    await this.notifyChargePaid(saved, condominiumId, charge.unitId, {
-      notifyAdmins: true,
-    });
-    return toChargeResponse(saved, condo);
   }
 
   async exempt(

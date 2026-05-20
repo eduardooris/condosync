@@ -105,11 +105,30 @@ function GenerateChargesDialogBody({
     if (mode === 'month') {
       try {
         const result = await generateMutation.mutateAsync(month);
-        toast.success(
-          result.created > 0
-            ? `${result.created} cobrança${result.created !== 1 ? 's' : ''} gerada${result.created !== 1 ? 's' : ''} para ${month}.`
-            : `Nenhuma cobrança nova: já existem lançamentos para ${month} em todas as unidades.`,
-        );
+        if (result.created === 0) {
+          toast.success(
+            `Nenhuma cobrança nova: já existem lançamentos para ${month} em todas as unidades.`,
+          );
+        } else if (result.asaasFailed > 0) {
+          const labels = result.failures
+            .slice(0, 3)
+            .map((f) => f.unitLabel)
+            .join(', ');
+          toast.error(
+            `${result.created} criada(s), mas ${result.asaasFailed} não foram para a Asaas` +
+              (labels ? ` (${labels}${result.failures.length > 3 ? '…' : ''})` : '') +
+              '. Use "Emitir pendentes na Asaas" na lista de cobranças.',
+            { duration: 10_000 },
+          );
+        } else {
+          const asaasPart =
+            result.asaasEmitted > 0
+              ? ` · ${result.asaasEmitted} na Asaas`
+              : '';
+          toast.success(
+            `${result.created} cobrança${result.created !== 1 ? 's' : ''} gerada${result.created !== 1 ? 's' : ''} para ${month}${asaasPart}.`,
+          );
+        }
         onOpenChange(false);
       } catch (err) {
         const friendly = extractPreflightError(err);

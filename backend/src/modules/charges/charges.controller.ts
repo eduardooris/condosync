@@ -32,6 +32,7 @@ import { UpdateChargeDto } from './dto/update-charge.dto';
 import { GenerateMonthDto } from './dto/generate-month.dto';
 import {
   ChargeResponseDto,
+  EmitPendingAsaasResponseDto,
   GenerateMonthResponseDto,
 } from './dto/charge-response.dto';
 import { ResendWhatsappResponseDto } from './dto/resend-whatsapp.dto';
@@ -115,9 +116,10 @@ export class CondominiumChargesController {
 
   @Post('generate')
   @ApiOperation({
-    summary: 'Gera cobranças mensais para todas as unidades ocupadas',
+    summary: 'Gera cobranças mensais para todas as unidades não isentas',
     description:
-      'RN-03.1 — Quando `billingMonth` é omitido, usa o mês corrente em America/Sao_Paulo.',
+      'RN-03.1 — Quando `billingMonth` é omitido, usa o mês corrente em America/Sao_Paulo. ' +
+      'Retorna contagem de emissões na Asaas e falhas por unidade.',
   })
   @ApiCreatedResponse({
     description: 'Geração de cobranças concluída.',
@@ -128,6 +130,23 @@ export class CondominiumChargesController {
     @Body() dto: GenerateMonthDto,
   ) {
     return this.service.generateMonth(condominiumId, dto.billingMonth);
+  }
+
+  @Post('emit-asaas-pending')
+  @ApiOperation({
+    summary: 'Emite na Asaas cobranças locais sem payment id',
+    description:
+      'Compensa falhas da geração mensal: reenvia `POST /payments` para cobranças ' +
+      'PENDING/OVERDUE que ainda não têm `asaas_payment_id`.',
+  })
+  @ApiOkResponse({
+    description: 'Tentativa de emissão concluída.',
+    type: EmitPendingAsaasResponseDto,
+  })
+  emitAsaasPending(
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+  ) {
+    return this.service.emitPendingAsaasForCondominium(condominiumId);
   }
 
   @Post(':chargeId/resend-whatsapp')
@@ -232,13 +251,13 @@ export class CondominiumMyChargesController {
 
   @Patch(':chargeId/mark-paid')
   @ApiOperation({
-    summary: 'Morador confirma pagamento (auto-declaração)',
+    summary: 'Morador: auto-declaração de pagamento (desativado)',
     description:
-      'US-08 — o morador declara que pagou a cobrança via Pix. Valida que a unidade da cobrança tem o usuário vinculado. Em V2 com `IPaymentAdapter`, esta rota apenas move para `PENDING_CONFIRMATION` e o webhook do banco confirma.',
+      'Retorna 400 — baixa manual apenas pelo síndico (`PATCH /charges/:id/mark-paid`).',
   })
-  @ApiOkResponse({
-    description: 'Cobrança marcada como paga.',
-    type: ChargeResponseDto,
+  @ApiBadRequestResponse({
+    description: 'Auto-declaração desativada.',
+    type: ErrorResponseDto,
   })
   @ApiNotFoundResponse({
     description: 'Cobrança não encontrada ou não pertence ao morador.',

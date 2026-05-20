@@ -108,7 +108,53 @@ export class ChargeResponseDto {
   asaasSyncedAt: Date | null;
 }
 
+export class GenerateMonthAsaasFailureDto {
+  @ApiProperty()
+  chargeId: string;
+
+  @ApiProperty()
+  unitId: string;
+
+  @ApiProperty({ example: 'A-101' })
+  unitLabel: string;
+
+  @ApiProperty({ example: 'Unidade sem responsável financeiro.' })
+  message: string;
+}
+
 export class GenerateMonthResponseDto {
   @ApiProperty({ example: 24 })
   created: number;
+
+  @ApiProperty({
+    example: 2,
+    description: 'Unidades que já tinham cobrança ativa no mês.',
+  })
+  skipped: number;
+
+  @ApiProperty({
+    example: 22,
+    description: 'Cobranças emitidas na Asaas com sucesso.',
+  })
+  asaasEmitted: number;
+
+  @ApiProperty({
+    example: 2,
+    description: 'Cobranças criadas localmente mas não enviadas à Asaas.',
+  })
+  asaasFailed: number;
+
+  @ApiProperty({ type: [GenerateMonthAsaasFailureDto] })
+  failures: GenerateMonthAsaasFailureDto[];
+}
+
+export class EmitPendingAsaasResponseDto {
+  @ApiProperty({ example: 5 })
+  emitted: number;
+
+  @ApiProperty({ example: 1 })
+  failed: number;
+
+  @ApiProperty({ type: [GenerateMonthAsaasFailureDto] })
+  failures: GenerateMonthAsaasFailureDto[];
 }

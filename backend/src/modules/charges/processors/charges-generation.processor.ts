@@ -15,4 +15,10 @@ export class ChargesGenerationProcessor {
     this.logger.log('Processing scheduled charge generation');
     await this.chargesService.runScheduledGenerationForToday();
   }
+
+  @Process('emit-pending-asaas')
+  async handleEmitPending(_job: Job): Promise<void> {
+    this.logger.log('Processing pending Asaas charge emission');
+    await this.chargesService.emitPendingAsaasForAllCondos();
+  }
 }
