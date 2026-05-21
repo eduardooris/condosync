@@ -363,26 +363,35 @@ export class ChargesService {
     const newIds: string[] = [];
     const notifItems: CreateNotificationInput[] = [];
     for (const unit of units) {
-      const exists = await this.chargesRepo.findActiveByUnitAndMonth(
+      const existing = await this.chargesRepo.findActiveByUnitAndMonth(
         unit.id,
         month,
       );
-      if (exists) {
+      let row: Charge;
+      const isNew = !existing;
+      if (existing) {
+        row = existing;
         skipped += 1;
-        continue;
+      } else {
+        const dueDate = this.buildDueDate(month, condo.billingDueDay);
+        row = await this.chargesRepo.save(
+          this.chargesRepo.create({
+            unitId: unit.id,
+            billingMonth: month,
+            amount: condo.monthlyFeeAmount,
+            dueDate,
+            description: null,
+            status: ChargeStatus.PENDING,
+          }),
+        );
+        created += 1;
       }
-      const dueDate = this.buildDueDate(month, condo.billingDueDay);
-      let row = await this.chargesRepo.save(
-        this.chargesRepo.create({
-          unitId: unit.id,
-          billingMonth: month,
-          amount: condo.monthlyFeeAmount,
-          dueDate,
-          description: null,
-          status: ChargeStatus.PENDING,
-        }),
-      );
-      if (asaasEnabled) {
+      // Emite na Asaas tanto para cobranças novas quanto para as locais
+      // pré-existentes ainda sem `asaas_payment_id` — a geração mensal
+      // deve deixar todas as unidades sincronizadas com o gateway, e não
+      // só as criadas neste run. Charges com payment id já emitido são
+      // ignoradas (idempotência).
+      if (asaasEnabled && !row.asaasPaymentId) {
         try {
           row.unit = unit;
           row = await this.chargesAsaas.emitPayment(row);
@@ -410,14 +419,17 @@ export class ChargesService {
           );
         }
       }
-      newIds.push(row.id);
-      created += 1;
-      const userIds = await this.tenantMembership.listUnitUserIds(
-        condominiumId,
-        unit.id,
-      );
-      for (const userId of userIds) {
-        notifItems.push(this.buildChargeCreatedNotif(userId, row, condominiumId));
+      if (isNew) {
+        newIds.push(row.id);
+        const userIds = await this.tenantMembership.listUnitUserIds(
+          condominiumId,
+          unit.id,
+        );
+        for (const userId of userIds) {
+          notifItems.push(
+            this.buildChargeCreatedNotif(userId, row, condominiumId),
+          );
+        }
       }
     }
     for (const id of newIds) {
