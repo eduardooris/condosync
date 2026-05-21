@@ -79,6 +79,13 @@ export class PaymentAccountsRepository {
     return qb.getCount();
   }
 
+  /** Subcontas em status ACTIVE — usadas pelo refresh em massa de webhooks. */
+  findAllActive(): Promise<PaymentAccount[]> {
+    return this.repo.find({
+      where: { status: PaymentAccountStatus.ACTIVE },
+    });
+  }
+
   /** Subcontas pendentes — usadas pelo job de polling de status. */
   findPendingForPolling(): Promise<PaymentAccount[]> {
     return this.repo

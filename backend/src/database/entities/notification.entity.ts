@@ -13,6 +13,10 @@ export enum NotificationType {
   CHARGE_CREATED = 'CHARGE_CREATED',
   CHARGE_OVERDUE = 'CHARGE_OVERDUE',
   CHARGE_PAID = 'CHARGE_PAID',
+  /** Morador clicou "Já paguei" — síndico precisa validar. */
+  CHARGE_PAYMENT_REQUESTED = 'CHARGE_PAYMENT_REQUESTED',
+  /** Síndico rejeitou a solicitação de baixa do morador. */
+  CHARGE_PAYMENT_REJECTED = 'CHARGE_PAYMENT_REJECTED',
   POLL_CREATED = 'POLL_CREATED',
   POLL_CLOSED = 'POLL_CLOSED',
   OCCURRENCE_STATUS = 'OCCURRENCE_STATUS',

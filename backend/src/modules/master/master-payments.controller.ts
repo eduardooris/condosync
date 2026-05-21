@@ -258,6 +258,31 @@ export class MasterPaymentsController {
     return event;
   }
 
+  @Post('payment-accounts/refresh-webhooks')
+  @ApiOperation({
+    summary: 'Atualiza os webhooks Asaas de todas as subcontas ativas',
+    description:
+      'Para cada subconta ACTIVE, verifica se o webhook registrado na Asaas inclui ' +
+      'todos os eventos exigidos pelo CondoSync. Se faltar algum (ex.: ' +
+      '`PAYMENT_RECEIVED_IN_CASH`), re-registra. Idempotente e seguro de rodar várias vezes.',
+  })
+  async refreshAllWebhooks() {
+    return this.paymentAccounts.refreshAllWebhooks();
+  }
+
+  @Post('payment-accounts/:id/refresh-webhook')
+  @ApiOperation({
+    summary: 'Atualiza o webhook Asaas de uma subconta específica',
+  })
+  async refreshWebhookForAccount(@Param('id', ParseUUIDPipe) id: string) {
+    const account = await this.accountsRepo.findOne({ where: { id } });
+    if (!account) throw new NotFoundException('Subconta não encontrada.');
+    const changed = await this.paymentAccounts.refreshWebhookForCondominium(
+      account.condominiumId,
+    );
+    return { ok: true, refreshed: changed };
+  }
+
   @Post('webhook-events/:id/reprocess')
   @ApiOperation({
     summary: 'Re-enfileira evento falho/pendente para nova tentativa de processamento.',

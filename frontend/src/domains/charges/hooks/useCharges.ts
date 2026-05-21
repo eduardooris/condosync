@@ -65,6 +65,12 @@ export function useCharges(
     mutationFn: (chargeId: string) => chargesService.resendWhatsapp(condId!, chargeId),
   });
 
+  const rejectPaymentRequestMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      chargesService.rejectPaymentRequest(id, reason),
+    onSuccess: invalidate,
+  });
+
   return {
     ...query,
     payMutation,
@@ -74,5 +80,6 @@ export function useCharges(
     createMutation,
     updateMutation,
     resendWhatsappMutation,
+    rejectPaymentRequestMutation,
   };
 }

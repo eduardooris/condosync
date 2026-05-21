@@ -184,6 +184,52 @@ export function renderChargeSecondCopyMessage(
   ].join('\n');
 }
 
+function paymentRequestMethodLabel(method: string | null | undefined): string {
+  switch (method) {
+    case 'PIX':
+      return 'Pix';
+    case 'CASH':
+      return 'dinheiro';
+    case 'TRANSFER':
+      return 'transferência';
+    case 'OTHER':
+    default:
+      return 'outro método';
+  }
+}
+
+/**
+ * Envia ao síndico um aviso de que o morador declarou pagamento e
+ * precisa de validação. Não substitui o webhook automático do Asaas —
+ * é o caminho para pagamentos fora do gateway.
+ */
+export function renderChargePaymentRequestedMessage(args: {
+  charge: Charge;
+  requesterName: string | null;
+  adminName: string | null;
+}): string {
+  const { charge, requesterName, adminName } = args;
+  const unit = unitLabel(charge);
+  const greetingTo = adminName?.trim().split(/\s+/)[0]
+    ? `Olá, ${adminName.trim().split(/\s+/)[0]}!`
+    : 'Olá!';
+  const noteLine = charge.paymentRequestNote?.trim()
+    ? `• Observação do morador: "${charge.paymentRequestNote.trim()}"`
+    : null;
+  return [
+    greetingTo,
+    '',
+    `*${requesterName ?? 'O morador'}* (${unit}) declarou que pagou a cobrança do condomínio *${condoName(charge)}*.`,
+    '',
+    `• Mês de referência: *${formatBillingMonth(charge.billingMonth)}*`,
+    `• Valor: *${formatBRL(charge.amount)}*`,
+    `• Método informado: *${paymentRequestMethodLabel(charge.paymentRequestMethod)}*`,
+    ...(noteLine ? [noteLine] : []),
+    '',
+    'Confirme a baixa pelo CondoSync após receber/conferir o pagamento.',
+  ].join('\n');
+}
+
 export type ChargeReminderStage =
   | 'D_MINUS_3'
   | 'D_DAY'

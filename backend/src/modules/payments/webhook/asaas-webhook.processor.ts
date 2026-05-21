@@ -155,10 +155,19 @@ export class AsaasWebhookProcessor {
         );
         break;
       case 'PAYMENT_RECEIVED_IN_CASH_UNDONE':
-        // Reverte "baixa manual" — volta para PENDING.
+        // Reverte "baixa manual" — volta para PENDING e limpa campos de pagamento.
         if (charge.status === ChargeStatus.PAID) {
           charge.status = ChargeStatus.PENDING;
           charge.paidAt = null;
+          charge.paidMethod = null;
+          charge.paidNote = null;
+          charge.asaasPaidVia = null;
+          charge.asaasTransactionReceiptUrl = null;
+          await this.notifyAdmins(
+            charge,
+            'Baixa de cobrança revertida',
+            `A baixa manual da cobrança ${charge.billingMonth} foi desfeita no Asaas — a cobrança voltou para pendente.`,
+          );
         }
         break;
       default:

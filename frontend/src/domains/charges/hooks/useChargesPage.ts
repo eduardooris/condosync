@@ -6,7 +6,14 @@ import { unitsService } from '@/domains/units/services/units.service';
 import { condominiumsService } from '@/domains/condominiums/services/condominiums.service';
 import { queryKeys } from '@/shared/lib/queryKeys';
 
-export type StatusFilter = 'all' | 'pending' | 'paid' | 'overdue' | 'exempt';
+export type StatusFilter =
+  | 'all'
+  | 'pending'
+  | 'paid'
+  | 'overdue'
+  | 'exempt'
+  /** Cobranças com solicitação de baixa do morador esperando o síndico. */
+  | 'requested';
 
 export function useChargesPage() {
   const condId = useAuthStore((state) => state.activeCondominium?.id);
@@ -39,9 +46,24 @@ export function useChargesPage() {
   }, [unitsQuery.data]);
 
   const list = useMemo(() => chargesQuery.data ?? [], [chargesQuery.data]);
+  const pendingRequestsCount = useMemo(
+    () =>
+      list.filter(
+        (c) =>
+          c.paymentRequestAt &&
+          (c.status === 'PENDING' || c.status === 'OVERDUE'),
+      ).length,
+    [list],
+  );
   const filtered = useMemo(() => {
     let next = list;
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'requested') {
+      next = next.filter(
+        (c) =>
+          c.paymentRequestAt &&
+          (c.status === 'PENDING' || c.status === 'OVERDUE'),
+      );
+    } else if (statusFilter !== 'all') {
       next = next.filter((c) => c.status.toLowerCase() === statusFilter);
     }
     if (search.trim()) {
@@ -73,5 +95,6 @@ export function useChargesPage() {
     unitLabelById,
     list,
     filtered,
+    pendingRequestsCount,
   };
 }

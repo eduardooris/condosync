@@ -110,6 +110,29 @@ export class Charge {
   @Column({ name: 'asaas_synced_at', type: 'timestamptz', nullable: true })
   asaasSyncedAt: Date | null;
 
+  // ── Solicitação de baixa pelo morador ("Já paguei") ────────────────────
+  // O morador NÃO altera o status; apenas pede que o síndico valide. Ao
+  // confirmar a baixa (`markPaid`), os 4 campos voltam para `null`.
+
+  @Column({ name: 'payment_request_at', type: 'timestamptz', nullable: true })
+  paymentRequestAt: Date | null;
+
+  /** PIX | CASH | TRANSFER | OTHER — método declarado pelo morador. */
+  @Column({
+    name: 'payment_request_method',
+    type: 'varchar',
+    length: 16,
+    nullable: true,
+  })
+  paymentRequestMethod: string | null;
+
+  @Column({ name: 'payment_request_note', type: 'text', nullable: true })
+  paymentRequestNote: string | null;
+
+  /** Quem clicou "Já paguei" (auditoria). */
+  @Column({ name: 'payment_request_user_id', type: 'uuid', nullable: true })
+  paymentRequestUserId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

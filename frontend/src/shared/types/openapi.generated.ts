@@ -1652,47 +1652,35 @@ export interface components {
             unitId?: string | null;
         };
         ChargeResponseDto: {
-            /** @example a71ac8a7-87b0-468b-9f10-ec781f3878c3 */
             id: string;
-            /** @example 82f1c46f-f7f7-4f9e-82cb-cbd38341f5f0 */
             unitId: string;
-            /** @example 2026-04 */
             billingMonth: string;
-            /** @example 180.00 */
             amount: string;
-            /** @example 2026-04-10 */
             dueDate: string;
-            /** @example Rateio de pintura da fachada. */
             description?: string | null;
-            /**
-             * @example PENDING
-             * @enum {string}
-             */
             status: "PENDING" | "PAID" | "OVERDUE" | "EXEMPT" | "CANCELED";
-            /**
-             * Format: date-time
-             * @example null
-             */
             paidAt?: string | null;
-            /** @example null */
+            paidMethod?: string | null;
+            paidNote?: string | null;
             exemptReason?: string | null;
-            /**
-             * Format: date-time
-             * @example null
-             */
             canceledAt?: string | null;
-            /** @example null */
             cancelReason?: string | null;
-            /**
-             * Format: date-time
-             * @example 2026-04-01T09:00:00.000Z
-             */
             createdAt: string;
-            /**
-             * Format: date-time
-             * @example 2026-04-01T09:00:00.000Z
-             */
             updatedAt: string;
+            pixCode?: string | null;
+            asaasPaymentId?: string | null;
+            asaasInvoiceUrl?: string | null;
+            asaasPixPayload?: string | null;
+            asaasPixQrBase64?: string | null;
+            asaasBankSlipUrl?: string | null;
+            asaasTransactionReceiptUrl?: string | null;
+            asaasPaidVia?: string | null;
+            asaasLastEvent?: string | null;
+            asaasSyncedAt?: string | null;
+            paymentRequestAt?: string | null;
+            paymentRequestMethod?: ("PIX" | "CASH" | "TRANSFER" | "OTHER") | null;
+            paymentRequestNote?: string | null;
+            paymentRequestUserId?: string | null;
         };
         CreateChargeDto: {
             unitId: string;

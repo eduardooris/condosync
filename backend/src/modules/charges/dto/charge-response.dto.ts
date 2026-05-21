@@ -106,6 +106,31 @@ export class ChargeResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   asaasSyncedAt: Date | null;
+
+  // ── Solicitação de baixa pelo morador ───────────────────────────────
+  // Quando preenchidos, o síndico vê o card "Aguardando confirmação".
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Quando o morador clicou "Já paguei".',
+  })
+  paymentRequestAt: Date | null;
+
+  @ApiPropertyOptional({
+    enum: ['PIX', 'CASH', 'TRANSFER', 'OTHER'],
+    nullable: true,
+    description: 'Método declarado pelo morador.',
+  })
+  paymentRequestMethod: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  paymentRequestNote: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'userId do morador que enviou a solicitação.',
+  })
+  paymentRequestUserId: string | null;
 }
 
 export class GenerateMonthAsaasFailureDto {

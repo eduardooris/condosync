@@ -87,6 +87,16 @@ export const chargesService = {
       undefined,
     ),
 
+  /**
+   * Síndico rejeita a solicitação de baixa do morador.
+   * Limpa `payment_request_*` da cobrança e notifica o morador.
+   */
+  rejectPaymentRequest: (chargeId: string, reason: string) =>
+    api.post<{ reason: string }, Charge>(
+      `/charges/${chargeId}/payment-request/reject`,
+      { reason },
+    ),
+
   exempt: (id: string, reason: string) =>
     api.patch<{ reason: string }, Charge>(`/charges/${id}/exempt`, { reason }),
 

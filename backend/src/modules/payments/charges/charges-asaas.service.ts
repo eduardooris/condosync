@@ -103,6 +103,35 @@ export class ChargesAsaasService {
   }
 
   /**
+   * Liquida a cobrança na Asaas como "recebida em dinheiro" — preserva
+   * histórico contábil e dispara `PAYMENT_RECEIVED_IN_CASH` no webhook.
+   *
+   * Usado pelo `markPaid` do síndico quando a baixa é por Pix fora do
+   * gateway, dinheiro, transferência etc. — qualquer método que NÃO seja
+   * `MANUAL_OTHER` (correção/duplicidade).
+   *
+   * Lança exceção: o caller (`ChargesService.markPaid`) decide se aborta
+   * a baixa local — atualmente abortamos, pra evitar inconsistência entre
+   * dashboard local "PAGO" e Asaas "PENDING".
+   */
+  async settleAsReceivedInCash(charge: Charge, paidAt: Date): Promise<Charge> {
+    if (!charge.asaasPaymentId) return charge;
+    const unit = charge.unit ?? (await this.loadUnitWithCondo(charge.unitId));
+    const apiKey = await this.accounts.resolveApiKey(unit.condominiumId);
+    const paymentDate = this.formatDateForAsaas(paidAt);
+    await this.asaas.receivePaymentInCash(apiKey, charge.asaasPaymentId, {
+      paymentDate,
+      value: Number(charge.amount),
+      // Não notificamos o pagador — o morador já sabe que pagou; o
+      // CondoSync envia a notif de "cobrança paga" pelo nosso fluxo.
+      notifyCustomer: false,
+    });
+    charge.asaasLastEvent = 'PAYMENT_RECEIVED_IN_CASH';
+    charge.asaasSyncedAt = new Date();
+    return this.chargeRepo.save(charge);
+  }
+
+  /**
    * Cancela a cobrança na Asaas. Usado em `cancel()` e `exempt()` — em
    * ambos os casos não faz sentido manter cobrança ativa lá.
    * Idempotente: se já cancelada ou inexistente, swallow + log.
@@ -204,6 +233,14 @@ export class ChargesAsaasService {
     const wallet = this.config.get('ASAAS_SAAS_WALLET_ID', { infer: true });
     if (!percent || percent <= 0 || !wallet) return [];
     return [{ walletId: wallet, percentualValue: percent }];
+  }
+
+  /** `YYYY-MM-DD` (formato exigido pelo Asaas em receiveInCash/paymentDate). */
+  private formatDateForAsaas(date: Date): string {
+    // Usa toISOString → corta a parte da hora. Funciona para qualquer Date
+    // pois Asaas só armazena dia. Não precisa converter para America/Sao_Paulo:
+    // ainda que o usuário esteja em outro fuso, a baixa de hoje é a baixa do dia.
+    return date.toISOString().slice(0, 10);
   }
 
   private async loadUnitWithCondo(unitId: string): Promise<Unit> {

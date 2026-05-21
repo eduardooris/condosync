@@ -52,6 +52,7 @@ describe('ChargesService', () => {
   const chargesAsaas = {
     emitPayment: jest.fn().mockImplementation(async (c) => c),
     cancelPayment: jest.fn().mockResolvedValue(undefined),
+    settleAsReceivedInCash: jest.fn().mockImplementation(async (c) => c),
     fetchPixQrCode: jest.fn().mockResolvedValue(null),
   };
   const logger = { warn: jest.fn(), log: jest.fn(), info: jest.fn(), error: jest.fn() };
@@ -143,5 +144,225 @@ describe('ChargesService', () => {
     await expect(service.exempt('u1', 'ch1', '   ')).rejects.toThrow(
       /Justificativa é obrigatória/,
     );
+  });
+
+  // ── Solicitação de baixa pelo morador ─────────────────────────────────
+
+  it('requestPaymentConfirmation grava request, notifica admins e enfileira WhatsApp', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1', block: 'A', number: '101' },
+      status: ChargeStatus.PENDING,
+      paymentRequestAt: null,
+      billingMonth: '2026-05',
+      amount: '180.00',
+    });
+    tenantMembership.assertUserOwnsUnit.mockResolvedValue(undefined);
+    tenantMembership.listAdminUserIds.mockResolvedValue(['admin1']);
+    residentRepo.findOne = jest
+      .fn()
+      .mockResolvedValue({ fullName: 'João da Silva' });
+    unitRepo.findOne = jest
+      .fn()
+      .mockResolvedValue({ block: 'A', number: '101' });
+    chargesRepo.save.mockImplementation(async (c: unknown) => c);
+
+    const result = await service.requestPaymentConfirmation(
+      'user1',
+      'cond1',
+      'ch1',
+      { method: 'PIX', note: 'pagamento via Itaú' },
+    );
+
+    expect(result).toEqual({ requested: true, alreadyRequested: false });
+    expect(chargesRepo.save).toHaveBeenCalled();
+    expect(notifications.createMany).toHaveBeenCalled();
+    expect(whatsappQueue.add).toHaveBeenCalledWith(
+      'charge-payment-requested',
+      { chargeId: 'ch1' },
+      expect.objectContaining({
+        jobId: expect.stringMatching(/^charge:ch1:payment-request:/),
+      }),
+    );
+  });
+
+  it('requestPaymentConfirmation é idempotente em janela de 24h', async () => {
+    const recent = new Date(Date.now() - 60_000); // 1 min atrás
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1', block: 'A', number: '101' },
+      status: ChargeStatus.PENDING,
+      paymentRequestAt: recent,
+      billingMonth: '2026-05',
+      amount: '180.00',
+    });
+    tenantMembership.assertUserOwnsUnit.mockResolvedValue(undefined);
+
+    const result = await service.requestPaymentConfirmation(
+      'user1',
+      'cond1',
+      'ch1',
+      { method: 'PIX' },
+    );
+
+    expect(result).toEqual({ requested: true, alreadyRequested: true });
+    expect(chargesRepo.save).not.toHaveBeenCalled();
+    expect(notifications.createMany).not.toHaveBeenCalled();
+    expect(whatsappQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('requestPaymentConfirmation bloqueia status não-pendente', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PAID,
+      paymentRequestAt: null,
+    });
+    tenantMembership.assertUserOwnsUnit.mockResolvedValue(undefined);
+
+    await expect(
+      service.requestPaymentConfirmation('user1', 'cond1', 'ch1', {
+        method: 'PIX',
+      }),
+    ).rejects.toThrow(/não é possível pedir confirmação/);
+  });
+
+  it('markPaidByResident sempre lança 410 com USE_REQUEST_CONFIRMATION', async () => {
+    await expect(
+      service.markPaidByResident('u1', 'cond1', 'ch1'),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'USE_REQUEST_CONFIRMATION' }),
+    });
+  });
+
+  it('rejectPaymentRequest limpa colunas e notifica morador', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PENDING,
+      paymentRequestAt: new Date(),
+      paymentRequestMethod: 'PIX',
+      paymentRequestUserId: 'morador1',
+      billingMonth: '2026-05',
+      amount: '180.00',
+    });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
+    chargesRepo.save.mockImplementation(async (c: unknown) => c);
+
+    const saved = await service.rejectPaymentRequest(
+      'sindico1',
+      'ch1',
+      'Pagamento não localizado na conta',
+    );
+
+    expect(saved.paymentRequestAt).toBeNull();
+    expect(saved.paymentRequestMethod).toBeNull();
+    expect(notifications.createMany).toHaveBeenCalled();
+  });
+
+  it('rejectPaymentRequest bloqueia quando não há solicitação pendente', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PENDING,
+      paymentRequestAt: null,
+    });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
+
+    await expect(
+      service.rejectPaymentRequest('sindico1', 'ch1', 'motivo válido'),
+    ).rejects.toThrow(/Não há solicitação de baixa pendente/);
+  });
+
+  // ── markPaid + Asaas receiveInCash ────────────────────────────────────
+
+  it('markPaid com método MANUAL_CASH dispara settleAsReceivedInCash no Asaas', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PENDING,
+      asaasPaymentId: 'pay_abc',
+      paymentRequestAt: null,
+    });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
+    chargesRepo.save.mockImplementation(async (c: unknown) => c);
+
+    const out = await service.markPaid('sindico1', 'ch1', undefined, {
+      method: 'MANUAL_CASH',
+    });
+
+    expect(out.status).toBe(ChargeStatus.PAID);
+    expect(chargesAsaas.settleAsReceivedInCash).toHaveBeenCalled();
+    expect(chargesAsaas.cancelPayment).not.toHaveBeenCalled();
+  });
+
+  it('markPaid com método MANUAL_OTHER mantém cancelPayment (correção/duplicidade)', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PENDING,
+      asaasPaymentId: 'pay_abc',
+      paymentRequestAt: null,
+    });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
+    chargesRepo.save.mockImplementation(async (c: unknown) => c);
+
+    await service.markPaid('sindico1', 'ch1', undefined, {
+      method: 'MANUAL_OTHER',
+    });
+
+    expect(chargesAsaas.cancelPayment).toHaveBeenCalled();
+    expect(chargesAsaas.settleAsReceivedInCash).not.toHaveBeenCalled();
+  });
+
+  it('markPaid sem asaasPaymentId nunca chama settleAsReceivedInCash', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PENDING,
+      asaasPaymentId: null,
+      paymentRequestAt: null,
+    });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
+    chargesRepo.save.mockImplementation(async (c: unknown) => c);
+
+    await service.markPaid('sindico1', 'ch1', undefined, {
+      method: 'MANUAL_PIX',
+    });
+
+    expect(chargesAsaas.settleAsReceivedInCash).not.toHaveBeenCalled();
+    expect(chargesAsaas.cancelPayment).toHaveBeenCalled();
+  });
+
+  it('markPaid limpa colunas payment_request_* ao baixar', async () => {
+    chargesRepo.findByIdWithUnit.mockResolvedValue({
+      id: 'ch1',
+      unitId: 'u1',
+      unit: { condominiumId: 'cond1' },
+      status: ChargeStatus.PENDING,
+      asaasPaymentId: null,
+      paymentRequestAt: new Date(),
+      paymentRequestMethod: 'PIX',
+      paymentRequestNote: 'pago',
+      paymentRequestUserId: 'morador1',
+    });
+    tenantMembership.assertAdminOrSub.mockResolvedValue(undefined);
+    chargesRepo.save.mockImplementation(async (c: unknown) => c);
+
+    const saved = await service.markPaid('sindico1', 'ch1', undefined, {
+      method: 'MANUAL_CASH',
+    });
+
+    expect(saved.paymentRequestAt).toBeNull();
+    expect(saved.paymentRequestMethod).toBeNull();
+    expect(saved.paymentRequestNote).toBeNull();
+    expect(saved.paymentRequestUserId).toBeNull();
   });
 });

@@ -49,6 +49,8 @@ const resolveDeeplink = (
     case NotificationType.CHARGE_CREATED:
     case NotificationType.CHARGE_OVERDUE:
     case NotificationType.CHARGE_PAID:
+    case NotificationType.CHARGE_PAYMENT_REQUESTED:
+    case NotificationType.CHARGE_PAYMENT_REJECTED:
       return typeof p.chargeId === 'string' ? `/charges/${p.chargeId}` : null;
     case NotificationType.POLL_CREATED:
     case NotificationType.POLL_CLOSED:

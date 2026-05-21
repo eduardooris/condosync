@@ -1,4 +1,11 @@
-import { Body, Controller, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -17,6 +24,7 @@ import { MarkPaidDto } from './dto/mark-paid.dto';
 import { ExemptChargeDto } from './dto/exempt-charge.dto';
 import { CancelChargeDto } from './dto/cancel-charge.dto';
 import { ChargeResponseDto } from './dto/charge-response.dto';
+import { RejectPaymentRequestDto } from './dto/request-payment-confirmation.dto';
 
 @ApiBearerAuth('bearer')
 @ApiTags('charges')
@@ -74,6 +82,25 @@ export class ChargeActionsController {
     @Body() dto: ExemptChargeDto,
   ) {
     return this.service.exempt(user.id, id, dto.reason);
+  }
+
+  @Post(':id/payment-request/reject')
+  @ApiOperation({
+    summary: 'Síndico rejeita solicitação de baixa do morador',
+    description:
+      'Limpa as colunas `payment_request_*` e notifica o morador. ' +
+      'Não altera o status da cobrança — ela continua em aberto.',
+  })
+  @ApiOkResponse({
+    description: 'Solicitação rejeitada.',
+    type: ChargeResponseDto,
+  })
+  rejectPaymentRequest(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RejectPaymentRequestDto,
+  ) {
+    return this.service.rejectPaymentRequest(user.id, id, dto.reason);
   }
 
   @Patch(':id/cancel')

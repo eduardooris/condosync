@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import { Copy, CreditCard, ExternalLink, FileText, Phone, QrCode, Receipt } from 'lucide-react';
+import { Copy, CreditCard, ExternalLink, FileText, HandCoins, Phone, QrCode, Receipt } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
 import { cn } from '@/shared/utils/cn';
@@ -119,6 +119,11 @@ export function ChargeDetailDialog({
             </div>
           </div>
 
+          {charge.paymentRequestAt &&
+          (status === 'pending' || status === 'overdue') ? (
+            <PaymentRequestBlock charge={charge} />
+          ) : null}
+
           {status === 'paid' ? (
             <PaymentReceiptSection charge={charge as ChargeWithPaymentMethods} />
           ) : (
@@ -162,10 +167,12 @@ export function ChargeDetailDialog({
             </div>
           )}
 
-          {status === 'pending' || status === 'overdue' ? (
+          {(status === 'pending' || status === 'overdue') &&
+          !charge.paymentRequestAt ? (
             <p className="rounded-ds-lg border border-ds-stroke/60 bg-ds-surface px-4 py-3 text-ds-sm text-ds-dim dark:bg-white/[0.02]">
               Após pagar pelo link Pix ou boleto desta cobrança, a baixa é automática.
-              Pagamento em dinheiro: solicite confirmação ao síndico.
+              Pagamento em dinheiro ou Pix fora do gateway: use o app para
+              avisar o síndico depois de pagar.
             </p>
           ) : null}
 
@@ -480,6 +487,69 @@ ${charge.paidNote ? `<div class="row"><span>Observação</span><span>${escapeHtm
 </body></html>`;
   win.document.write(html);
   win.document.close();
+}
+
+const PAYMENT_REQUEST_METHOD_DETAIL: Record<string, string> = {
+  PIX: 'Pix',
+  CASH: 'Dinheiro',
+  TRANSFER: 'Transferência',
+  OTHER: 'Outro',
+};
+
+/**
+ * Card destacado quando o morador clicou "Já paguei" e a cobrança ainda
+ * está em aberto. Não tem CTAs — as ações Confirmar/Rejeitar ficam na
+ * linha da listagem para reduzir indireção. Aqui o foco é dar contexto
+ * (quem, quando, como) para o síndico decidir.
+ */
+function PaymentRequestBlock({ charge }: { charge: Charge }) {
+  const requestedAt = charge.paymentRequestAt
+    ? new Date(charge.paymentRequestAt)
+    : null;
+  const methodLabel =
+    PAYMENT_REQUEST_METHOD_DETAIL[charge.paymentRequestMethod ?? 'OTHER'] ??
+    'Outro';
+  const note = charge.paymentRequestNote?.trim();
+
+  return (
+    <div className="rounded-ds-lg border border-amber-500/30 bg-amber-500/[0.08] px-4 py-3 space-y-2">
+      <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">
+        <HandCoins className="h-3.5 w-3.5" />
+        Solicitação de baixa do morador
+      </p>
+      <dl className="grid grid-cols-2 gap-3 text-ds-sm">
+        <div>
+          <dt className="text-[11px] text-ds-dim">Método informado</dt>
+          <dd className="mt-0.5 font-semibold text-ds-body">{methodLabel}</dd>
+        </div>
+        {requestedAt && !isNaN(requestedAt.getTime()) ? (
+          <div>
+            <dt className="text-[11px] text-ds-dim">Enviada em</dt>
+            <dd className="mt-0.5 font-semibold text-ds-body">
+              {new Intl.DateTimeFormat('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }).format(requestedAt)}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+      {note ? (
+        <div className="rounded-ds-md border border-ds-stroke/60 bg-ds-surface px-3 py-2 dark:bg-white/[0.02]">
+          <p className="text-[11px] uppercase tracking-widest text-ds-dim">
+            Observação do morador
+          </p>
+          <p className="mt-1 text-ds-sm text-ds-body">{note}</p>
+        </div>
+      ) : null}
+      <p className="text-[11px] text-ds-dim">
+        Confirme ou rejeite a baixa pelos botões na lista de cobranças.
+      </p>
+    </div>
+  );
 }
 
 function escapeHtml(s: string): string {

@@ -19,6 +19,7 @@ import { AsaasClient } from '../asaas/asaas.client';
 import {
   AsaasAccountApprovalStatus,
   AsaasAccountStatusResponse,
+  AsaasWebhookEvent,
 } from '../asaas/asaas.types';
 import { PaymentEncryptionService } from '../crypto/payment-encryption.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
@@ -272,6 +273,105 @@ export class PaymentAccountsService {
     return account;
   }
 
+  // ── Manutenção dos webhooks Asaas ─────────────────────────────────────────
+
+  /**
+   * Lista de eventos atualmente exigidos pelo CondoSync. Ao adicionar um
+   * evento novo no `registerWebhook`, atualize aqui também — o
+   * `refreshWebhookForCondominium` compara contra essa lista e regista
+   * de novo quando algum evento estiver faltando na subconta existente.
+   */
+  private static readonly REQUIRED_WEBHOOK_EVENTS: readonly string[] = [
+    'PAYMENT_CREATED',
+    'PAYMENT_CONFIRMED',
+    'PAYMENT_RECEIVED',
+    'PAYMENT_OVERDUE',
+    'PAYMENT_DELETED',
+    'PAYMENT_REFUNDED',
+    'PAYMENT_RESTORED',
+    'PAYMENT_RECEIVED_IN_CASH',
+    'PAYMENT_RECEIVED_IN_CASH_UNDONE',
+  ];
+
+  /**
+   * Garante que a subconta tem um webhook com todos os eventos exigidos.
+   * Se já existe um webhook na URL CondoSync com a lista certa, no-op.
+   * Caso contrário, deleta os obsoletos e cria um novo.
+   *
+   * Retorna `true` se houve mudança (criou/recriou), `false` se já estava OK.
+   */
+  async refreshWebhookForCondominium(condominiumId: string): Promise<boolean> {
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    if (!account) return false;
+    const apiKey = this.crypto.decrypt(account.asaasApiKey);
+    const baseUrl =
+      this.config.get('ASAAS_WEBHOOK_PUBLIC_BASE_URL', { infer: true }) ?? '';
+    if (!baseUrl) return false;
+    const expectedUrl =
+      `${baseUrl.replace(/\/$/, '')}/api/v1/integrations/asaas/webhook`;
+    const required = new Set(PaymentAccountsService.REQUIRED_WEBHOOK_EVENTS);
+
+    let list;
+    try {
+      list = await this.asaas.listWebhooks(apiKey);
+    } catch (err) {
+      this.logger.warn(
+        { condominiumId, err_message: (err as Error).message },
+        'asaas.subaccount.list_webhooks_failed',
+      );
+      return false;
+    }
+    const matching = list.data.filter((wh) => wh.url === expectedUrl);
+    const ok = matching.find((wh) => {
+      const evts = new Set(wh.events ?? []);
+      return [...required].every((e) => evts.has(e as AsaasWebhookEvent));
+    });
+    if (ok) return false;
+
+    // Limpa webhooks antigos da nossa URL (sem todos os eventos) — evita
+    // duplicação. Falha individual é só log.
+    for (const stale of matching) {
+      try {
+        await this.asaas.deleteWebhook(apiKey, stale.id);
+      } catch (err) {
+        this.logger.warn(
+          { condominiumId, webhookId: stale.id, err_message: (err as Error).message },
+          'asaas.subaccount.delete_stale_webhook_failed',
+        );
+      }
+    }
+    await this.registerWebhook(apiKey, account.asaasWebhookToken, account.holderEmail);
+    this.logger.info(
+      { condominiumId },
+      'asaas.subaccount.webhook_refreshed',
+    );
+    return true;
+  }
+
+  /**
+   * Iter sobre todas as subcontas ATIVAS e garante webhooks atualizados.
+   * Idempotente — pode ser disparado por cron ou ação master.
+   */
+  async refreshAllWebhooks(): Promise<{ checked: number; refreshed: number }> {
+    const accounts = await this.repo.findAllActive();
+    let refreshed = 0;
+    for (const acc of accounts) {
+      try {
+        const changed = await this.refreshWebhookForCondominium(
+          acc.condominiumId,
+        );
+        if (changed) refreshed += 1;
+      } catch (err) {
+        this.logger.warn(
+          { condominiumId: acc.condominiumId, err_message: (err as Error).message },
+          'asaas.subaccount.refresh_failed',
+        );
+      }
+    }
+    return { checked: accounts.length, refreshed };
+  }
+
   // ── Helpers internos ──────────────────────────────────────────────────────
 
   private async getAccountOrFail(
@@ -451,6 +551,11 @@ export class PaymentAccountsService {
         'PAYMENT_DELETED',
         'PAYMENT_REFUNDED',
         'PAYMENT_RESTORED',
+        // Disparados quando o síndico baixa manualmente no CondoSync (via
+        // `receiveInCash`) — backend usa para auditoria; status local já
+        // está PAID. UNDONE reverte para PENDING se a baixa é desfeita.
+        'PAYMENT_RECEIVED_IN_CASH',
+        'PAYMENT_RECEIVED_IN_CASH_UNDONE',
       ],
     });
   }

@@ -17,6 +17,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Charge } from '../database/entities/charge.entity';
 import { Poll } from '../database/entities/poll.entity';
 import { Resident } from '../database/entities/resident.entity';
+import { User } from '../database/entities/user.entity';
+import { UserCondominium } from '../database/entities/user-condominium.entity';
 import { MessageServerAdapter } from '../adapters/whatsapp/message-server.adapter';
 import { WHATSAPP_ADAPTER } from '../adapters/whatsapp/whatsapp.adapter';
 
@@ -35,7 +37,7 @@ import { WHATSAPP_ADAPTER } from '../adapters/whatsapp/whatsapp.adapter';
       { name: QUEUE_INAPP_NOTIFY },
       { name: QUEUE_ASAAS_WEBHOOK },
     ),
-    TypeOrmModule.forFeature([Charge, Resident, Poll]),
+    TypeOrmModule.forFeature([Charge, Resident, Poll, User, UserCondominium]),
   ],
   providers: [
     WhatsappProcessor,

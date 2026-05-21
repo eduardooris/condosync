@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   HttpException,
   Injectable,
   NotFoundException,
@@ -46,6 +47,10 @@ import { ChargesAsaasService } from '../payments/charges/charges-asaas.service';
 import { Resident } from '../../database/entities/resident.entity';
 import { ConfigService } from '@nestjs/config';
 import { Env } from '../../config/env.schema';
+import type {
+  PaymentRequestMethod,
+  RequestPaymentConfirmationResponseDto,
+} from './dto/request-payment-confirmation.dto';
 
 function formatBrl(amount: number | string): string {
   const n = typeof amount === 'number' ? amount : Number(amount);
@@ -84,6 +89,9 @@ export class ChargesService {
     @InjectPinoLogger(ChargesService.name)
     private readonly logger: PinoLogger,
   ) {}
+
+  /** Janela de deduplicação do "Já paguei" — 24h. */
+  private static readonly PAYMENT_REQUEST_DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
   private unitLabel(unit: Unit): string {
     return `${unit.block}-${unit.number}`;
@@ -566,13 +574,28 @@ export class ChargesService {
       charge.unit.condominiumId,
     );
     assertChargeTransition(charge.status, ChargeStatus.PAID);
-    await this.chargesAsaas.cancelPayment(charge);
+    const method = extra?.method ?? 'MANUAL_OTHER';
+    const effectivePaidAt = paidAt ?? new Date();
+    // Decide o que fazer no Asaas:
+    //   - MANUAL_OTHER (correção/duplicidade) → cancela no Asaas.
+    //   - Demais métodos (Pix fora do gateway, dinheiro, transferência etc.)
+    //     → `receiveInCash` mantém o registro contábil no Asaas.
+    if (charge.asaasPaymentId && method !== 'MANUAL_OTHER') {
+      await this.chargesAsaas.settleAsReceivedInCash(charge, effectivePaidAt);
+    } else {
+      await this.chargesAsaas.cancelPayment(charge);
+    }
     charge.status = ChargeStatus.PAID;
-    charge.paidAt = paidAt ?? new Date();
-    charge.paidMethod = extra?.method ?? 'MANUAL_OTHER';
+    charge.paidAt = effectivePaidAt;
+    charge.paidMethod = method;
     if (extra?.note) {
       charge.paidNote = extra.note;
     }
+    // Limpa solicitação do morador (síndico atendeu, manual ou por confirmação).
+    charge.paymentRequestAt = null;
+    charge.paymentRequestMethod = null;
+    charge.paymentRequestNote = null;
+    charge.paymentRequestUserId = null;
     const saved = await this.chargesRepo.save(charge);
     // Admin baixou pagamento → avisa moradores da unidade que a quitação foi
     // registrada (confirmação visível). Falha silenciosa: pagamento não é
@@ -584,8 +607,12 @@ export class ChargesService {
   }
 
   /**
-   * Auto-declaração pelo morador desativada — baixa manual só pelo síndico
-   * (evita inflar receita no dashboard sem pagamento real).
+   * Endpoint legado — auto-declaração de pagamento pelo morador. Sempre
+   * lança `410 Gone`. O app mobile antigo cai aqui; o app novo migrou
+   * para `requestPaymentConfirmation` (endpoint dedicado).
+   *
+   * O `code: USE_REQUEST_CONFIRMATION` é o gatilho do app mobile para
+   * exibir o modal "Atualize o app".
    */
   async markPaidByResident(
     _userId: string,
@@ -593,11 +620,146 @@ export class ChargesService {
     _chargeId: string,
     _paidAt?: Date,
   ): Promise<ChargeResponseDto> {
-    throw new BadRequestException(
-      'A confirmação de pagamento é feita pela administração após o recebimento. ' +
-        'Se você pagou via Pix ou boleto da cobrança, aguarde a baixa automática. ' +
-        'Para pagamento em dinheiro, solicite ao síndico.',
+    throw new HttpException(
+      {
+        statusCode: 410,
+        message:
+          'A confirmação de pagamento agora é uma solicitação enviada ao síndico. ' +
+          'Atualize seu aplicativo para usar o novo fluxo.',
+        code: 'USE_REQUEST_CONFIRMATION',
+      },
+      410,
     );
+  }
+
+  /**
+   * Morador declara que pagou (botão "Já paguei" no app). NÃO altera o
+   * status da cobrança — apenas guarda a declaração e avisa o síndico
+   * para validar.
+   *
+   * Idempotente: se houver `payment_request_at` em janela de 24h,
+   * retorna `alreadyRequested: true` sem disparar notificações
+   * duplicadas.
+   */
+  async requestPaymentConfirmation(
+    userId: string,
+    condominiumId: string,
+    chargeId: string,
+    input: { method: PaymentRequestMethod; note?: string },
+  ): Promise<RequestPaymentConfirmationResponseDto> {
+    const charge = await this.findInCondo(condominiumId, chargeId);
+    // Morador só pode solicitar baixa de cobranças de unidades onde está
+    // cadastrado (mesma checagem do detalhe).
+    await this.tenantMembership.assertUserOwnsUnit(
+      userId,
+      condominiumId,
+      charge.unitId,
+    );
+
+    if (
+      charge.status !== ChargeStatus.PENDING &&
+      charge.status !== ChargeStatus.OVERDUE
+    ) {
+      throw new BadRequestException(
+        `Esta cobrança está em status "${charge.status}" — não é possível pedir confirmação.`,
+      );
+    }
+
+    const now = new Date();
+    // Idempotência: ignorar cliques duplicados em 24h.
+    if (
+      charge.paymentRequestAt &&
+      now.getTime() - charge.paymentRequestAt.getTime() <
+        ChargesService.PAYMENT_REQUEST_DEDUP_WINDOW_MS
+    ) {
+      return { requested: true, alreadyRequested: true };
+    }
+
+    charge.paymentRequestAt = now;
+    charge.paymentRequestMethod = input.method;
+    charge.paymentRequestNote = input.note?.trim() || null;
+    charge.paymentRequestUserId = userId;
+    const saved = await this.chargesRepo.save(charge);
+
+    await this.notifyAdminsPaymentRequested(saved, condominiumId, userId).catch(
+      (err) => {
+        this.logger.warn(
+          {
+            chargeId,
+            condominiumId,
+            err_message: (err as Error).message,
+          },
+          'charges.payment_request.notify_failed',
+        );
+      },
+    );
+
+    await this.enqueuePaymentRequestWhatsapp(saved.id).catch((err) => {
+      this.logger.warn(
+        {
+          chargeId,
+          err_message: (err as Error).message,
+        },
+        'charges.payment_request.whatsapp_enqueue_failed',
+      );
+    });
+
+    return { requested: true, alreadyRequested: false };
+  }
+
+  /**
+   * Síndico rejeita a solicitação de baixa do morador. Limpa as colunas
+   * `payment_request_*` e avisa o morador via in-app.
+   */
+  async rejectPaymentRequest(
+    userId: string,
+    chargeId: string,
+    reason: string,
+  ): Promise<Charge> {
+    const trimmed = reason?.trim();
+    if (!trimmed) {
+      throw new BadRequestException(
+        'Informe um motivo para rejeitar a solicitação de baixa.',
+      );
+    }
+    const charge = await this.chargesRepo.findByIdWithUnit(chargeId);
+    if (!charge) {
+      throw new NotFoundException('Cobrança não encontrada.');
+    }
+    await this.tenantMembership.assertAdminOrSub(
+      userId,
+      charge.unit.condominiumId,
+    );
+    if (!charge.paymentRequestAt) {
+      throw new ConflictException(
+        'Não há solicitação de baixa pendente para esta cobrança.',
+      );
+    }
+
+    const requesterUserId = charge.paymentRequestUserId;
+    charge.paymentRequestAt = null;
+    charge.paymentRequestMethod = null;
+    charge.paymentRequestNote = null;
+    charge.paymentRequestUserId = null;
+    const saved = await this.chargesRepo.save(charge);
+
+    if (requesterUserId) {
+      await this.notifyResidentRequestRejected(
+        saved,
+        charge.unit.condominiumId,
+        requesterUserId,
+        trimmed,
+      ).catch((err) => {
+        this.logger.warn(
+          {
+            chargeId,
+            err_message: (err as Error).message,
+          },
+          'charges.payment_request.reject_notify_failed',
+        );
+      });
+    }
+    return saved;
   }
 
   async exempt(
@@ -895,6 +1057,102 @@ export class ChargesService {
     );
   }
 
+  /**
+   * Notifica ADMIN/SUB_ADMIN do condomínio que o morador clicou "Já paguei".
+   * `requesterUserId` permite buscar nome/unidade na notificação.
+   */
+  private async notifyAdminsPaymentRequested(
+    charge: Charge,
+    condominiumId: string,
+    requesterUserId: string,
+  ): Promise<void> {
+    const [adminIds, requester, unit] = await Promise.all([
+      this.tenantMembership.listAdminUserIds(condominiumId),
+      this.residentRepo.findOne({
+        where: { userId: requesterUserId, unitId: charge.unitId },
+        select: { fullName: true },
+      }),
+      this.unitRepo.findOne({
+        where: { id: charge.unitId },
+        select: { block: true, number: true },
+      }),
+    ]);
+    if (adminIds.length === 0) return;
+
+    const requesterName = requester?.fullName?.split(/\s+/)[0] ?? 'O morador';
+    const unitLabel = unit ? `${unit.block}-${unit.number}` : 'sua unidade';
+    const methodLabel = this.paymentRequestMethodLabel(
+      charge.paymentRequestMethod,
+    );
+    const body =
+      `${requesterName} (${unitLabel}) declarou que pagou a cobrança de ` +
+      `${charge.billingMonth} (${formatBrl(charge.amount)}) via ${methodLabel}. ` +
+      `Valide a baixa.`;
+
+    await this.notifications.createMany(
+      adminIds.map((userId) => ({
+        userId,
+        condominiumId,
+        type: NotificationType.CHARGE_PAYMENT_REQUESTED,
+        title: 'Solicitação de baixa de cobrança',
+        body,
+        payload: {
+          chargeId: charge.id,
+          unitId: charge.unitId,
+          billingMonth: charge.billingMonth,
+          amount: charge.amount,
+          requestedAt: charge.paymentRequestAt,
+          method: charge.paymentRequestMethod,
+          note: charge.paymentRequestNote,
+          requesterUserId,
+        },
+      })),
+    );
+  }
+
+  /**
+   * Notifica o morador que a solicitação foi rejeitada pelo síndico —
+   * cobrança continua em aberto.
+   */
+  private async notifyResidentRequestRejected(
+    charge: Charge,
+    condominiumId: string,
+    requesterUserId: string,
+    reason: string,
+  ): Promise<void> {
+    await this.notifications.createMany([
+      {
+        userId: requesterUserId,
+        condominiumId,
+        type: NotificationType.CHARGE_PAYMENT_REJECTED,
+        title: 'Solicitação de baixa não confirmada',
+        body:
+          `A administração não confirmou seu pedido de baixa da cobrança ` +
+          `de ${charge.billingMonth} (${formatBrl(charge.amount)}). Motivo: ${reason}`,
+        payload: {
+          chargeId: charge.id,
+          billingMonth: charge.billingMonth,
+          amount: charge.amount,
+          reason,
+        },
+      },
+    ]);
+  }
+
+  private paymentRequestMethodLabel(method: string | null): string {
+    switch (method) {
+      case 'PIX':
+        return 'Pix';
+      case 'CASH':
+        return 'dinheiro';
+      case 'TRANSFER':
+        return 'transferência';
+      case 'OTHER':
+      default:
+        return 'outro método';
+    }
+  }
+
   private async enqueueChargeNotification(chargeId: string): Promise<void> {
     await this.whatsappQueue.add(
       'charge-created',
@@ -903,6 +1161,20 @@ export class ChargesService {
         // jobId determinístico — evita duplicidade em retry/reagendamento.
         jobId: `charge:${chargeId}:created`,
       },
+    );
+  }
+
+  /** WhatsApp para o síndico quando morador clica "Já paguei". */
+  private async enqueuePaymentRequestWhatsapp(
+    chargeId: string,
+  ): Promise<void> {
+    // jobId com timestamp permite re-disparo se o síndico não viu (mas a
+    // idempotência do `requestPaymentConfirmation` já evita re-cliques).
+    const suffix = String(Date.now());
+    await this.whatsappQueue.add(
+      'charge-payment-requested',
+      { chargeId },
+      { jobId: `charge:${chargeId}:payment-request:${suffix}` },
     );
   }
 

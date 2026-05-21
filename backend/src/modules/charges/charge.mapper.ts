@@ -58,5 +58,9 @@ export const toChargeResponse = (
     asaasPaidVia: charge.asaasPaidVia,
     asaasLastEvent: charge.asaasLastEvent,
     asaasSyncedAt: charge.asaasSyncedAt,
+    paymentRequestAt: charge.paymentRequestAt,
+    paymentRequestMethod: charge.paymentRequestMethod,
+    paymentRequestNote: charge.paymentRequestNote,
+    paymentRequestUserId: charge.paymentRequestUserId,
   };
 };

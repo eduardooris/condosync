@@ -37,6 +37,10 @@ import {
 } from './dto/charge-response.dto';
 import { ResendWhatsappResponseDto } from './dto/resend-whatsapp.dto';
 import { MarkPaidDto } from './dto/mark-paid.dto';
+import {
+  RequestPaymentConfirmationDto,
+  RequestPaymentConfirmationResponseDto,
+} from './dto/request-payment-confirmation.dto';
 
 /**
  * Listagem e administração de cobranças por condomínio.
@@ -251,16 +255,13 @@ export class CondominiumMyChargesController {
 
   @Patch(':chargeId/mark-paid')
   @ApiOperation({
-    summary: 'Morador: auto-declaração de pagamento (desativado)',
+    summary: 'Morador: endpoint legado de auto-declaração',
     description:
-      'Retorna 400 — baixa manual apenas pelo síndico (`PATCH /charges/:id/mark-paid`).',
+      'Sempre 410 Gone — use `POST .../request-confirmation`. Mantido por compatibilidade com apps antigos: ' +
+      'o cliente recebe `code: USE_REQUEST_CONFIRMATION` e deve oferecer atualização.',
   })
   @ApiBadRequestResponse({
-    description: 'Auto-declaração desativada.',
-    type: ErrorResponseDto,
-  })
-  @ApiNotFoundResponse({
-    description: 'Cobrança não encontrada ou não pertence ao morador.',
+    description: 'Endpoint removido (410). Use request-confirmation.',
     type: ErrorResponseDto,
   })
   markPaidMine(
@@ -275,6 +276,41 @@ export class CondominiumMyChargesController {
       condominiumId,
       chargeId,
       paidAt,
+    );
+  }
+
+  @Post(':chargeId/request-confirmation')
+  @ApiOperation({
+    summary: 'Morador: declara que pagou — solicita validação do síndico',
+    description:
+      'Cria uma solicitação de baixa sem alterar o status da cobrança. ' +
+      'Aciona notificação in-app + WhatsApp para ADMIN/SUB_ADMIN. ' +
+      'Idempotente em janela de 24h.',
+  })
+  @ApiOkResponse({
+    description: 'Solicitação registrada (ou já existia uma recente).',
+    type: RequestPaymentConfirmationResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Cobrança não está em PENDING/OVERDUE ou payload inválido.',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Cobrança não encontrada ou não pertence ao morador.',
+    type: ErrorResponseDto,
+  })
+  requestPaymentConfirmation(
+    @CurrentUser() user: RequestUser,
+    @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
+    @Param('chargeId', ParseUUIDPipe) chargeId: string,
+    @Body() dto: RequestPaymentConfirmationDto,
+  ) {
+    return this.service.requestPaymentConfirmation(
+      user.id,
+      condominiumId,
+      chargeId,
+      { method: dto.method, note: dto.note },
     );
   }
 }

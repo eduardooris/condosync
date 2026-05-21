@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Receipt, Search, Filter, CheckCircle2, Ban, Zap, Pencil, Settings2, Send } from 'lucide-react';
+import { Receipt, Search, Filter, CheckCircle2, Ban, Zap, Pencil, Settings2, Send, HandCoins } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
@@ -33,11 +33,30 @@ import { useAuthStore } from '@/shared/stores/auth.store';
 
 const statusOptions: { key: StatusFilter; label: string }[] = [
   { key: 'all', label: 'Todos' },
+  { key: 'requested', label: 'Solicitações' },
   { key: 'pending', label: 'Pendente' },
   { key: 'paid', label: 'Pago' },
   { key: 'overdue', label: 'Atrasado' },
   { key: 'exempt', label: 'Isento' },
 ];
+
+const PAYMENT_REQUEST_METHOD_LABEL: Record<string, string> = {
+  PIX: 'Pix',
+  CASH: 'Dinheiro',
+  TRANSFER: 'Transferência',
+  OTHER: 'Outro',
+};
+
+/**
+ * Mapeia o método declarado pelo morador para o `ManualPaidMethod` do
+ * síndico no diálogo "Marcar paga". O síndico ainda pode trocar.
+ */
+const PAYMENT_REQUEST_TO_MANUAL_METHOD: Record<string, ManualPaidMethod> = {
+  PIX: 'MANUAL_PIX',
+  CASH: 'MANUAL_CASH',
+  TRANSFER: 'MANUAL_TRANSFER',
+  OTHER: 'MANUAL_OTHER',
+};
 
 function formatBrl(n: number | string) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n));
@@ -94,12 +113,14 @@ export function ChargesPage() {
     filtered,
     generateOpen,
     setGenerateOpen,
+    pendingRequestsCount,
   } = useChargesPage();
   const {
     payMutation,
     emitAsaasPendingMutation,
     exemptMutation,
     resendWhatsappMutation,
+    rejectPaymentRequestMutation,
   } = chargesQuery;
   const condominiumWithPix = condominiumQuery.data as
     | ({ pixKeyType?: string | null; pixKeyValue?: string | null } & object)
@@ -116,6 +137,8 @@ export function ChargesPage() {
   const [payNote, setPayNote] = useState('');
   const [chargeToExempt, setChargeToExempt] = useState<Charge | null>(null);
   const [exemptReason, setExemptReason] = useState('');
+  const [chargeToReject, setChargeToReject] = useState<Charge | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const openWithoutAsaas = useMemo(
     () =>
@@ -259,26 +282,41 @@ export function ChargesPage() {
           <div className="-mx-1 flex min-w-0 touch-pan-x">
             <div className="flex max-w-full flex-nowrap gap-1 overflow-x-auto overscroll-x-contain rounded-ds-md bg-[var(--ds-filter-track-bg)] p-1.5 pb-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ds-md:flex-wrap ds-md:overflow-visible ds-md:pb-1.5">
               <Filter className="ml-0.5 h-3.5 w-3.5 shrink-0 self-center text-ds-subtle ds-md:ml-1" aria-hidden />
-              {statusOptions.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setStatusFilter(key)}
-                  className={cn(
-                    'relative shrink-0 rounded-ds-lg px-3.5 py-2 text-ds-xs font-semibold transition-all duration-200 ds-md:py-1',
-                    statusFilter === key ? 'text-brand-900 dark:text-white' : 'text-ds-dim hover:text-ds-body',
-                  )}
-                >
-                  {statusFilter === key && (
-                    <motion.div
-                      layoutId="charge-filter-bg"
-                      className="absolute inset-0 rounded-ds-lg bg-gradient-to-r from-brand-500/45 to-brand-600/30 dark:from-brand-400/40 dark:to-brand-500/25"
-                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                    />
-                  )}
-                  <span className="relative whitespace-nowrap">{label}</span>
-                </button>
-              ))}
+              {statusOptions
+                .filter((opt) => opt.key !== 'requested' || canManage)
+                .map(({ key, label }) => {
+                  const isRequested = key === 'requested';
+                  const showBadge = isRequested && pendingRequestsCount > 0;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setStatusFilter(key)}
+                      className={cn(
+                        'relative shrink-0 rounded-ds-lg px-3.5 py-2 text-ds-xs font-semibold transition-all duration-200 ds-md:py-1',
+                        statusFilter === key
+                          ? 'text-brand-900 dark:text-white'
+                          : 'text-ds-dim hover:text-ds-body',
+                      )}
+                    >
+                      {statusFilter === key && (
+                        <motion.div
+                          layoutId="charge-filter-bg"
+                          className="absolute inset-0 rounded-ds-lg bg-gradient-to-r from-brand-500/45 to-brand-600/30 dark:from-brand-400/40 dark:to-brand-500/25"
+                          transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                        />
+                      )}
+                      <span className="relative inline-flex items-center gap-1 whitespace-nowrap">
+                        {label}
+                        {showBadge ? (
+                          <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500/95 px-1 text-[10px] font-bold text-white">
+                            {pendingRequestsCount}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -384,6 +422,15 @@ export function ChargesPage() {
                     </span>
                     <div className="flex flex-col gap-2 ds-md:flex ds-md:flex-row ds-md:flex-wrap ds-md:items-center ds-md:justify-end">
                       <Badge status={status} />
+                      {canManage && charge.paymentRequestAt && (status === 'pending' || status === 'overdue') ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300"
+                          title={`Morador declarou pagamento via ${PAYMENT_REQUEST_METHOD_LABEL[charge.paymentRequestMethod ?? 'OTHER']}`}
+                        >
+                          <HandCoins className="h-3 w-3" aria-hidden />
+                          Pediu baixa
+                        </span>
+                      ) : null}
                       <div
                         className="grid max-ds-md:[&_button]:min-h-10 grid-cols-2 gap-2 ds-md:contents"
                         onClick={(e) => e.stopPropagation()}
@@ -435,16 +482,40 @@ export function ChargesPage() {
                           size="sm"
                           variant="secondary"
                           onClick={() => {
-                            setPayMethod('MANUAL_CASH');
-                            setPayNote('');
+                            const requested = charge.paymentRequestMethod;
+                            const initial =
+                              (requested &&
+                                PAYMENT_REQUEST_TO_MANUAL_METHOD[requested]) ||
+                              'MANUAL_CASH';
+                            setPayMethod(initial);
+                            setPayNote(charge.paymentRequestNote ?? '');
                             setChargeToPay(charge);
                           }}
                           disabled={payMutation.isPending}
-                          title="Baixa manual (dinheiro, Pix fora do Asaas, etc.)"
+                          title={
+                            charge.paymentRequestAt
+                              ? 'Confirmar a baixa solicitada pelo morador'
+                              : 'Baixa manual (dinheiro, Pix fora do Asaas, etc.)'
+                          }
                         >
                           <CheckCircle2 className="h-3 w-3" aria-hidden />
-                          Marcar paga
+                          {charge.paymentRequestAt ? 'Confirmar baixa' : 'Marcar paga'}
                         </Button>
+                        {canManage && charge.paymentRequestAt ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setChargeToReject(charge);
+                              setRejectReason('');
+                            }}
+                            disabled={rejectPaymentRequestMutation.isPending}
+                            title="Rejeitar a solicitação do morador"
+                          >
+                            <Ban className="h-3 w-3" aria-hidden />
+                            Rejeitar
+                          </Button>
+                        ) : null}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -644,6 +715,82 @@ export function ChargesPage() {
                 </Button>
                 <Button type="submit" disabled={exemptMutation.isPending}>
                   {exemptMutation.isPending ? 'Aplicando…' : 'Isentar cobrança'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormDialog>
+
+          <FormDialog
+            open={Boolean(chargeToReject)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setChargeToReject(null);
+                setRejectReason('');
+              }
+            }}
+            title="Rejeitar solicitação de baixa"
+            description={
+              chargeToReject
+                ? `${unitLabelForCharge(chargeToReject, unitLabelById, myUnitId)} · ${formatBrl(chargeToReject.amount)}. O morador será notificado com o motivo.`
+                : ''
+            }
+          >
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const reason = rejectReason.trim();
+                if (!chargeToReject || reason.length < 4) {
+                  toast.error('Informe um motivo (mín. 4 caracteres).');
+                  return;
+                }
+                rejectPaymentRequestMutation.mutate(
+                  { id: chargeToReject.id, reason },
+                  {
+                    onSuccess: () => {
+                      toast.success('Solicitação rejeitada — morador avisado.');
+                      setChargeToReject(null);
+                      setRejectReason('');
+                    },
+                    onError: () =>
+                      toast.error('Não foi possível rejeitar a solicitação.'),
+                  },
+                );
+              }}
+            >
+              <FormField
+                label="Motivo"
+                htmlFor="reject-reason"
+                required
+                hint="Ex.: não localizei o pagamento na conta; valor divergente."
+              >
+                <Textarea
+                  id="reject-reason"
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Explique por que a baixa não foi confirmada…"
+                  maxLength={280}
+                />
+              </FormField>
+              <DialogFooter>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => {
+                    setChargeToReject(null);
+                    setRejectReason('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={rejectPaymentRequestMutation.isPending}
+                >
+                  {rejectPaymentRequestMutation.isPending
+                    ? 'Enviando…'
+                    : 'Rejeitar solicitação'}
                 </Button>
               </DialogFooter>
             </form>

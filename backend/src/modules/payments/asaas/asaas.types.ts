@@ -204,6 +204,7 @@ export type AsaasWebhookEvent =
   | 'PAYMENT_DELETED'
   | 'PAYMENT_REFUNDED'
   | 'PAYMENT_RESTORED'
+  | 'PAYMENT_RECEIVED_IN_CASH'
   | 'PAYMENT_RECEIVED_IN_CASH_UNDONE';
 
 export interface AsaasCreateWebhookInput {

@@ -6,6 +6,12 @@ import { Repository } from 'typeorm';
 import { Charge } from '../database/entities/charge.entity';
 import { Poll } from '../database/entities/poll.entity';
 import { Resident } from '../database/entities/resident.entity';
+import { User } from '../database/entities/user.entity';
+import {
+  MembershipStatus,
+  UserCondominium,
+} from '../database/entities/user-condominium.entity';
+import { UserRole } from '../common/enums';
 import {
   WHATSAPP_ADAPTER,
   IWhatsAppAdapter,
@@ -17,6 +23,7 @@ import {
   renderChargeCollectionReminderMessage,
   renderChargeCreatedMessage,
   renderChargeOverdueMessage,
+  renderChargePaymentRequestedMessage,
   renderChargeSecondCopyMessage,
 } from './messages/charge-templates';
 import { renderPollCreatedWhatsappMessage } from './messages/poll-templates';
@@ -32,6 +39,10 @@ export class WhatsappProcessor {
     private readonly residentRepo: Repository<Resident>,
     @InjectRepository(Poll)
     private readonly pollRepo: Repository<Poll>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(UserCondominium)
+    private readonly membershipRepo: Repository<UserCondominium>,
     @Inject(WHATSAPP_ADAPTER)
     private readonly whatsapp: IWhatsAppAdapter,
   ) {}
@@ -134,6 +145,83 @@ export class WhatsappProcessor {
     }
     const msg = renderChargeSecondCopyMessage(charge, resp);
     await this.deliver(job, resp.phoneWhatsapp, msg);
+  }
+
+  @Process('charge-payment-requested')
+  async onChargePaymentRequested(
+    job: Job<{ chargeId: string }>,
+  ): Promise<void> {
+    const charge = await this.chargeRepo.findOne({
+      where: { id: job.data.chargeId },
+      relations: ['unit', 'unit.condominium'],
+    });
+    if (!charge) {
+      this.logger.warn(
+        `payment-requested: cobrança ${job.data.chargeId} não encontrada.`,
+      );
+      return;
+    }
+    if (!charge.paymentRequestAt) {
+      this.logger.log(
+        `payment-requested: cobrança ${charge.id} sem solicitação ativa (rejeitada/baixada).`,
+      );
+      return;
+    }
+    const condominiumId = charge.unit?.condominiumId;
+    if (!condominiumId) return;
+
+    // Resolve nome do morador que pediu (best-effort).
+    let requesterName: string | null = null;
+    if (charge.paymentRequestUserId) {
+      const resident = await this.residentRepo.findOne({
+        where: {
+          unitId: charge.unitId,
+          userId: charge.paymentRequestUserId,
+        },
+        select: { fullName: true },
+      });
+      requesterName = resident?.fullName ?? null;
+    }
+
+    // Lista síndicos/subs aprovados, com telefone cadastrado.
+    const memberships = await this.membershipRepo.find({
+      where: [
+        {
+          condominiumId,
+          role: UserRole.ADMIN,
+          status: MembershipStatus.APPROVED,
+        },
+        {
+          condominiumId,
+          role: UserRole.SUB_ADMIN,
+          status: MembershipStatus.APPROVED,
+        },
+      ],
+      select: { userId: true },
+    });
+    const adminIds = [...new Set(memberships.map((m) => m.userId))].filter(
+      (x): x is string => Boolean(x),
+    );
+    if (adminIds.length === 0) {
+      this.logger.log(
+        `payment-requested: condomínio ${condominiumId} sem síndico aprovado.`,
+      );
+      return;
+    }
+    const admins = await this.userRepo.find({
+      where: adminIds.map((id) => ({ id })),
+      select: { id: true, fullName: true, phoneWhatsapp: true },
+    });
+
+    for (const admin of admins) {
+      if (!admin.phoneWhatsapp) continue;
+      const msg = renderChargePaymentRequestedMessage({
+        charge,
+        requesterName,
+        adminName: admin.fullName,
+      });
+      await this.deliver(job, admin.phoneWhatsapp, msg);
+    }
   }
 
   @Process('charge-reminder')
