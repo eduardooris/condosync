@@ -61,6 +61,7 @@ export class PaymentCustomersService {
             email: resident.email ?? undefined,
             mobilePhone,
             externalReference: customer.id,
+            notificationDisabled: true,
           });
           customer.legalName = resident.fullName;
           customer.email = resident.email ?? null;
@@ -84,6 +85,11 @@ export class PaymentCustomersService {
         email: resident.email ?? undefined,
         mobilePhone,
         externalReference: `condo:${condominiumId}:resident:${resident.id}`,
+        // Desliga as 8 notificações default do Asaas (email/SMS/voz/WhatsApp).
+        // O CondoSync já avisa o morador via WhatsApp por conta própria
+        // (Evolution API), então deixar Asaas mandando também é duplicação
+        // paga: SMS/email a R$0,99, voz a R$0,55, WhatsApp Asaas a R$0,55.
+        notificationDisabled: true,
       });
       customer = await this.repo.saveCustomer(
         this.repo.createCustomer({
@@ -110,6 +116,44 @@ export class PaymentCustomersService {
     // 3) Linka resident → customer (idempotente).
     await this.repo.linkResident(resident.id, customer.id);
     return customer;
+  }
+
+  /**
+   * Desabilita as 8 notificações default do Asaas em todos os customers
+   * de uma subconta — operação master idempotente. Usar uma vez no
+   * rollout do `notificationDisabled` para os customers que já existiam
+   * antes do flag.
+   *
+   * Retorna `{ updated, failed }` por subconta. Falha individual em um
+   * customer é logada mas não derruba o lote.
+   */
+  async disableNotificationsForAccount(
+    condominiumId: string,
+  ): Promise<{ checked: number; updated: number; failed: number }> {
+    const account = await this.accounts.requireActive(condominiumId);
+    const apiKey = await this.accounts.resolveApiKey(condominiumId);
+    const customers = await this.repo.findByPaymentAccount(account.id);
+    let updated = 0;
+    let failed = 0;
+    for (const customer of customers) {
+      try {
+        await this.asaas.updateCustomer(apiKey, customer.asaasCustomerId, {
+          notificationDisabled: true,
+        });
+        updated += 1;
+      } catch (err) {
+        failed += 1;
+        this.logger.warn(
+          {
+            customerId: customer.id,
+            asaasCustomerId: customer.asaasCustomerId,
+            err_message: (err as Error).message,
+          },
+          'asaas.customer.disable_notifications_failed',
+        );
+      }
+    }
+    return { checked: customers.length, updated, failed };
   }
 
   /**

@@ -157,6 +157,24 @@ export class AsaasClient implements OnModuleInit {
     });
   }
 
+  /**
+   * Atualiza um Customer existente — só envia o `notificationDisabled`
+   * (e qualquer outro campo desejado) sem reposicionar o resto. Útil pra
+   * o one-shot que desabilita notif em customers já cadastrados antes
+   * do flag ter sido introduzido no `createCustomer`.
+   */
+  updateCustomer(
+    apiKey: string,
+    customerId: string,
+    patch: Partial<AsaasCreateCustomerInput>,
+  ): Promise<AsaasCustomerResponse> {
+    return this.request<AsaasCustomerResponse>(
+      'POST',
+      `/customers/${customerId}`,
+      { apiKey, body: patch },
+    );
+  }
+
   // ── Cobranças (na subconta) ─────────────────────────────────────────────
 
   createPayment(

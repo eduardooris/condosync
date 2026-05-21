@@ -25,6 +25,7 @@ import { Charge } from '../../database/entities/charge.entity';
 import { Condominium } from '../../database/entities/condominium.entity';
 import { QUEUE_ASAAS_WEBHOOK } from '../../queues/queue-names';
 import { PaymentAccountsService } from '../payments/accounts/payment-accounts.service';
+import { PaymentCustomersService } from '../payments/customers/payment-customers.service';
 
 /**
  * Endpoints cross-tenant pro back-office.
@@ -53,6 +54,7 @@ export class MasterPaymentsController {
     @InjectQueue(QUEUE_ASAAS_WEBHOOK)
     private readonly webhookQueue: Queue,
     private readonly paymentAccounts: PaymentAccountsService,
+    private readonly paymentCustomers: PaymentCustomersService,
   ) {}
 
   // ── PAYMENT ACCOUNTS ────────────────────────────────────────────────────
@@ -281,6 +283,24 @@ export class MasterPaymentsController {
       account.condominiumId,
     );
     return { ok: true, refreshed: changed };
+  }
+
+  @Post('payment-accounts/:id/disable-customer-notifications')
+  @ApiOperation({
+    summary: 'Desabilita notificações Asaas dos customers de uma subconta',
+    description:
+      'One-shot: chama UPDATE em cada customer da subconta com ' +
+      '`notificationDisabled: true`. Use para customers criados antes do flag ' +
+      'ter sido introduzido no createCustomer.',
+  })
+  async disableCustomerNotificationsForAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const account = await this.accountsRepo.findOne({ where: { id } });
+    if (!account) throw new NotFoundException('Subconta não encontrada.');
+    return this.paymentCustomers.disableNotificationsForAccount(
+      account.condominiumId,
+    );
   }
 
   @Post('webhook-events/:id/reprocess')

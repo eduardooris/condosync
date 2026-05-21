@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
+  BellOff,
   Copy,
   Eye,
   EyeOff,
@@ -75,6 +76,24 @@ export function PaymentAccountDetailPage() {
       void qc.invalidateQueries({
         queryKey: ['master', 'asaas-webhooks', condoId],
       });
+    },
+    onError: (e) => toast.error(extractApiError(e)),
+  });
+
+  const disableNotificationsMut = useMutation({
+    mutationFn: () => masterService.disableCustomerNotifications(accountId!),
+    onSuccess: ({ checked, updated, failed }) => {
+      if (checked === 0) {
+        toast.success('Nenhum customer nesta subconta ainda.');
+      } else if (failed === 0) {
+        toast.success(
+          `${updated} de ${checked} customer${checked !== 1 ? 's' : ''} com notificações Asaas desligadas.`,
+        );
+      } else {
+        toast.error(
+          `${updated} atualizados, ${failed} falha${failed !== 1 ? 's' : ''} (ver logs).`,
+        );
+      }
     },
     onError: (e) => toast.error(extractApiError(e)),
   });
@@ -159,6 +178,13 @@ export function PaymentAccountDetailPage() {
             tone="warning"
           >
             Re-registrar (forçado, sandbox)
+          </ActionButton>
+          <ActionButton
+            onClick={() => disableNotificationsMut.mutate()}
+            loading={disableNotificationsMut.isPending}
+            icon={<BellOff className="h-3.5 w-3.5" />}
+          >
+            Desligar notif. dos customers
           </ActionButton>
           {a.status !== 'ACTIVE' ? (
             <ActionButton

@@ -46,6 +46,11 @@ export class PaymentCustomersRepository {
     });
   }
 
+  /** Customers de uma subconta — usado pelo job de desativar notificações em massa. */
+  findByPaymentAccount(paymentAccountId: string): Promise<PaymentCustomer[]> {
+    return this.customerRepo.find({ where: { paymentAccountId } });
+  }
+
   createCustomer(data: Partial<PaymentCustomer>): PaymentCustomer {
     return this.customerRepo.create(data);
   }

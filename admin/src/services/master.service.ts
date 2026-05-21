@@ -94,6 +94,22 @@ export const masterService = {
     return data;
   },
 
+  /**
+   * One-shot: desabilita notificações Asaas (email/SMS/voz/WhatsApp)
+   * em todos os customers da subconta. Para customers novos o flag
+   * já vai no createCustomer; este endpoint cobre os antigos.
+   */
+  disableCustomerNotifications: async (
+    accountId: string,
+  ): Promise<{ checked: number; updated: number; failed: number }> => {
+    const { data } = await http.post<{
+      checked: number;
+      updated: number;
+      failed: number;
+    }>(`/master/payment-accounts/${accountId}/disable-customer-notifications`);
+    return data;
+  },
+
   // ── Condomínios (cross-tenant) ──
   listCondominiums: async (params: {
     search?: string;

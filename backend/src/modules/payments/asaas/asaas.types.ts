@@ -101,6 +101,16 @@ export interface AsaasCreateCustomerInput {
   mobilePhone?: string;
   /** Idempotência: se passarmos o `Resident.id`, Asaas dedup pelo par. */
   externalReference?: string;
+  /**
+   * `true` impede o Asaas de criar/enviar as 8 notificações default
+   * (email, SMS, voz, WhatsApp). Usamos para evitar duplicação com o
+   * WhatsApp via Evolution API (que já é parte do nosso fluxo de
+   * cobrança) e para zerar os custos por notif:
+   *   • SMS/email — pacote R$ 0,99 cada
+   *   • Voz/robô   — R$ 0,55 por chamada
+   *   • WhatsApp Asaas — R$ 0,55 por mensagem
+   */
+  notificationDisabled?: boolean;
 }
 
 export interface AsaasCustomerResponse {
