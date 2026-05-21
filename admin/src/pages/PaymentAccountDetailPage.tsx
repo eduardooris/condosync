@@ -60,6 +60,25 @@ export function PaymentAccountDetailPage() {
     onError: (e) => toast.error(extractApiError(e)),
   });
 
+  /**
+   * Master-only — só re-registra quando faltar evento na lista atual.
+   * Mais seguro pra rodar em prod do que o `Re-registrar` que recria sempre.
+   */
+  const refreshWebhookMasterMut = useMutation({
+    mutationFn: () => masterService.refreshAsaasWebhookForAccount(accountId!),
+    onSuccess: (r) => {
+      toast.success(
+        r.refreshed
+          ? 'Webhook atualizado com os eventos novos.'
+          : 'Webhook já estava em dia — nada a fazer.',
+      );
+      void qc.invalidateQueries({
+        queryKey: ['master', 'asaas-webhooks', condoId],
+      });
+    },
+    onError: (e) => toast.error(extractApiError(e)),
+  });
+
   const forceActiveMut = useMutation({
     mutationFn: () => masterService.forceActive(condoId!),
     onSuccess: (r) => {
@@ -127,11 +146,19 @@ export function PaymentAccountDetailPage() {
         </h2>
         <div className="mt-3 flex flex-wrap gap-2">
           <ActionButton
+            onClick={() => refreshWebhookMasterMut.mutate()}
+            loading={refreshWebhookMasterMut.isPending}
+            icon={<RefreshCw className="h-3.5 w-3.5" />}
+          >
+            Atualizar webhook (se faltar evento)
+          </ActionButton>
+          <ActionButton
             onClick={() => refreshWebhookMut.mutate()}
             loading={refreshWebhookMut.isPending}
             icon={<Webhook className="h-3.5 w-3.5" />}
+            tone="warning"
           >
-            Re-registrar webhook
+            Re-registrar (forçado, sandbox)
           </ActionButton>
           {a.status !== 'ACTIVE' ? (
             <ActionButton

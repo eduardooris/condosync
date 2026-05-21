@@ -1,15 +1,33 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { masterService } from '@/services/master.service';
 import { StatusBadge } from '@/components/StatusBadge';
+import { extractApiError } from '@/lib/http';
 
 export function PaymentsPage() {
   const [search, setSearch] = useState('');
   const { data = [], isLoading } = useQuery({
     queryKey: ['master', 'payment-accounts'],
     queryFn: masterService.listPaymentAccounts,
+  });
+
+  const refreshAllMut = useMutation({
+    mutationFn: () => masterService.refreshAllAsaasWebhooks(),
+    onSuccess: ({ checked, refreshed }) => {
+      if (refreshed === 0) {
+        toast.success(
+          `Tudo em dia: ${checked} subconta${checked !== 1 ? 's' : ''} verificada${checked !== 1 ? 's' : ''}, nenhuma precisava atualizar.`,
+        );
+      } else {
+        toast.success(
+          `${refreshed} de ${checked} subcontas atualizadas no Asaas.`,
+        );
+      }
+    },
+    onError: (e) => toast.error(extractApiError(e)),
   });
 
   const filtered = data.filter((a) => {
@@ -33,15 +51,31 @@ export function PaymentsPage() {
             ações de debug (refresh webhook, simular Pix, etc).
           </p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-subtle" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Condomínio, titular, email…"
-            className="h-9 w-72 rounded border border-border bg-bg-surface pl-8 pr-3 text-sm placeholder:text-fg-subtle focus:border-accent focus:outline-none"
-          />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => refreshAllMut.mutate()}
+            disabled={refreshAllMut.isPending}
+            title="Verifica todas as subcontas ATIVAS e re-registra os webhooks que não têm os eventos mais recentes (idempotente)."
+            className="inline-flex h-9 items-center gap-2 rounded border border-border bg-bg-surface px-3 text-sm font-medium text-fg hover:bg-bg-elevated disabled:opacity-60"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${refreshAllMut.isPending ? 'animate-spin' : ''}`}
+            />
+            {refreshAllMut.isPending
+              ? 'Atualizando…'
+              : 'Atualizar webhooks (todas)'}
+          </button>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-subtle" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Condomínio, titular, email…"
+              className="h-9 w-72 rounded border border-border bg-bg-surface pl-8 pr-3 text-sm placeholder:text-fg-subtle focus:border-accent focus:outline-none"
+            />
+          </div>
         </div>
       </header>
 

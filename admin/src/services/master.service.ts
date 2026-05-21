@@ -69,6 +69,31 @@ export const masterService = {
     return data;
   },
 
+  /**
+   * Idempotente: para cada subconta ACTIVE, garante que o webhook Asaas
+   * inclui todos os eventos exigidos (PAYMENT_RECEIVED_IN_CASH, etc.).
+   * Subcontas que já estão OK são puladas.
+   */
+  refreshAllAsaasWebhooks: async (): Promise<{
+    checked: number;
+    refreshed: number;
+  }> => {
+    const { data } = await http.post<{ checked: number; refreshed: number }>(
+      '/master/payment-accounts/refresh-webhooks',
+    );
+    return data;
+  },
+
+  /** Atualiza o webhook de uma subconta específica (idempotente). */
+  refreshAsaasWebhookForAccount: async (
+    accountId: string,
+  ): Promise<{ ok: boolean; refreshed: boolean }> => {
+    const { data } = await http.post<{ ok: boolean; refreshed: boolean }>(
+      `/master/payment-accounts/${accountId}/refresh-webhook`,
+    );
+    return data;
+  },
+
   // ── Condomínios (cross-tenant) ──
   listCondominiums: async (params: {
     search?: string;
