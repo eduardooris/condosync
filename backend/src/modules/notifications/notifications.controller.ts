@@ -82,7 +82,11 @@ export class NotificationsController {
     @Query('unread', new ParseBoolPipe({ optional: true })) unread?: boolean,
     @Query('condominiumId') condominiumId?: string,
     @Query('before') before?: string,
-    @Query('limit', new DefaultValuePipe(25), new ParseIntPipe({ optional: true }))
+    @Query(
+      'limit',
+      new DefaultValuePipe(25),
+      new ParseIntPipe({ optional: true }),
+    )
     limit?: number,
   ): Promise<NotificationsPageResponseDto> {
     let beforeDate: Date | null = null;

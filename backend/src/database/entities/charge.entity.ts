@@ -67,11 +67,21 @@ export class Charge {
   // condomínio sem subconta ativa fica com tudo `null` — Pix manual.
 
   /** ID Asaas (`pay_xxx`). Unique para impedir duplicação por retry. */
-  @Column({ name: 'asaas_payment_id', type: 'varchar', nullable: true, unique: true })
+  @Column({
+    name: 'asaas_payment_id',
+    type: 'varchar',
+    nullable: true,
+    unique: true,
+  })
   asaasPaymentId: string | null;
 
   /** URL pública do Asaas Checkout (pagador escolhe Pix/boleto/cartão). */
-  @Column({ name: 'asaas_invoice_url', type: 'varchar', length: 512, nullable: true })
+  @Column({
+    name: 'asaas_invoice_url',
+    type: 'varchar',
+    length: 512,
+    nullable: true,
+  })
   asaasInvoiceUrl: string | null;
 
   /** Pix copia-cola (BR Code). Cacheado para evitar GET extra a cada visualização. */
@@ -83,7 +93,12 @@ export class Charge {
   asaasPixQrBase64: string | null;
 
   /** PDF do boleto (preenchido após `POST /payments`). */
-  @Column({ name: 'asaas_bank_slip_url', type: 'varchar', length: 512, nullable: true })
+  @Column({
+    name: 'asaas_bank_slip_url',
+    type: 'varchar',
+    length: 512,
+    nullable: true,
+  })
   asaasBankSlipUrl: string | null;
 
   /** Recibo oficial Asaas (URL público) — preenchido pelo webhook PAYMENT_RECEIVED. */
@@ -100,7 +115,12 @@ export class Charge {
    * Varchar (não enum) porque Asaas pode mandar valores novos sem aviso —
    * tipicamente PIX/BOLETO/CREDIT_CARD/DEBIT_CARD; ignoramos 'UNDEFINED'.
    */
-  @Column({ name: 'asaas_paid_via', type: 'varchar', length: 32, nullable: true })
+  @Column({
+    name: 'asaas_paid_via',
+    type: 'varchar',
+    length: 32,
+    nullable: true,
+  })
   asaasPaidVia: string | null;
 
   /** Último evento processado (auditoria + dedup). */

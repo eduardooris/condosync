@@ -106,7 +106,11 @@ export function asaasForbidden(
 export function formatAsaasErrorDescriptions(
   upstream: AsaasErrorResponse | string | null | undefined,
 ): string | null {
-  if (!upstream || typeof upstream !== 'object' || !Array.isArray(upstream.errors)) {
+  if (
+    !upstream ||
+    typeof upstream !== 'object' ||
+    !Array.isArray(upstream.errors)
+  ) {
     return null;
   }
   const parts = upstream.errors
@@ -116,9 +120,7 @@ export function formatAsaasErrorDescriptions(
   return parts.join(' ');
 }
 
-export function asaasValidation(
-  upstream: AsaasErrorResponse,
-): AsaasException {
+export function asaasValidation(upstream: AsaasErrorResponse): AsaasException {
   const detail = formatAsaasErrorDescriptions(upstream);
   return new AsaasException(
     'ASAAS_VALIDATION_FAILED',

@@ -7,10 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Server, Socket } from 'socket.io';
-import {
-  AUTH_ADAPTER,
-  IAuthAdapter,
-} from '../../adapters/auth/auth.adapter';
+import { AUTH_ADAPTER, IAuthAdapter } from '../../adapters/auth/auth.adapter';
 import { Notification } from '../../database/entities/notification.entity';
 
 /**

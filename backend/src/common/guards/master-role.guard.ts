@@ -27,7 +27,9 @@ export class MasterRoleGuard implements CanActivate {
   static readonly REQUIRED_ROLE = 'master-admin';
 
   canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest<Request & { user?: RequestUser }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<Request & { user?: RequestUser }>();
     const user = req.user;
     if (!user) {
       // JwtAuthGuard deveria ter populado — se não tem, é erro de wiring.

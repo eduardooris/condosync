@@ -147,48 +147,51 @@ export class ResidentsService {
       // Toda promoção a responsável precisa rodar dentro de uma
       // transação SERIALIZABLE — caso contrário dois requests
       // concorrentes podem deixar a unidade com 2 responsáveis.
-      const saved = await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
-        const provisioned = await this.provisionResidentAccess({
-          condominiumId,
-          unitId,
-          email: normalizedEmail,
-          fullName: dto.fullName,
-          isFinancialResponsible: true,
-        });
-        await this.clearOtherResponsiblesTx(manager, unitId);
-        await this.closeOpenHistoryTx(manager, unitId);
-        const r = manager.getRepository(Resident).create({
-          unitId,
-          userId: provisioned.userId,
-          fullName: dto.fullName,
-          cpf: normalizeCpf(dto.cpf),
-          phoneWhatsapp: normalizeBrazilWhatsapp(dto.phoneWhatsapp),
-          email: normalizedEmail,
-          isFinancialResponsible: true,
-        });
-        const saved = await manager.getRepository(Resident).save(r);
-        await manager
-          .getRepository(Unit)
-          .update(
-            { id: unitId, status: UnitStatusEnum.VACANT },
-            { status: UnitStatusEnum.OCCUPIED },
-          );
-        await manager.getRepository(FinancialResponsibleHistory).save(
-          manager.getRepository(FinancialResponsibleHistory).create({
+      const saved = await this.dataSource.transaction(
+        'SERIALIZABLE',
+        async (manager) => {
+          const provisioned = await this.provisionResidentAccess({
+            condominiumId,
             unitId,
-            residentId: saved.id,
-            startedAt: new Date(),
-            endedAt: null,
-          }),
-        );
-        await this.sendPasswordSetupIfNeeded(
-          provisioned.isNewUser,
-          saved.phoneWhatsapp,
-          normalizedEmail,
-          condominiumName,
-        );
-        return saved;
-      });
+            email: normalizedEmail,
+            fullName: dto.fullName,
+            isFinancialResponsible: true,
+          });
+          await this.clearOtherResponsiblesTx(manager, unitId);
+          await this.closeOpenHistoryTx(manager, unitId);
+          const r = manager.getRepository(Resident).create({
+            unitId,
+            userId: provisioned.userId,
+            fullName: dto.fullName,
+            cpf: normalizeCpf(dto.cpf),
+            phoneWhatsapp: normalizeBrazilWhatsapp(dto.phoneWhatsapp),
+            email: normalizedEmail,
+            isFinancialResponsible: true,
+          });
+          const saved = await manager.getRepository(Resident).save(r);
+          await manager
+            .getRepository(Unit)
+            .update(
+              { id: unitId, status: UnitStatusEnum.VACANT },
+              { status: UnitStatusEnum.OCCUPIED },
+            );
+          await manager.getRepository(FinancialResponsibleHistory).save(
+            manager.getRepository(FinancialResponsibleHistory).create({
+              unitId,
+              residentId: saved.id,
+              startedAt: new Date(),
+              endedAt: null,
+            }),
+          );
+          await this.sendPasswordSetupIfNeeded(
+            provisioned.isNewUser,
+            saved.phoneWhatsapp,
+            normalizedEmail,
+            condominiumName,
+          );
+          return saved;
+        },
+      );
       // Hook fora da transação SERIALIZABLE (chamada externa Asaas não pode
       // segurar lock). Falha aqui não desfaz o cadastro local.
       await this.ensureAsaasCustomerBestEffort(condominiumId, saved);

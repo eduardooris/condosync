@@ -1,7 +1,11 @@
 import * as jwt from 'jsonwebtoken';
 import { JwtHeader } from 'jsonwebtoken';
-import jwksClient = require('jwks-rsa');
 import { JwksClient } from 'jwks-rsa';
+// `jwks-rsa` exporta a função via `export =` (CommonJS). Sem `esModuleInterop`
+// o `import default` quebra em runtime, então usamos `require` com o tipo do
+// módulo para manter o callable e a tipagem das opções.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const jwksClient = require('jwks-rsa') as typeof import('jwks-rsa');
 
 const clientCache: Record<string, JwksClient> = {};
 

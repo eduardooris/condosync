@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { AlertTriangle, Building2, CalendarDays, CheckCircle2, Layers, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePaymentAccount } from '@/domains/payments/hooks/usePaymentAccount';
-import { paymentAccountStatusLabel } from '@/domains/payments/components/PaymentAccountStatusBadge';
+import { paymentAccountStatusLabel } from '@/domains/payments/components/payment-account-status';
 import { Button } from '@/shared/components/ui/Button';
 import {
   Dialog,

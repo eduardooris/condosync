@@ -313,8 +313,7 @@ export const envSchema = z
         ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message:
-              'ASAAS_WEBHOOK_PUBLIC_BASE_URL deve ser HTTPS em produção',
+            message: 'ASAAS_WEBHOOK_PUBLIC_BASE_URL deve ser HTTPS em produção',
             path: ['ASAAS_WEBHOOK_PUBLIC_BASE_URL'],
           });
         }

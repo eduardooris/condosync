@@ -1,0 +1,91 @@
+name: message-server-release
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Build + push da imagem do message-server (Go) para o GHCR e deploy via SSH.
+#
+# Secrets: EC2_HOST, EC2_USER, EC2_SSH_KEY, GHCR_TOKEN (se pacote privado)
+# Variáveis: DEPLOY_PATH, EXTRA_COMPOSE_FILE (opcionais — ver backend-release.yml)
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+    tags: ['message-server-v*']
+    paths:
+      - 'message-server-main/**'
+      - '.github/workflows/message-server-release.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag/SHA a publicar (default: SHA atual)'
+        required: false
+
+concurrency:
+  group: message-server-release
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      owner: ${{ steps.meta.outputs.owner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Definir tag e owner
+        id: meta
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          [ -z "$TAG" ] && TAG="${GITHUB_SHA::12}"
+          echo "image_tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push message-server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./message-server-main
+          file: ./message-server-main/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/condosync-message-server:${{ steps.meta.outputs.image_tag }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/condosync-message-server:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Disparar deploy-message-server.sh na VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            export GHCR_OWNER="${{ needs.build-and-push.outputs.owner }}"
+            export MESSAGE_SERVER_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+            export GHCR_USER="${{ github.actor }}"
+            export GHCR_TOKEN="${{ secrets.GHCR_TOKEN }}"
+            export EXTRA_COMPOSE_FILE="${{ vars.EXTRA_COMPOSE_FILE }}"
+            DEPLOY_PATH="${{ vars.DEPLOY_PATH }}"
+            bash "${DEPLOY_PATH:-/opt/condosync}/infra/scripts/deploy-message-server.sh"

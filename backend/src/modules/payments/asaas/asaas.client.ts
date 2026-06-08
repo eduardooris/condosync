@@ -108,7 +108,9 @@ export class AsaasClient implements OnModuleInit {
    * Deve ser chamado com a **apiKey da subconta**, não a master.
    * `GET /accounts/:id` só devolve dados cadastrais, sem `commercialInfo` etc.
    */
-  getAccountStatus(subaccountApiKey: string): Promise<AsaasAccountStatusResponse> {
+  getAccountStatus(
+    subaccountApiKey: string,
+  ): Promise<AsaasAccountStatusResponse> {
     return this.request<AsaasAccountStatusResponse>(
       'GET',
       '/myAccount/status/',
@@ -188,11 +190,9 @@ export class AsaasClient implements OnModuleInit {
   }
 
   getPayment(apiKey: string, paymentId: string): Promise<AsaasPaymentResponse> {
-    return this.request<AsaasPaymentResponse>(
-      'GET',
-      `/payments/${paymentId}`,
-      { apiKey },
-    );
+    return this.request<AsaasPaymentResponse>('GET', `/payments/${paymentId}`, {
+      apiKey,
+    });
   }
 
   getPixQrCode(
@@ -207,11 +207,9 @@ export class AsaasClient implements OnModuleInit {
   }
 
   deletePayment(apiKey: string, paymentId: string): Promise<{ deleted: true }> {
-    return this.request<{ deleted: true }>(
-      'DELETE',
-      `/payments/${paymentId}`,
-      { apiKey },
-    );
+    return this.request<{ deleted: true }>('DELETE', `/payments/${paymentId}`, {
+      apiKey,
+    });
   }
 
   // ── Webhooks (na subconta) ──────────────────────────────────────────────
@@ -236,11 +234,9 @@ export class AsaasClient implements OnModuleInit {
 
   /** Remove um webhook pelo id (`whk_xxx`). Idempotente do lado do cliente. */
   deleteWebhook(apiKey: string, webhookId: string): Promise<{ deleted: true }> {
-    return this.request<{ deleted: true }>(
-      'DELETE',
-      `/webhooks/${webhookId}`,
-      { apiKey },
-    );
+    return this.request<{ deleted: true }>('DELETE', `/webhooks/${webhookId}`, {
+      apiKey,
+    });
   }
 
   // ── Pagamentos "fora do gateway" — recebimentos manuais ─────────────────
@@ -412,10 +408,7 @@ export class AsaasClient implements OnModuleInit {
     method: HttpMethod,
     path: string,
   ): Error {
-    this.logger.warn(
-      { method, path, status, asaas_body: body },
-      'asaas.4xx',
-    );
+    this.logger.warn({ method, path, status, asaas_body: body }, 'asaas.4xx');
     if (status === 401) return asaasAuthFailed();
     if (status === 403) return asaasForbidden(body);
     if (status === 409) return asaasDuplicate();
@@ -487,9 +480,7 @@ export class AsaasClient implements OnModuleInit {
     );
   }
 
-  private buildQuery(
-    params: RequestOptions['query'],
-  ): string {
+  private buildQuery(params: RequestOptions['query']): string {
     if (!params) return '';
     const usp = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) {

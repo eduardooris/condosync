@@ -36,7 +36,10 @@ export class MyResidentProfileResponseDto {
   @ApiProperty({ example: 'A', description: 'Bloco da unidade vinculada.' })
   block: string;
 
-  @ApiProperty({ example: '101', description: 'Número/apto da unidade vinculada.' })
+  @ApiProperty({
+    example: '101',
+    description: 'Número/apto da unidade vinculada.',
+  })
   number: string;
 }
 

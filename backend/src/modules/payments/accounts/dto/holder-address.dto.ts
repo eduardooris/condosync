@@ -38,6 +38,8 @@ export class HolderAddressDto {
   state: string;
 
   @ApiProperty({ example: '01310100', description: 'Só dígitos.' })
-  @Matches(/^\d{8}$/, { message: 'postalCode deve ter 8 dígitos (sem máscara).' })
+  @Matches(/^\d{8}$/, {
+    message: 'postalCode deve ter 8 dígitos (sem máscara).',
+  })
   postalCode: string;
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { ExternalLink, Landmark, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/shared/components/ui/Button';
@@ -10,10 +10,8 @@ import { SetupShell } from '@/domains/setup/components/SetupShell';
 import { useSetupStore } from '@/domains/setup/store/setup.store';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { usePaymentAccount } from '@/domains/payments/hooks/usePaymentAccount';
-import {
-  PaymentAccountStatusBadge,
-  paymentAccountStatusLabel,
-} from '@/domains/payments/components/PaymentAccountStatusBadge';
+import { PaymentAccountStatusBadge } from '@/domains/payments/components/PaymentAccountStatusBadge';
+import { paymentAccountStatusLabel } from '@/domains/payments/components/payment-account-status';
 import type {
   CreatePaymentAccountInput,
   PaymentAccountHolderType,
@@ -93,7 +91,7 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
     return 'PF';
   })();
 
-  const { register, handleSubmit, control, watch, setValue, formState } =
+  const { register, handleSubmit, control, setValue, formState } =
     useForm<FormValues>({
       // Pré-popula com o que o síndico já preencheu na etapa de identidade
       // do condomínio + perfil dele. Quanto menos redigitação, melhor.
@@ -122,8 +120,8 @@ export function StepPayments({ onBack, onContinue }: StepPaymentsProps) {
       },
     });
 
-  const holderType = watch('holderType');
-  const postalCode = watch('postalCode');
+  const holderType = useWatch({ control, name: 'holderType' });
+  const postalCode = useWatch({ control, name: 'postalCode' });
   const cpfCnpjMaxLength = holderType === 'PJ' ? 18 : 14;
   const { resolveCep, isLoading: cepLoading, reset: resetCepLookup } =
     useCepAutocomplete();

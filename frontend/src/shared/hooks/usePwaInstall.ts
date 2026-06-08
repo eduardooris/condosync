@@ -43,8 +43,9 @@ function useWallClockMsForDeadline(deadlineMs: number): number {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
+    // `deadlineMs <= 0` ⇒ o hook retorna 0 (abaixo) e `nowMs` não é lido,
+    // então não há motivo para atualizar o estado aqui.
     if (typeof window === 'undefined' || deadlineMs <= 0) {
-      setNowMs(Date.now());
       return;
     }
     const tick = () => setNowMs(Date.now());

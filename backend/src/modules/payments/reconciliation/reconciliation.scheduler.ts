@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, IsNull, LessThan, Not, Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Env } from '../../../config/env.schema';
 import { Charge } from '../../../database/entities/charge.entity';
 import { ChargeStatus } from '../../../common/enums';

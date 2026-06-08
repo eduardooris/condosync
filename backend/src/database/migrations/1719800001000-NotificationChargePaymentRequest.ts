@@ -8,9 +8,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * precisa validar. `CHARGE_PAYMENT_REJECTED` — síndico rejeitou a
  * solicitação e o morador é avisado.
  */
-export class NotificationChargePaymentRequest1719800001000
-  implements MigrationInterface
-{
+export class NotificationChargePaymentRequest1719800001000 implements MigrationInterface {
   // Postgres não permite `ALTER TYPE ... ADD VALUE` dentro de uma transação.
   public transaction = false as const;
 

@@ -18,14 +18,12 @@ import { PaymentAccountsRepository } from '../accounts/payment-accounts.reposito
  */
 @Injectable()
 export class AsaasWebhookGuard implements CanActivate {
-  constructor(
-    private readonly paymentAccounts: PaymentAccountsRepository,
-  ) {}
+  constructor(private readonly paymentAccounts: PaymentAccountsRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<
-      Request & { paymentAccount?: PaymentAccount }
-    >();
+    const req = context
+      .switchToHttp()
+      .getRequest<Request & { paymentAccount?: PaymentAccount }>();
     const token = req.headers['asaas-access-token'];
     if (typeof token !== 'string' || token.length === 0) {
       throw new UnauthorizedException();

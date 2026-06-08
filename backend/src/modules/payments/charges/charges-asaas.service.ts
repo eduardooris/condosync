@@ -159,7 +159,9 @@ export class ChargesAsaasService {
    * Lê QR Code Pix sob demanda — cacheamos na charge para evitar GET
    * extras a cada visualização do morador.
    */
-  async fetchPixQrCode(charge: Charge): Promise<{ payload: string; qrBase64: string } | null> {
+  async fetchPixQrCode(
+    charge: Charge,
+  ): Promise<{ payload: string; qrBase64: string } | null> {
     if (!charge.asaasPaymentId) return null;
     if (charge.asaasPixPayload && charge.asaasPixQrBase64) {
       return {

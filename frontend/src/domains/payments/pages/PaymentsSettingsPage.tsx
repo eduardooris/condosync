@@ -7,10 +7,8 @@ import { GlassCard } from '@/shared/components/ui/GlassCard';
 import { Spinner } from '@/shared/components/ui/Spinner';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { usePaymentAccount } from '@/domains/payments/hooks/usePaymentAccount';
-import {
-  PaymentAccountStatusBadge,
-  paymentAccountStatusLabel,
-} from '@/domains/payments/components/PaymentAccountStatusBadge';
+import { PaymentAccountStatusBadge } from '@/domains/payments/components/PaymentAccountStatusBadge';
+import { paymentAccountStatusLabel } from '@/domains/payments/components/payment-account-status';
 import type { PaymentAccountApprovalStatus } from '@/domains/payments/services/payment-accounts.service';
 import { cn } from '@/shared/utils/cn';
 

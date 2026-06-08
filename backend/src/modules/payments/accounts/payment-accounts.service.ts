@@ -217,7 +217,8 @@ export class PaymentAccountsService {
    * ChargesService etc.). **Nunca expor essa string em response/log.**
    */
   async resolveApiKey(condominiumId: string): Promise<string> {
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new NotFoundException('Subconta de pagamento não encontrada.');
     }
@@ -259,7 +260,8 @@ export class PaymentAccountsService {
    * está ativa (RN-PG-03.1).
    */
   async requireActive(condominiumId: string): Promise<PaymentAccount> {
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new ForbiddenException(
         'Condomínio sem subconta de pagamento configurada. Configure no setup antes de gerar cobranças.',
@@ -308,8 +310,7 @@ export class PaymentAccountsService {
     const baseUrl =
       this.config.get('ASAAS_WEBHOOK_PUBLIC_BASE_URL', { infer: true }) ?? '';
     if (!baseUrl) return false;
-    const expectedUrl =
-      `${baseUrl.replace(/\/$/, '')}/api/v1/integrations/asaas/webhook`;
+    const expectedUrl = `${baseUrl.replace(/\/$/, '')}/api/v1/integrations/asaas/webhook`;
     const required = new Set(PaymentAccountsService.REQUIRED_WEBHOOK_EVENTS);
 
     let list;
@@ -336,16 +337,21 @@ export class PaymentAccountsService {
         await this.asaas.deleteWebhook(apiKey, stale.id);
       } catch (err) {
         this.logger.warn(
-          { condominiumId, webhookId: stale.id, err_message: (err as Error).message },
+          {
+            condominiumId,
+            webhookId: stale.id,
+            err_message: (err as Error).message,
+          },
           'asaas.subaccount.delete_stale_webhook_failed',
         );
       }
     }
-    await this.registerWebhook(apiKey, account.asaasWebhookToken, account.holderEmail);
-    this.logger.info(
-      { condominiumId },
-      'asaas.subaccount.webhook_refreshed',
+    await this.registerWebhook(
+      apiKey,
+      account.asaasWebhookToken,
+      account.holderEmail,
     );
+    this.logger.info({ condominiumId }, 'asaas.subaccount.webhook_refreshed');
     return true;
   }
 
@@ -364,7 +370,10 @@ export class PaymentAccountsService {
         if (changed) refreshed += 1;
       } catch (err) {
         this.logger.warn(
-          { condominiumId: acc.condominiumId, err_message: (err as Error).message },
+          {
+            condominiumId: acc.condominiumId,
+            err_message: (err as Error).message,
+          },
           'asaas.subaccount.refresh_failed',
         );
       }
@@ -377,7 +386,8 @@ export class PaymentAccountsService {
   private async getAccountOrFail(
     condominiumId: string,
   ): Promise<PaymentAccount> {
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new NotFoundException('Subconta de pagamento não encontrada.');
     }
@@ -461,11 +471,10 @@ export class PaymentAccountsService {
       );
     }
     // MEI aceita tanto CPF (autônomo) quanto CNPJ — não bloqueamos.
-    if (
-      dto.holderType === PaymentAccountHolderType.PF &&
-      !dto.birthDate
-    ) {
-      throw new BadRequestException('birthDate é obrigatório para holderType=PF.');
+    if (dto.holderType === PaymentAccountHolderType.PF && !dto.birthDate) {
+      throw new BadRequestException(
+        'birthDate é obrigatório para holderType=PF.',
+      );
     }
   }
 
