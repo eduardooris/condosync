@@ -69,6 +69,14 @@ export function usePortaria(accessToken: string) {
     };
   }, []);
 
+  // Sincroniza a sessão (sistema externo: polling do servidor via react-query)
+  // com o estado de UI e dispara o teardown de socket/WebRTC (`cleanupCall`) na
+  // transição. É o caso legítimo de "assinar um sistema externo e atualizar o
+  // estado quando ele muda" — o react-query entrega a mudança como `data` em vez
+  // de um callback de evento, então o setState aqui não é um render em cascata
+  // evitável. As transições e o teardown são acoplados por status; separá-los
+  // duplicaria a lógica.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const status = statusQuery.data?.status;
     if (!status) return;
@@ -91,6 +99,7 @@ export function usePortaria(accessToken: string) {
       setStatusLabel('Aguardando outro morador…');
     }
   }, [statusQuery.data?.status, step, cleanupCall]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const releaseLocalMedia = useCallback(() => {
     webrtcRef.current?.stop();

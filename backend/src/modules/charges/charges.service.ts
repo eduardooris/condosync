@@ -354,9 +354,8 @@ export class ChargesService {
     if (!condo) {
       throw new NotFoundException('Condomínio não encontrado.');
     }
-    const { asaasEnabled } = await this.runChargeGenerationPreflight(
-      condominiumId,
-    );
+    const { asaasEnabled } =
+      await this.runChargeGenerationPreflight(condominiumId);
     const units = await this.unitRepo.find({
       where: {
         condominiumId,
@@ -488,9 +487,8 @@ export class ChargesService {
       return { emitted: 0, failed: 0, failures: [] };
     }
     await this.paymentAccounts.requireActive(condominiumId);
-    const charges = await this.chargesRepo.findOpenWithoutAsaasByCondo(
-      condominiumId,
-    );
+    const charges =
+      await this.chargesRepo.findOpenWithoutAsaasByCondo(condominiumId);
     let emitted = 0;
     let failed = 0;
     const failures: GenerateMonthAsaasFailureDto[] = [];
@@ -600,9 +598,14 @@ export class ChargesService {
     // Admin baixou pagamento → avisa moradores da unidade que a quitação foi
     // registrada (confirmação visível). Falha silenciosa: pagamento não é
     // bloqueado pela disponibilidade do gateway de notif.
-    await this.notifyChargePaid(saved, charge.unit.condominiumId, charge.unitId, {
-      notifyAdmins: false,
-    });
+    await this.notifyChargePaid(
+      saved,
+      charge.unit.condominiumId,
+      charge.unitId,
+      {
+        notifyAdmins: false,
+      },
+    );
     return saved;
   }
 
@@ -1165,9 +1168,7 @@ export class ChargesService {
   }
 
   /** WhatsApp para o síndico quando morador clica "Já paguei". */
-  private async enqueuePaymentRequestWhatsapp(
-    chargeId: string,
-  ): Promise<void> {
+  private async enqueuePaymentRequestWhatsapp(chargeId: string): Promise<void> {
     // jobId com timestamp permite re-disparo se o síndico não viu (mas a
     // idempotência do `requestPaymentConfirmation` já evita re-cliques).
     const suffix = String(Date.now());

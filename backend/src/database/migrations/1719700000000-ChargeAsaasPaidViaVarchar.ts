@@ -18,9 +18,7 @@ export class ChargeAsaasPaidViaVarchar1719700000000 implements MigrationInterfac
     `);
 
     // Remove o tipo enum órfão. `IF EXISTS` torna a operação idempotente.
-    await queryRunner.query(
-      `DROP TYPE IF EXISTS charges_asaas_paid_via_enum`,
-    );
+    await queryRunner.query(`DROP TYPE IF EXISTS charges_asaas_paid_via_enum`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

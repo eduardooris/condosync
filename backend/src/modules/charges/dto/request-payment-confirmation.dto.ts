@@ -36,8 +36,7 @@ export class RequestPaymentConfirmationDto {
 
 export class RejectPaymentRequestDto {
   @ApiProperty({
-    description:
-      'Motivo da rejeição — exibido para o morador. Até 280 chars.',
+    description: 'Motivo da rejeição — exibido para o morador. Até 280 chars.',
     maxLength: 280,
   })
   @IsString()

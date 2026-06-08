@@ -56,7 +56,10 @@ export class CreatePaymentAccountDto {
     description:
       'Data de nascimento do titular (PF/MEI). Obrigatória quando holderType=PF.',
   })
-  @ValidateIf((o: CreatePaymentAccountDto) => o.holderType === PaymentAccountHolderType.PF)
+  @ValidateIf(
+    (o: CreatePaymentAccountDto) =>
+      o.holderType === PaymentAccountHolderType.PF,
+  )
   @IsDateString({ strict: true })
   birthDate?: string;
 

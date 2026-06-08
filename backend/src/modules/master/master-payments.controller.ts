@@ -8,11 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Like, IsNull, Not } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
@@ -60,7 +56,9 @@ export class MasterPaymentsController {
   // ── PAYMENT ACCOUNTS ────────────────────────────────────────────────────
 
   @Get('payment-accounts')
-  @ApiOperation({ summary: 'Lista todas as subcontas Asaas com nome do condomínio.' })
+  @ApiOperation({
+    summary: 'Lista todas as subcontas Asaas com nome do condomínio.',
+  })
   async listPaymentAccounts() {
     const accounts = await this.accountsRepo.find({
       order: { createdAt: 'DESC' },
@@ -155,7 +153,8 @@ export class MasterPaymentsController {
 
   @Get('charges')
   @ApiOperation({
-    summary: 'Lista cobranças (cross-tenant). Filtros via query: status, condominiumId, asaasPaymentId, search.',
+    summary:
+      'Lista cobranças (cross-tenant). Filtros via query: status, condominiumId, asaasPaymentId, search.',
   })
   async listCharges(
     @Query('status') status?: string,
@@ -171,8 +170,10 @@ export class MasterPaymentsController {
       .take(Math.min(Number(limit) || 50, 200));
 
     if (status) qb.andWhere('c.status = :status', { status });
-    if (condominiumId) qb.andWhere('u.condominium_id = :cid', { cid: condominiumId });
-    if (asaasPaymentId) qb.andWhere('c.asaas_payment_id = :pid', { pid: asaasPaymentId });
+    if (condominiumId)
+      qb.andWhere('u.condominium_id = :cid', { cid: condominiumId });
+    if (asaasPaymentId)
+      qb.andWhere('c.asaas_payment_id = :pid', { pid: asaasPaymentId });
     if (search) {
       qb.andWhere(
         '(c.description ILIKE :q OR c.asaas_payment_id ILIKE :q OR c.id::text ILIKE :q)',
@@ -181,7 +182,11 @@ export class MasterPaymentsController {
     }
 
     const list = await qb.getMany();
-    const condoIds = [...new Set(list.map((c) => c.unit?.condominiumId).filter(Boolean) as string[])];
+    const condoIds = [
+      ...new Set(
+        list.map((c) => c.unit?.condominiumId).filter(Boolean) as string[],
+      ),
+    ];
     const condos = condoIds.length
       ? await this.condoRepo.find({ where: { id: In(condoIds) } })
       : [];
@@ -210,7 +215,8 @@ export class MasterPaymentsController {
 
   @Get('webhook-events')
   @ApiOperation({
-    summary: 'Lista eventos webhook recebidos. Filtros: event, status (processed/failed/pending), paymentAccountId.',
+    summary:
+      'Lista eventos webhook recebidos. Filtros: event, status (processed/failed/pending), paymentAccountId.',
   })
   async listWebhookEvents(
     @Query('event') event?: string,
@@ -234,7 +240,9 @@ export class MasterPaymentsController {
     }
 
     const list = await this.eventsRepo.find({
-      where: where as Parameters<typeof this.eventsRepo.find>[0] extends { where?: infer W }
+      where: where as Parameters<typeof this.eventsRepo.find>[0] extends {
+        where?: infer W;
+      }
         ? W
         : never,
       order: { receivedAt: 'DESC' },
@@ -305,7 +313,8 @@ export class MasterPaymentsController {
 
   @Post('webhook-events/:id/reprocess')
   @ApiOperation({
-    summary: 'Re-enfileira evento falho/pendente para nova tentativa de processamento.',
+    summary:
+      'Re-enfileira evento falho/pendente para nova tentativa de processamento.',
   })
   async reprocessWebhookEvent(@Param('id', ParseUUIDPipe) id: string) {
     const event = await this.eventsRepo.findOne({ where: { id } });
@@ -330,11 +339,13 @@ export class MasterPaymentsController {
 function extractPaymentPreview(
   payload: Record<string, unknown> | null | undefined,
 ): { id?: string; status?: string; value?: number; billingType?: string } {
-  const payment = (payload?.payment as Record<string, unknown> | undefined) ?? {};
+  const payment =
+    (payload?.payment as Record<string, unknown> | undefined) ?? {};
   return {
     id: typeof payment.id === 'string' ? payment.id : undefined,
     status: typeof payment.status === 'string' ? payment.status : undefined,
     value: typeof payment.value === 'number' ? payment.value : undefined,
-    billingType: typeof payment.billingType === 'string' ? payment.billingType : undefined,
+    billingType:
+      typeof payment.billingType === 'string' ? payment.billingType : undefined,
   };
 }

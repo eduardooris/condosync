@@ -292,8 +292,7 @@ export class CondominiumMyChargesController {
     type: RequestPaymentConfirmationResponseDto,
   })
   @ApiBadRequestResponse({
-    description:
-      'Cobrança não está em PENDING/OVERDUE ou payload inválido.',
+    description: 'Cobrança não está em PENDING/OVERDUE ou payload inválido.',
     type: ErrorResponseDto,
   })
   @ApiNotFoundResponse({

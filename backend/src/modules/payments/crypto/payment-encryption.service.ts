@@ -76,7 +76,10 @@ export class PaymentEncryptionService implements OnModuleInit {
    */
   decrypt(envelope: Buffer): string {
     const key = this.requireKey();
-    if (envelope.length < 1 + PaymentEncryptionService.IV_LEN + PaymentEncryptionService.TAG_LEN) {
+    if (
+      envelope.length <
+      1 + PaymentEncryptionService.IV_LEN + PaymentEncryptionService.TAG_LEN
+    ) {
       throw new Error('Envelope inválido: tamanho insuficiente.');
     }
     const version = envelope[0];
@@ -86,15 +89,24 @@ export class PaymentEncryptionService implements OnModuleInit {
       );
     }
     let offset = 1;
-    const iv = envelope.subarray(offset, offset + PaymentEncryptionService.IV_LEN);
+    const iv = envelope.subarray(
+      offset,
+      offset + PaymentEncryptionService.IV_LEN,
+    );
     offset += PaymentEncryptionService.IV_LEN;
-    const authTag = envelope.subarray(offset, offset + PaymentEncryptionService.TAG_LEN);
+    const authTag = envelope.subarray(
+      offset,
+      offset + PaymentEncryptionService.TAG_LEN,
+    );
     offset += PaymentEncryptionService.TAG_LEN;
     const ciphertext = envelope.subarray(offset);
 
     const decipher = createDecipheriv(PaymentEncryptionService.ALGO, key, iv);
     decipher.setAuthTag(authTag);
-    const plain = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    const plain = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
     return plain.toString('utf8');
   }
 

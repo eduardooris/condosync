@@ -30,12 +30,16 @@ export class ChargeResponseDto {
   paidAt: Date | null;
 
   @ApiPropertyOptional({
-    description: 'Método de pagamento. Asaas: PIX/BOLETO/CREDIT_CARD/etc. Manual: MANUAL_*.',
+    description:
+      'Método de pagamento. Asaas: PIX/BOLETO/CREDIT_CARD/etc. Manual: MANUAL_*.',
     nullable: true,
   })
   paidMethod: string | null;
 
-  @ApiPropertyOptional({ description: 'Observação livre do admin.', nullable: true })
+  @ApiPropertyOptional({
+    description: 'Observação livre do admin.',
+    nullable: true,
+  })
   paidNote: string | null;
 
   @ApiPropertyOptional({ example: null, nullable: true })

@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/shared/components/ui/Dialog';
-import { SIDEBAR_SECTIONS } from '@/shared/components/layout/Sidebar';
+import { SIDEBAR_SECTIONS } from '@/shared/components/layout/sidebar-sections';
 
 interface QuickNavItem {
   to: string;

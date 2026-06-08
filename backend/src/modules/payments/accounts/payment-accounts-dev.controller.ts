@@ -92,7 +92,8 @@ export class PaymentAccountsDevController {
     @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
   ): Promise<{ status: PaymentAccountStatus }> {
     this.assertSandbox();
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new ForbiddenException(
         'Crie a subconta primeiro (POST /payment-account).',
@@ -132,7 +133,8 @@ export class PaymentAccountsDevController {
     asaasWebhookToken: string;
   }> {
     this.assertSandbox();
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new ForbiddenException('Subconta não encontrada.');
     }
@@ -200,7 +202,8 @@ export class PaymentAccountsDevController {
     @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
   ): Promise<{ webhookId: string; url: string; deletedOld: number }> {
     this.assertSandbox();
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new ForbiddenException('Subconta não encontrada.');
     }
@@ -215,7 +218,9 @@ export class PaymentAccountsDevController {
         await this.asaas.deleteWebhook(apiKey, w.id);
         deletedOld += 1;
       } catch (err) {
-        this.logger.warn(`Falha ao deletar webhook ${w.id}: ${(err as Error).message}`);
+        this.logger.warn(
+          `Falha ao deletar webhook ${w.id}: ${(err as Error).message}`,
+        );
       }
     }
 
@@ -261,21 +266,33 @@ export class PaymentAccountsDevController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[DEV] Marca cobrança como paga em dinheiro via Asaas. Só sandbox.',
+    summary:
+      '[DEV] Marca cobrança como paga em dinheiro via Asaas. Só sandbox.',
   })
   async receiveChargeInCash(
     @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
     @Param('chargeId', ParseUUIDPipe) chargeId: string,
     @Body() body: { paymentDate?: string; notifyCustomer?: boolean } = {},
-  ): Promise<{ asaasPaymentId: string; status: string; webhookExpected: string }> {
+  ): Promise<{
+    asaasPaymentId: string;
+    status: string;
+    webhookExpected: string;
+  }> {
     this.assertSandbox();
-    const { charge, apiKey } = await this.resolveChargeAndKey(condominiumId, chargeId);
+    const { charge, apiKey } = await this.resolveChargeAndKey(
+      condominiumId,
+      chargeId,
+    );
     const today = new Date().toISOString().slice(0, 10);
-    const resp = await this.asaas.receivePaymentInCash(apiKey, charge.asaasPaymentId!, {
-      paymentDate: body.paymentDate ?? today,
-      value: Number(charge.amount),
-      notifyCustomer: body.notifyCustomer ?? false,
-    });
+    const resp = await this.asaas.receivePaymentInCash(
+      apiKey,
+      charge.asaasPaymentId!,
+      {
+        paymentDate: body.paymentDate ?? today,
+        value: Number(charge.amount),
+        notifyCustomer: body.notifyCustomer ?? false,
+      },
+    );
     this.logger.warn(
       `DEV: charge ${charge.id} marcada como recebida em dinheiro via Asaas`,
     );
@@ -307,14 +324,23 @@ export class PaymentAccountsDevController {
   async simulatePix(
     @Param('condominiumId', ParseUUIDPipe) condominiumId: string,
     @Param('chargeId', ParseUUIDPipe) chargeId: string,
-  ): Promise<{ asaasPaymentId: string; status: string; webhookExpected: string }> {
+  ): Promise<{
+    asaasPaymentId: string;
+    status: string;
+    webhookExpected: string;
+  }> {
     this.assertSandbox();
-    const { charge, apiKey } = await this.resolveChargeAndKey(condominiumId, chargeId);
+    const { charge, apiKey } = await this.resolveChargeAndKey(
+      condominiumId,
+      chargeId,
+    );
     const resp = await this.asaas.confirmPaymentInSandbox(
       apiKey,
       charge.asaasPaymentId!,
     );
-    this.logger.warn(`DEV: charge ${charge.id} confirmada como Pix via sandbox`);
+    this.logger.warn(
+      `DEV: charge ${charge.id} confirmada como Pix via sandbox`,
+    );
     return {
       asaasPaymentId: resp.id,
       status: resp.status,
@@ -342,24 +368,31 @@ export class PaymentAccountsDevController {
     @Param('chargeId', ParseUUIDPipe) chargeId: string,
   ): Promise<{ asaasPaymentId: string; status: string }> {
     this.assertSandbox();
-    const { charge, apiKey } = await this.resolveChargeAndKey(condominiumId, chargeId);
-    const resp = await this.asaas.payWithCreditCard(apiKey, charge.asaasPaymentId!, {
-      creditCard: {
-        holderName: 'JOAO DA SILVA',
-        number: '5162306071967330',
-        expiryMonth: '05',
-        expiryYear: '2030',
-        ccv: '318',
+    const { charge, apiKey } = await this.resolveChargeAndKey(
+      condominiumId,
+      chargeId,
+    );
+    const resp = await this.asaas.payWithCreditCard(
+      apiKey,
+      charge.asaasPaymentId!,
+      {
+        creditCard: {
+          holderName: 'JOAO DA SILVA',
+          number: '5162306071967330',
+          expiryMonth: '05',
+          expiryYear: '2030',
+          ccv: '318',
+        },
+        creditCardHolderInfo: {
+          name: 'Joao da Silva',
+          email: 'teste@condosync.dev',
+          cpfCnpj: '24971563792',
+          postalCode: '01310100',
+          addressNumber: '100',
+        },
+        remoteIp: '127.0.0.1',
       },
-      creditCardHolderInfo: {
-        name: 'Joao da Silva',
-        email: 'teste@condosync.dev',
-        cpfCnpj: '24971563792',
-        postalCode: '01310100',
-        addressNumber: '100',
-      },
-      remoteIp: '127.0.0.1',
-    });
+    );
     this.logger.warn(`DEV: charge ${charge.id} paga com cartão de teste`);
     return { asaasPaymentId: resp.id, status: resp.status };
   }
@@ -376,7 +409,10 @@ export class PaymentAccountsDevController {
     @Param('chargeId', ParseUUIDPipe) chargeId: string,
   ): Promise<{ asaasPaymentId: string; status: string }> {
     this.assertSandbox();
-    const { charge, apiKey } = await this.resolveChargeAndKey(condominiumId, chargeId);
+    const { charge, apiKey } = await this.resolveChargeAndKey(
+      condominiumId,
+      chargeId,
+    );
     const resp = await this.asaas.undoReceivePaymentInCash(
       apiKey,
       charge.asaasPaymentId!,
@@ -410,7 +446,8 @@ export class PaymentAccountsDevController {
   }
 
   private async resolveApiKey(condominiumId: string): Promise<string> {
-    const account = await this.repo.findByCondominiumIdWithSecrets(condominiumId);
+    const account =
+      await this.repo.findByCondominiumIdWithSecrets(condominiumId);
     if (!account) {
       throw new ForbiddenException('Subconta não encontrada.');
     }

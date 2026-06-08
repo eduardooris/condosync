@@ -58,7 +58,9 @@ export function normalizeBrazilWhatsapp(phone: string): string {
  * Formato exigido pela Asaas em `mobilePhone` (subconta e customer):
  * `55` + DDD (2) + 8 ou 9 dígitos, só dígitos.
  */
-export function toAsaasMobilePhone(raw: string | null | undefined): string | undefined {
+export function toAsaasMobilePhone(
+  raw: string | null | undefined,
+): string | undefined {
   if (!raw?.trim()) return undefined;
   let d = raw.replace(/\D/g, '');
   if (!d) return undefined;

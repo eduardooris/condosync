@@ -44,7 +44,10 @@ describe('ChargesService', () => {
     create: jest.fn(),
     createMany: jest.fn().mockResolvedValue([]),
   };
-  const residentRepo = { findOne: jest.fn(), count: jest.fn().mockResolvedValue(1) };
+  const residentRepo = {
+    findOne: jest.fn(),
+    count: jest.fn().mockResolvedValue(1),
+  };
   const paymentAccounts = {
     requireActive: jest.fn().mockResolvedValue({ id: 'pa1' }),
     resolveApiKey: jest.fn().mockResolvedValue('fakekey'),
@@ -55,7 +58,12 @@ describe('ChargesService', () => {
     settleAsReceivedInCash: jest.fn().mockImplementation(async (c) => c),
     fetchPixQrCode: jest.fn().mockResolvedValue(null),
   };
-  const logger = { warn: jest.fn(), log: jest.fn(), info: jest.fn(), error: jest.fn() };
+  const logger = {
+    warn: jest.fn(),
+    log: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+  };
   // Quando `ASAAS_ACCOUNTS_ENABLED=false`, ChargesService pula a integração.
   // Mantemos `false` no spec para os testes existentes não dependerem de Asaas.
   const config = {

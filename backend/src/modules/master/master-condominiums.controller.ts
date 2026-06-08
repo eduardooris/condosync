@@ -122,13 +122,16 @@ export class MasterCondominiumsController {
     const condo = await this.condoRepo.findOne({ where: { id } });
     if (!condo) return null;
 
-    const [account, totalUnits, vacantUnits, members, chargesAgg] = await Promise.all([
-      this.paymentAccountsRepo.findOne({ where: { condominiumId: id } }),
-      this.unitRepo.count({ where: { condominiumId: id } }),
-      this.unitRepo.count({ where: { condominiumId: id, status: 'VACANT' as never } }),
-      this.listMembers(id),
-      this.aggregateCharges(id),
-    ]);
+    const [account, totalUnits, vacantUnits, members, chargesAgg] =
+      await Promise.all([
+        this.paymentAccountsRepo.findOne({ where: { condominiumId: id } }),
+        this.unitRepo.count({ where: { condominiumId: id } }),
+        this.unitRepo.count({
+          where: { condominiumId: id, status: 'VACANT' as never },
+        }),
+        this.listMembers(id),
+        this.aggregateCharges(id),
+      ]);
 
     return {
       id: condo.id,

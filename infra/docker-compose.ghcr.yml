@@ -1,0 +1,32 @@
+# CondoSync — override de produção que PUXA imagens do GHCR (CI/CD).
+#
+# Use NO LUGAR de docker-compose.build.yml. Em vez de buildar local, cada
+# serviço roda a imagem publicada pelos workflows de release no GHCR.
+#
+#   cd infra
+#   export GHCR_OWNER=<owner>            # ex.: condosync (minúsculo)
+#   export IMAGE_TAG=<sha>               # tag do backend
+#   export FRONTEND_TAG=<sha>            # tag do frontend
+#   export MESSAGE_SERVER_TAG=<sha>      # tag do message-server
+#   docker compose \
+#     -f docker-compose.prod.yml \
+#     -f docker-compose.api.yml \
+#     -f docker-compose.ghcr.yml \
+#     --env-file .env.prod \
+#     up -d --no-deps api frontend message-server
+#
+# Os scripts infra/scripts/deploy-*.sh fazem isso (login + pull + healthcheck).
+# Tags default `latest` permitem subir a stack sem fixar SHA.
+
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER}/condosync-api:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER}/condosync-frontend:${FRONTEND_TAG:-latest}
+    pull_policy: always
+
+  message-server:
+    image: ghcr.io/${GHCR_OWNER}/condosync-message-server:${MESSAGE_SERVER_TAG:-latest}
+    pull_policy: always

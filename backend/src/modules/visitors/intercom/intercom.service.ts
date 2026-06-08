@@ -593,7 +593,9 @@ export class IntercomService {
     return stale.length;
   }
 
-  private toTokenListItem(row: IntercomAccessToken): IntercomAccessTokenListItemDto {
+  private toTokenListItem(
+    row: IntercomAccessToken,
+  ): IntercomAccessTokenListItemDto {
     return {
       id: row.id,
       label: row.label,
@@ -603,7 +605,9 @@ export class IntercomService {
     };
   }
 
-  private toTokenDetail(row: IntercomAccessToken): IntercomAccessTokenDetailDto {
+  private toTokenDetail(
+    row: IntercomAccessToken,
+  ): IntercomAccessTokenDetailDto {
     const canReveal = Boolean(row.tokenSecret && !row.revokedAt);
     return {
       id: row.id,

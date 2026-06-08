@@ -36,14 +36,20 @@ export class PaymentCustomersService {
    */
   async ensureForResponsible(
     condominiumId: string,
-    resident: Pick<Resident, 'id' | 'cpf' | 'fullName' | 'email' | 'phoneWhatsapp'>,
+    resident: Pick<
+      Resident,
+      'id' | 'cpf' | 'fullName' | 'email' | 'phoneWhatsapp'
+    >,
   ): Promise<PaymentCustomer> {
     const account = await this.accounts.requireActive(condominiumId);
     const apiKey = await this.accounts.resolveApiKey(condominiumId);
     const mobilePhone = toAsaasMobilePhone(resident.phoneWhatsapp);
 
     // 1) Reuso por (payment_account_id, cpf).
-    let customer = await this.repo.findByAccountAndCpf(account.id, resident.cpf);
+    let customer = await this.repo.findByAccountAndCpf(
+      account.id,
+      resident.cpf,
+    );
 
     if (customer) {
       // Mantém Asaas sincronizado se mudou nome/email/telefone — best-effort.

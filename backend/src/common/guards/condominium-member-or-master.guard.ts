@@ -51,7 +51,9 @@ export class CondominiumMemberOrMasterGuard implements CanActivate {
       MasterRoleGuard.REQUIRED_ROLE,
     );
     if (isMaster) {
-      const exists = await this.condoRepo.exist({ where: { id: condominiumId } });
+      const exists = await this.condoRepo.exist({
+        where: { id: condominiumId },
+      });
       if (!exists) {
         throw new ForbiddenException('Você não tem acesso a este condomínio.');
       }

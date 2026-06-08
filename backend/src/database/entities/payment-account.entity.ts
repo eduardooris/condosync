@@ -101,7 +101,12 @@ export class PaymentAccount {
   holderMobilePhone: string;
 
   /** Renda mensal (PF) ou faturamento (PJ). Asaas exige desde 30/mai/2024. */
-  @Column({ name: 'holder_income_value', type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    name: 'holder_income_value',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+  })
   holderIncomeValue: string;
 
   /**
@@ -174,7 +179,12 @@ export class PaymentAccount {
   @Column({ name: 'reject_reason', type: 'text', nullable: true })
   rejectReason: string | null;
 
-  @Column({ name: 'onboarding_url', type: 'varchar', length: 512, nullable: true })
+  @Column({
+    name: 'onboarding_url',
+    type: 'varchar',
+    length: 512,
+    nullable: true,
+  })
   onboardingUrl: string | null;
 
   @Column({ name: 'last_status_check_at', type: 'timestamptz', nullable: true })

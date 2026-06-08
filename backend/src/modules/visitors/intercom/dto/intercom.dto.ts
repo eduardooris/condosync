@@ -141,7 +141,8 @@ export class IntercomAccessTokenListItemDto {
   revokedAt?: Date | null;
 
   @ApiProperty({
-    description: 'Indica se o link/QR pode ser exibido novamente (tokens criados após suporte a consulta).',
+    description:
+      'Indica se o link/QR pode ser exibido novamente (tokens criados após suporte a consulta).',
   })
   canRevealLink: boolean;
 }
@@ -161,7 +162,8 @@ export class IntercomAccessTokenDetailDto {
 
   @ApiProperty({
     example: 'http://localhost:5173/portaria/abc123',
-    description: 'Ausente se o token foi criado antes do armazenamento consultável ou se revogado.',
+    description:
+      'Ausente se o token foi criado antes do armazenamento consultável ou se revogado.',
   })
   portariaUrl?: string | null;
 }

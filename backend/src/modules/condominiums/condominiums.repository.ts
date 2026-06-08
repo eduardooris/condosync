@@ -6,7 +6,6 @@ import {
   MembershipStatus,
   UserCondominium,
 } from '../../database/entities/user-condominium.entity';
-import { UserRole } from '../../common/enums';
 
 @Injectable()
 export class CondominiumsRepository {

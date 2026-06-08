@@ -8,8 +8,8 @@ import helmet from 'helmet';
 // runtime (`compression_1.default is not a function`). Usamos `require`
 // direto para garantir o callable.
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-const compression =
-  require('compression') as () => import('express').RequestHandler;
+const compressionModule = require('compression');
+const compression = compressionModule as () => import('express').RequestHandler;
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { ErrorResponseDto } from './common/dto/error-response.dto';

@@ -119,8 +119,7 @@ export class NotificationsService {
     const hasMore = items.length > limit;
     const trimmed = hasMore ? items.slice(0, limit) : items;
     const last = trimmed[trimmed.length - 1];
-    const nextCursor =
-      hasMore && last ? last.createdAt.toISOString() : null;
+    const nextCursor = hasMore && last ? last.createdAt.toISOString() : null;
 
     return { items: trimmed, nextCursor };
   }
